@@ -12,7 +12,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -48,10 +47,8 @@ object SponsorBlockApi {
     @Serializable
     private data class SegmentDto(
         val segment: List<Double> = emptyList(),
-        val cid: String? = null,
         val category: String = "",
         val actionType: String = "",
-        @SerialName("UUID") val uuid: String = "",
     )
 
     suspend fun getSegments(bvid: String, cid: Long): List<SponsorSegment> {
