@@ -34,6 +34,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
+import com.github.mytv.bv.ui.feature.video.show
 import com.github.mytv.bv.ui.navigation.PlayerRoute
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.viewmodel.CommentViewModel
