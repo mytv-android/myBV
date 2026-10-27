@@ -12,7 +12,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.focusable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -41,6 +40,7 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.github.mytv.bv.player.design.LocalBvMotionScheme
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
@@ -92,7 +92,7 @@ private class FocusRingNode(
         this.corner = corner
         this.glow = glow
         if (changed) {
-            val spec = currentValueOf(MaterialTheme.LocalMotionScheme).fastEffectsSpec<Float>()
+            val spec = currentValueOf(LocalBvMotionScheme).fastEffectsSpec<Float>()
             coroutineScope.launch { alpha.animateTo(if (visible) 1f else 0f, spec) }
         }
     }
@@ -192,7 +192,7 @@ private class BvFocusNode(
         show = newShow
         // zIndex 在 placement 阶段生效，焦点切换时重新测量一次即可
         invalidateMeasurement()
-        val motion = currentValueOf(MaterialTheme.LocalMotionScheme)
+        val motion = currentValueOf(LocalBvMotionScheme)
         coroutineScope.launch {
             if (animate) {
                 launch { scaleProgress.animateTo(if (show) 1f else 0f, motion.fastSpatialSpec<Float>()) }

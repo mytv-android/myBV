@@ -20,7 +20,7 @@ import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.materialkolor.DynamicMaterialExpressiveTheme
+import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.ktx.themeColors
 import com.github.mytv.bv.entity.DarkMode
@@ -65,9 +65,8 @@ fun CoverTheme(coverUrl: String?, forceDark: Boolean = false, content: @Composab
     val dark = forceDark || LocalBvDark.current
     val seed = loaded ?: MaterialTheme.colorScheme.primary
     CompositionLocalProvider(LocalBvDark provides dark) {
-        DynamicMaterialExpressiveTheme(
+        DynamicMaterialTheme(
             seedColor = seed,
-            motionScheme = MaterialTheme.motionScheme,
             isDark = dark,
             isAmoled = dark && prefs.darkMode == DarkMode.PureBlack,
             style = prefs.style,
@@ -76,7 +75,15 @@ fun CoverTheme(coverUrl: String?, forceDark: Boolean = false, content: @Composab
             shapes = MaterialTheme.shapes,
             typography = MaterialTheme.typography,
             animate = true,
-            content = content,
+            content = {
+                MaterialTheme(
+                    colorScheme = MaterialTheme.colorScheme,
+                    motionScheme = MaterialTheme.motionScheme,
+                    shapes = MaterialTheme.shapes,
+                    typography = MaterialTheme.typography,
+                    content = content,
+                )
+            },
         )
     }
 }

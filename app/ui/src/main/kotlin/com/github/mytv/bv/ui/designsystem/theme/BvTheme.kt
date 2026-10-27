@@ -21,12 +21,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
-import com.materialkolor.DynamicMaterialExpressiveTheme
+import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.github.mytv.bv.component.FpsMonitor
 import com.github.mytv.bv.entity.DarkMode
 import com.github.mytv.bv.entity.ThemePrefs
 import com.github.mytv.bv.entity.ThemeSource
+import com.github.mytv.bv.player.design.LocalBvMotionScheme
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.adaptive.rememberDeviceProfile
 import com.github.mytv.bv.ui.designsystem.focus.LocalFocusColor
@@ -77,10 +78,10 @@ fun BvTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
         else -> prefs.seed
     }
     if (!profile.isTv) SystemBarsAppearance(dark)
+    val motionScheme = if (prefs.reduceMotion) MotionScheme.standard() else MotionScheme.expressive()
     CompositionLocalProvider(LocalBvDark provides dark) {
-        DynamicMaterialExpressiveTheme(
+        DynamicMaterialTheme(
             seedColor = seed,
-            motionScheme = if (prefs.reduceMotion) MotionScheme.standard() else MotionScheme.expressive(),
             isDark = dark,
             isAmoled = dark && prefs.darkMode == DarkMode.PureBlack,
             style = prefs.style,
@@ -88,10 +89,19 @@ fun BvTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
             specVersion = ColorSpec.SpecVersion.SPEC_2025,
             animate = true,
             content = {
-                CompositionLocalProvider(
-                    LocalFocusColor provides MaterialTheme.colorScheme.primary,
+                // materialKolor 4.x 不再接收 MotionScheme，这里用当前配色重建一层 M3 主题来下发 reduceMotion
+                MaterialTheme(
+                    colorScheme = MaterialTheme.colorScheme,
+                    motionScheme = motionScheme,
+                    shapes = MaterialTheme.shapes,
+                    typography = MaterialTheme.typography,
                 ) {
-                    content()
+                    CompositionLocalProvider(
+                        LocalBvMotionScheme provides motionScheme,
+                        LocalFocusColor provides MaterialTheme.colorScheme.primary,
+                    ) {
+                        content()
+                    }
                 }
             },
         )

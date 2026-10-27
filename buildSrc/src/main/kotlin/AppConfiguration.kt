@@ -16,9 +16,9 @@ object AppConfiguration {
     val myBvCertSha256: String =
         System.getenv(MYBV_CERT_SHA256_ENV)?.trim()?.lowercase().orEmpty()
 
-    const val compileSdk = 36
+    const val compileSdk = 37
     const val minSdk = 23
-    const val targetSdk = 36
+    const val targetSdk = 37
     const val jdk = 21
     private const val major = 1
     private const val minor = 0

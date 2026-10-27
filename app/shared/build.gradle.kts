@@ -1,3 +1,4 @@
+import com.android.build.api.variant.BuildConfigField
 import java.net.URI
 
 plugins {
@@ -6,7 +7,6 @@ plugins {
     alias(gradleLibs.plugins.google.ksp)
     alias(gradleLibs.plugins.google.protobuf)
     alias(gradleLibs.plugins.google.services) apply false
-    alias(gradleLibs.plugins.kotlin.android)
     alias(gradleLibs.plugins.kotlin.serialization)
 }
 
@@ -18,34 +18,6 @@ android {
         minSdk = AppConfiguration.minSdk
         vectorDrawables {
             useSupportLibrary = true
-        }
-
-        buildTypes {
-            buildConfigField(
-                type = "int",
-                name = "VERSION_CODE",
-                value = "${AppConfiguration.versionCode}"
-            )
-            buildConfigField(
-                type = "String",
-                name = "VERSION_NAME",
-                value = "\"${AppConfiguration.versionName}\""
-            )
-            buildConfigField(
-                type = "String",
-                name = "APPLICATION_ID",
-                value = "\"${AppConfiguration.appId}\""
-            )
-            buildConfigField(
-                type = "String",
-                name = "MYBV_CERT_SHA256",
-                value = "\"${AppConfiguration.myBvCertSha256}\""
-            )
-            buildConfigField(
-                type = "String",
-                name = "BLACKLIST_URL",
-                value = "\"${AppConfiguration.blacklistUrl}\""
-            )
         }
     }
 
@@ -78,12 +50,26 @@ android {
         buildConfig = true
     }
 
-    lint {
-        targetSdk = AppConfiguration.targetSdk
-    }
-
     testOptions {
         targetSdk = AppConfiguration.targetSdk
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.buildConfigFields?.apply {
+            put("VERSION_CODE", BuildConfigField("int", AppConfiguration.versionCode, null))
+            put("VERSION_NAME", BuildConfigField("String", "\"${AppConfiguration.versionName}\"", null))
+            put("APPLICATION_ID", BuildConfigField("String", "\"${AppConfiguration.appId}\"", null))
+            put(
+                "MYBV_CERT_SHA256",
+                BuildConfigField("String", "\"${AppConfiguration.myBvCertSha256}\"", null)
+            )
+            put(
+                "BLACKLIST_URL",
+                BuildConfigField("String", "\"${AppConfiguration.blacklistUrl}\"", null)
+            )
+        }
     }
 }
 

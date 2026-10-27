@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.build.gradle.internal.api.ApkVariantOutputImpl
+import com.android.build.api.variant.FilterConfiguration
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.FileInputStream
 import java.util.Properties
@@ -11,7 +11,6 @@ plugins {
     alias(gradleLibs.plugins.firebase.crashlytics)
     alias(gradleLibs.plugins.google.ksp)
     alias(gradleLibs.plugins.google.services) apply false
-    alias(gradleLibs.plugins.kotlin.android)
     alias(gradleLibs.plugins.kotlin.serialization)
 }
 
@@ -155,16 +154,19 @@ android {
         }
     }*/
 
-    applicationVariants.configureEach {
-        val variant = this
-        outputs.configureEach {
-            (this as ApkVariantOutputImpl).apply {
-                val abi = this.filters.find { it.filterType == "ABI" }?.identifier ?: "universal"
-                outputFileName =
-                    "BV_${AppConfiguration.versionCode}_${AppConfiguration.versionName}.${variant.buildType.name}_${variant.flavorName}_$abi.apk"
-                versionNameOverride =
-                    "${variant.versionName}.${variant.buildType.name}"
-            }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .find { it.filterType == FilterConfiguration.FilterType.ABI }
+                ?.identifier ?: "universal"
+            output.outputFileName.set(
+                "BV_${AppConfiguration.versionCode}_${AppConfiguration.versionName}." +
+                    "${variant.buildType}_${variant.flavorName}_$abi.apk"
+            )
+            output.versionName.set("${AppConfiguration.versionName}.${variant.buildType}")
         }
     }
 }

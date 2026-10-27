@@ -1,9 +1,10 @@
 @file:Suppress("UnstableApiUsage")
 
+import com.android.build.api.variant.BuildConfigField
+
 plugins {
     alias(gradleLibs.plugins.android.library)
     alias(gradleLibs.plugins.compose.compiler)
-    alias(gradleLibs.plugins.kotlin.android)
 }
 
 android {
@@ -14,32 +15,17 @@ android {
         minSdk = AppConfiguration.minSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
-
-        buildConfigField("String", "libVLCVersion", "\"${AppConfiguration.libVLCVersion}\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
         create("r8Test") {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
         create("alpha") {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 
@@ -50,6 +36,15 @@ android {
 
     testOptions {
         targetSdk = AppConfiguration.targetSdk
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.buildConfigFields?.put(
+            "libVLCVersion",
+            BuildConfigField("String", "\"${AppConfiguration.libVLCVersion}\"", null)
+        )
     }
 }
 
