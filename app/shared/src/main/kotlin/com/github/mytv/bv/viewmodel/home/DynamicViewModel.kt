@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import dev.aaa1115910.biliapi.entity.user.DynamicItem
 import dev.aaa1115910.biliapi.entity.user.DynamicVideo
 import dev.aaa1115910.biliapi.http.entity.AuthFailureException
+import dev.aaa1115910.biliapi.http.entity.RiskControlException
 import dev.aaa1115910.biliapi.repositories.UserRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.BuildConfig
@@ -95,6 +96,12 @@ class DynamicViewModel(
                     if (!BuildConfig.DEBUG) bvUserRepository.logout()
                 }
 
+                is RiskControlException -> {
+                    withContext(Dispatchers.Main) {
+                        "动态被风控拦截，请稍后重试".toast(BVApp.context)
+                    }
+                }
+
                 else -> {
                     withContext(Dispatchers.Main) {
                         "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
@@ -108,10 +115,10 @@ class DynamicViewModel(
     private suspend fun loadAllData() {
         if (!allHasMore || !bvUserRepository.isLogin) return
         loadingAll = true
-        logger.fInfo { "Load more dynamic all [apiType=${Prefs.apiType}, offset=$allHistoryOffset, page=${currentVideoPage + 1}]" }
+        logger.fInfo { "Load more dynamic all [apiType=${Prefs.apiType}, offset=$allHistoryOffset, page=${currentAllPage + 1}]" }
         runCatching {
             val dynamicData = userRepository.getDynamics(
-                page = ++currentVideoPage,
+                page = ++currentAllPage,
                 offset = allHistoryOffset ?: "",
                 updateBaseline = allUpdateBaseline ?: "",
                 preferApiType = Prefs.apiType
@@ -131,6 +138,12 @@ class DynamicViewModel(
                             .toast(BVApp.context)
                     }
                     logger.fInfo { "User auth failure" }
+                }
+
+                is RiskControlException -> {
+                    withContext(Dispatchers.Main) {
+                        "动态被风控拦截，请稍后重试".toast(BVApp.context)
+                    }
                 }
 
                 else -> {

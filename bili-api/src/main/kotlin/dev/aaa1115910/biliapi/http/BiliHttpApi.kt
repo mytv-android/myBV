@@ -525,13 +525,21 @@ object BiliHttpApi {
         page: Int = 1,
         offset: String? = null,
         sessData: String = ""
-    ): BiliResponse<DynamicData> = client.get("/x/polymer/web-dynamic/v1/feed/all") {
-        parameter("timezone_offset", timezoneOffset)
-        parameter("type", type)
-        parameter("page", page)
-        offset?.let { parameter("offset", offset) }
-        header("Cookie", "SESSDATA=$sessData;")
-    }.body()
+    ): BiliResponse<DynamicData> {
+        val bodyText = client.get("/x/polymer/web-dynamic/v1/feed/all") {
+            parameter("timezone_offset", timezoneOffset)
+            parameter("type", type)
+            parameter("page", page)
+            offset?.let { parameter("offset", offset) }
+            // 不带 referer 容易被风控返回 -352（见 getVideoDetail）
+            header("referer", "https://www.bilibili.com/")
+            header("Cookie", "SESSDATA=$sessData;")
+        }.bodyAsText()
+        // -352 响应的 data 里常只有 v_voucher，直接按目标实体反序列化会抛
+        // MissingFieldException，先检查原始响应体把凭证带出来
+        checkForVVoucher(bodyText)
+        return json.decodeFromString(bodyText)
+    }
 
     /**
      * 获取动态详情
@@ -543,12 +551,18 @@ object BiliHttpApi {
         id: String,
         features: String? = null,
         sessData: String = ""
-    ): BiliResponse<DynamicDetailData> = client.get("/x/polymer/web-dynamic/v1/detail") {
-        parameter("timezone_offset", timezoneOffset)
-        parameter("id", id)
-        features?.let { parameter("features", it) }
-        header("Cookie", "SESSDATA=$sessData;")
-    }.body()
+    ): BiliResponse<DynamicDetailData> {
+        val bodyText = client.get("/x/polymer/web-dynamic/v1/detail") {
+            parameter("timezone_offset", timezoneOffset)
+            parameter("id", id)
+            features?.let { parameter("features", it) }
+            // 详情页来源是 t.bilibili.com，referer 保持一致，否则被风控返回 -352
+            header("referer", "https://t.bilibili.com/")
+            header("Cookie", "SESSDATA=$sessData;")
+        }.bodyAsText()
+        checkForVVoucher(bodyText)
+        return json.decodeFromString(bodyText)
+    }
 
     /**
      * 获取用户[uid]的详细信息

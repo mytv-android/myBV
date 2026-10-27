@@ -10,11 +10,12 @@ import kotlinx.serialization.Serializable
 data class DynamicData(
     @SerialName("has_more")
     val hasMore: Boolean,
-    val offset: String,
+    // B 站偶尔不下发这几个翻页字段（如风控降级响应），缺字段不应让整页解析失败
+    val offset: String = "",
     @SerialName("update_baseline")
-    val updateBaseline: String,
+    val updateBaseline: String = "",
     @SerialName("update_num")
-    val updateNum: Int,
+    val updateNum: Int = 0,
     val items: List<DynamicItem> = emptyList()
 )
 
@@ -171,12 +172,14 @@ data class DynamicItem(
                 val jumpUrl: String,
                 @SerialName("reserve_total")
                 val reserveTotal: Int,
-                val rid: Int,
+                // rid 是动态/房间号、up_mid 是用户 mid，都可能是超过 Int 范围的大数，
+                // 用 Int 会在反序列化时抛异常导致整条动态列表解析失败
+                val rid: Long,
                 val state: Int,
                 val stypc: Int? = null,
                 val title: String,
                 @SerialName("up_mid")
-                val upMid: Int
+                val upMid: Long
             ) {
                 @Serializable
                 data class Desc(
@@ -295,7 +298,8 @@ data class DynamicItem(
 
                 @Serializable
                 data class Draw(
-                    val id: Int,
+                    // 图文动态的 id 是动态 id（雪花 id，超过 Int 范围），用 Long 接
+                    val id: Long,
                     val items: List<Pic>,
                 ) {
                     @Serializable

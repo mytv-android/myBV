@@ -50,7 +50,15 @@ data class DynamicData(
                             }
                         }
 
-                        DynamicItem.fromDynamicItem(it)
+                        // 单条动态解析失败（B 站改字段、缺模块等）只跳过该条，
+                        // 不能让整页动态都加载不出来
+                        runCatching { DynamicItem.fromDynamicItem(it) }
+                            .onFailure { e ->
+                                logger.warn(e) {
+                                    "parse dynamic item failed, type: ${it.type}, up: ${it.modules.moduleAuthor.name}"
+                                }
+                            }
+                            .getOrNull()
                     },
                 hasMore = data.hasMore,
                 historyOffset = data.offset,
@@ -491,7 +499,8 @@ data class DynamicItem(
     data class DynamicLiveRcmdModule(
         val title: String,
         val cover: String,
-        val roomId: Int
+        // 直播间号已逼近/超过 Int 范围，用 Long 接
+        val roomId: Long
     ) {
         companion object {
             private val json = Json {
@@ -541,7 +550,7 @@ data class DynamicItem(
                 @SerialName("live_start_time")
                 val liveStartTime: Long,
                 @SerialName("room_id")
-                val roomId: Int,
+                val roomId: Long,
                 @SerialName("live_status")
                 val liveStatus: Int,
                 @SerialName("room_type")
@@ -706,7 +715,14 @@ data class DynamicVideoData(
         private val logger = KotlinLogging.logger { }
         fun fromDynamicData(data: dev.aaa1115910.biliapi.http.entity.dynamic.DynamicData) =
             DynamicVideoData(
-                videos = data.items.map { DynamicVideo.fromDynamicVideoItem(it) },
+                videos = data.items.mapNotNull { item ->
+                    // 同上：单条解析失败只跳过该条
+                    runCatching { DynamicVideo.fromDynamicVideoItem(item) }
+                        .onFailure { e ->
+                            logger.warn(e) { "parse dynamic video item failed, up: ${item.modules.moduleAuthor.name}" }
+                        }
+                        .getOrNull()
+                },
                 hasMore = data.hasMore,
                 historyOffset = data.offset,
                 updateBaseline = data.updateBaseline
