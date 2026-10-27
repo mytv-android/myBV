@@ -201,8 +201,10 @@ class PlayUrlResolver(
             )
         }
 
+        val dolbyVisionQuality = quality == Resolution.RDolby
         val codecList = playData.codec[quality.code].orEmpty()
-            .mapNotNull { VideoCodec.fromCodecString(it) }
+            .mapNotNull { VideoCodec.fromCodecString(it, dolbyVisionQuality) }
+            .distinct()
         logger.fInfo { "Video available codec: $codecList" }
         logger.fInfo { "Default codec: $preferred" }
 
@@ -213,7 +215,7 @@ class PlayUrlResolver(
             // 编码表里没有该清晰度时，按实际视频流推断，避免直接失败
             else -> playData.dashVideos.firstOrNull { it.quality == quality.code }
                 ?.let { video ->
-                    video.codecs?.let { VideoCodec.fromCodecString(it) }
+                    video.codecs?.let { VideoCodec.fromCodecString(it, dolbyVisionQuality) }
                         ?: VideoCodec.fromCodecId(video.codecId)
                 }
                 ?: preferred
@@ -257,10 +259,10 @@ class PlayUrlResolver(
     ): SelectedStreams {
         val videoItem = playData.dashVideos.find {
             when (apiType) {
-                ApiType.Web -> it.quality == qn && it.codecs!!.startsWith(codec.prefix)
+                ApiType.Web -> it.quality == qn && codec.matches(it.codecs!!)
                 ApiType.App -> {
                     if (playData.codec.isEmpty()) it.quality == qn
-                    else it.quality == qn && it.codecs!!.startsWith(codec.prefix)
+                    else it.quality == qn && codec.matches(it.codecs!!)
                 }
             }
         }

@@ -42,6 +42,7 @@ import coil.compose.AsyncImage
 import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.reply.Comment
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 
 /**
@@ -115,16 +116,18 @@ fun CommentItem(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     comment.pictures.take(3).forEachIndexed { index, picture ->
                         AsyncImage(
-                            model = picture.url,
+                            model = normalizePictureUrl(picture.url),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .width(88.dp)
+                                .width(72.dp)
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .then(
-                                    if (onPictureClick != null) Modifier.clickable { onPictureClick(comment.pictures, index) }
+                                    if (onPictureClick != null) Modifier
+                                        .bvFocus(scale = 1.06f, corner = 10.dp)
+                                        .clickable { onPictureClick(comment.pictures, index) }
                                     else Modifier
                                 ),
                         )
@@ -212,3 +215,5 @@ private fun CommentText(
         )
     }
 }
+
+private fun normalizePictureUrl(url: String) = if (url.startsWith("//")) "https:$url" else url

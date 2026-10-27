@@ -94,6 +94,8 @@ internal fun BvPlayerHost(
     val playerLongPressAction = remember { Prefs.playerLongPressAction }
     val playerLongPressSpeed = remember { Prefs.playerLongPressSpeed }
     val skipPgcIntroOutro = remember { Prefs.skipPgcIntroOutro }
+    val skipSponsorSegments = remember { Prefs.skipSponsorSegments }
+    val showPlayerLogs = remember { Prefs.showPlayerLogs }
 
     // 旧播放页 onPause：暂停视频（弹幕引擎通过 isPlayingProvider 跟随，无需单独暂停）
     DisposableEffect(lifecycleOwner, videoPlayer) {
@@ -180,6 +182,9 @@ internal fun BvPlayerHost(
                     longPressSpeed = playerLongPressSpeed,
                     clipInfoList = playerVm.clipInfoList,
                     skipPgcIntroOutro = skipPgcIntroOutro,
+                    skipSponsorSegments = skipSponsorSegments,
+                    sponsorSegments = playerVm.sponsorSegments,
+                    showPlayerLogs = showPlayerLogs,
                 ),
                 LocalVideoPlayerDanmakuMasksData provides VideoPlayerDanmakuMasksData(
                     danmakuMasks = playerVm.danmakuMasks,

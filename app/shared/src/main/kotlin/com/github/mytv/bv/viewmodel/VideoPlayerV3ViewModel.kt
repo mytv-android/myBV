@@ -26,10 +26,12 @@ import dev.aaa1115910.biliapi.http.entity.RiskControlException
 import dev.aaa1115910.biliapi.http.entity.video.ClipInfo
 import dev.aaa1115910.biliapi.repositories.AuthRepository
 import dev.aaa1115910.biliapi.repositories.VideoPlayRepository
+import dev.aaa1115910.biliapi.util.toBv
 import dev.aaa1115910.bilisubtitle.SubtitleParser
 import dev.aaa1115910.bilisubtitle.entity.SubtitleItem
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.entity.proxy.ProxyArea
+import com.github.mytv.bv.network.SponsorBlockApi
 import com.github.mytv.bv.player.AbstractVideoPlayer
 import com.github.mytv.bv.player.danmaku.DanmakuView
 import com.github.mytv.bv.player.danmaku.model.Danmaku
@@ -38,6 +40,7 @@ import com.github.mytv.bv.player.entity.DanmakuType
 import com.github.mytv.bv.player.entity.PlayMode
 import com.github.mytv.bv.player.entity.RequestState
 import com.github.mytv.bv.player.entity.Resolution
+import com.github.mytv.bv.player.entity.SponsorSegment
 import com.github.mytv.bv.player.entity.VideoAspectRatio
 import com.github.mytv.bv.player.entity.VideoCodec
 import com.github.mytv.bv.player.entity.VideoListItemData
@@ -109,6 +112,9 @@ class VideoPlayerV3ViewModel(
 
     /** 当前剧集的片头/片尾配置；换集时先清空，拿到新播放数据后再更新 */
     var clipInfoList: List<ClipInfo>? by mutableStateOf(null)
+
+    /** 空降助手标注的推广片段；换集时先清空，异步拉到后更新 */
+    var sponsorSegments by mutableStateOf(emptyList<SponsorSegment>())
 
     var availableQuality = mutableStateListOf<Resolution>()
     var availableVideoCodec = mutableStateListOf<VideoCodec>()
@@ -243,8 +249,9 @@ class VideoPlayerV3ViewModel(
             currentInteractiveNodeId = 0L
             currentInteractiveEdgeId = 0L
         }
-        // 换集后先清空上一集的片头片尾，避免新数据返回前用旧配置误跳
+        // 换集后先清空上一集的片头片尾与推广片段，避免新数据返回前用旧配置误跳
         clipInfoList = null
+        sponsorSegments = emptyList()
         epid?.let { this.epid = it }
         seasonId?.let { this.seasonId = it }
         viewModelScope.launch(Dispatchers.Default) {
@@ -314,6 +321,7 @@ class VideoPlayerV3ViewModel(
                 this@VideoPlayerV3ViewModel.playData = playData
                 this@VideoPlayerV3ViewModel.clipInfoList = playData.clipInfoList
             }
+            loadSponsorSegments(avid, cid)
             logger.fInfo { "Load play data response success" }
             //logger.info { "Play data: $playData" }
 
@@ -376,6 +384,25 @@ class VideoPlayerV3ViewModel(
             addLogs("加载视频地址成功")
             loadState = RequestState.Success
             logger.fInfo { "Load play url success" }
+        }
+    }
+
+    /** 普通视频（有 bvid）才查空降助手；失败或未开启时静默返回，不影响起播。 */
+    private fun loadSponsorSegments(aid: Long, cid: Long) {
+        // PGC 没有 bvid，空降助手只对普通 UGC 视频有效
+        if (!Prefs.skipSponsorSegments || currentEpid != 0 || aid <= 0L || cid <= 0L) {
+            sponsorSegments = emptyList()
+            return
+        }
+        val bvid = aid.toBv()
+        viewModelScope.launch(Dispatchers.IO) {
+            val segments = SponsorBlockApi.getSegments(bvid, cid)
+            withContext(Dispatchers.Main) {
+                // 换集后旧请求可能晚到，只在仍然是同一集时写入
+                if (currentAid == aid && currentCid == cid) {
+                    sponsorSegments = segments
+                }
+            }
         }
     }
 

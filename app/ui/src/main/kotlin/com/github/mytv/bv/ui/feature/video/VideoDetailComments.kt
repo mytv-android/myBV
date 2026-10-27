@@ -1,6 +1,6 @@
 package com.github.mytv.bv.ui.feature.video
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -53,6 +55,8 @@ import com.github.mytv.bv.ui.imageviewer.previewer.ImagePreviewerState
 import com.github.mytv.bv.ui.imageviewer.previewer.VerticalDragType
 import com.github.mytv.bv.ui.imageviewer.previewer.rememberPreviewerState
 import com.github.mytv.bv.viewmodel.CommentViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /** 最热 / 最新切换（BvChip）。 */
@@ -304,15 +308,30 @@ internal fun rememberCommentPictures(): CommentPictures {
 /** 显示图片预览层，并处理返回键关闭。放在页面最上层。 */
 @Composable
 internal fun CommentPicturePreviewer(state: CommentPictures) {
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val previewer = state.previewer
-    BackHandler(previewer.canClose || previewer.animating) {
-        if (previewer.canClose) scope.launch { previewer.close() }
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    // 手势返回时跟随进度缩小淡出，松手后再交给预览器自己的关闭动画
+    PredictiveBackHandler(previewer.canClose || previewer.animating) { progress ->
+        try {
+            progress.collect { backProgress = it.progress }
+            backProgress = 0f
+            if (previewer.canClose) previewer.close()
+        } catch (e: CancellationException) {
+            backProgress = 0f
+            throw e
+        }
     }
     Box(Modifier.fillMaxSize()) {
         ImagePreviewer(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    val scale = 1f - 0.08f * backProgress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = 1f - 0.15f * backProgress
+                },
             state = previewer,
             imageLoader = { index ->
                 val url = state.pictures.getOrNull(index)?.url

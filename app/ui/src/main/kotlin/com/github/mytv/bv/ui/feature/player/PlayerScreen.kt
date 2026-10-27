@@ -32,6 +32,8 @@ import com.github.mytv.bv.entity.proxy.ProxyArea
 import com.github.mytv.bv.player.danmaku.DanmakuView
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
 import com.github.mytv.bv.ui.navigation.PlayerRoute
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.viewmodel.CommentViewModel
@@ -65,6 +67,7 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
     var showRemoteHint by remember { mutableStateOf(isTv && !Prefs.showedRemoteControllerPanelDemo) }
     var showComments by rememberSaveable { mutableStateOf(false) }
     val playerFocus = remember { FocusRequester() }
+    val commentPictures = rememberCommentPictures()
 
     val exit: () -> Unit = {
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) nav.popBackStack()
@@ -185,8 +188,12 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
                     }
                 },
                 modifier = Modifier.align(Alignment.CenterEnd),
+                onPictureClick = { pictures, index ->
+                    scope.launch { commentPictures.show(pictures, index) }
+                },
             )
         }
+        CommentPicturePreviewer(commentPictures)
     }
 }
 

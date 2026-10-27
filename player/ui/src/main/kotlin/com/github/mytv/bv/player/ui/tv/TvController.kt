@@ -305,6 +305,12 @@ internal fun TvController(
         logger.info { "onTimeBack: [current=${videoPlayer.currentPosition}, goTime=$goTime]" }
     }
 
+    // 松手即跳转；确认键仍保留，左右/快进键抬起也直接生效
+    val commitSeek: () -> Unit = {
+        controller.seekTo(goTime)
+        seeking = false
+    }
+
     val togglePlay: () -> Unit = {
         if (videoPlayer.isPlaying) controller.pause() else controller.play()
     }
@@ -436,6 +442,14 @@ internal fun TvController(
             return@handler false
         }
         if (buttonsFocused) {
+            // 底部按钮区按快进/快退后焦点会回到画面，但 buttonsFocused 可能还没刷新；
+            // 先让快进键抬起完成跳转，避免这次 seek 被按钮分支吃掉
+            if (seeking && (key == BvKey.Left || key == BvKey.Right ||
+                        key == BvKey.Rewind || key == BvKey.FastForward)
+            ) {
+                commitSeek()
+                return@handler true
+            }
             return@handler when (key) {
                 BvKey.Back -> {
                     hideControls()
@@ -464,9 +478,13 @@ internal fun TvController(
         if (seeking) {
             return@handler when (key) {
                 BvKey.Center -> {
-                    controller.seekTo(goTime)
+                    commitSeek()
                     if (!videoPlayer.isPlaying) controller.play()
-                    seeking = false
+                    true
+                }
+
+                BvKey.Left, BvKey.Right, BvKey.Rewind, BvKey.FastForward -> {
+                    commitSeek()
                     true
                 }
 
@@ -769,7 +787,7 @@ internal fun TvController(
                 time = historyData.lastPlayed.toLong().formatHourMinSec(),
             )
 
-            if (showLogs && logsData.logs.isNotBlank()) {
+            if (configData.showPlayerLogs && showLogs && logsData.logs.isNotBlank()) {
                 Column(modifier = Modifier.align(Alignment.BottomStart)) {
                     Text(text = logsData.logs, style = PlayerType.Meta)
                 }

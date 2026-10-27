@@ -41,6 +41,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.reply.CommentSort
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvChip
@@ -63,6 +64,7 @@ internal fun TvCommentsPanel(
     commentVm: CommentViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onPictureClick: ((List<Picture>, Int) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -167,6 +169,7 @@ internal fun TvCommentsPanel(
                                 }
                                 .padding(8.dp),
                             maxLines = 8,
+                            onPictureClick = onPictureClick,
                             textExpanded = expandedComments[comment.rpid] == true,
                             onToggleTextExpand = {
                                 expandedComments[comment.rpid] = expandedComments[comment.rpid] != true

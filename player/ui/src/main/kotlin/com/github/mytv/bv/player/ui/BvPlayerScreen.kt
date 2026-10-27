@@ -228,6 +228,12 @@ fun BvPlayerScreen(
         processedClipIndices = emptySet()
     }
 
+    // 跳过空降助手标注的推广片段：同一视频每个区间只自动跳一次
+    var processedSponsorIndices by remember { mutableStateOf(emptySet<Int>()) }
+    KeyedSideEffect(configData.currentVideoCid, configData.sponsorSegments) {
+        processedSponsorIndices = emptySet()
+    }
+
     var danmakuConfig by remember { mutableStateOf(DanmakuConfig()) }
 
     // ---------------------------------------------------------------- 弹幕配置
@@ -430,6 +436,26 @@ fun BvPlayerScreen(
                 }
             }
 
+            val sponsorSegments = config.sponsorSegments
+            if (config.skipSponsorSegments && videoPlayer.isPlaying && sponsorSegments.isNotEmpty()) {
+                val positionSeconds = position / 1000.0
+                val matched = sponsorSegments.withIndex().firstOrNull { (index, segment) ->
+                    index !in processedSponsorIndices &&
+                            segment.end > segment.start &&
+                            positionSeconds >= segment.start && positionSeconds < segment.end
+                }
+                if (matched != null) {
+                    val segment = matched.value
+                    processedSponsorIndices = processedSponsorIndices + matched.index
+                    val target = (segment.end * 1000).toLong()
+                    logger.info {
+                        "Skip sponsor segment: ${segment.category}, $positionSeconds -> ${segment.end}"
+                    }
+                    videoPlayer.seekTo(target)
+                    mDanmakuView?.notifySeek(target)
+                }
+            }
+
             delay(100)
         }
     }
@@ -559,7 +585,7 @@ fun BvPlayerScreen(
 
     // ---------------------------------------------------------------- 控制层
 
-    // 用户手动 seek 到片头/片尾区间内时不强行跳走：把目标区间标记为已处理
+    // 用户手动 seek 到片头/片尾、推广片段区间内时不强行跳走：把目标区间标记为已处理
     val markManualSeekClip: (position: Long) -> Unit = { position ->
         val positionSeconds = (position.coerceAtLeast(0L) / 1000).toInt()
         val handled = configData.clipInfoList.orEmpty().mapIndexedNotNull { index, clip ->
@@ -569,6 +595,13 @@ fun BvPlayerScreen(
         }
         if (handled.isNotEmpty()) {
             processedClipIndices = processedClipIndices + handled
+        }
+        val positionSecondsExact = position.coerceAtLeast(0L) / 1000.0
+        val handledSponsor = configData.sponsorSegments.mapIndexedNotNull { index, segment ->
+            if (positionSecondsExact >= segment.start && positionSecondsExact < segment.end) index else null
+        }
+        if (handledSponsor.isNotEmpty()) {
+            processedSponsorIndices = processedSponsorIndices + handledSponsor
         }
     }
 

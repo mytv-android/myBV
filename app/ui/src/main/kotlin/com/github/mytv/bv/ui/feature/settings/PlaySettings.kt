@@ -53,6 +53,8 @@ internal fun PlaySettings(container: SettingsContainer) {
             ffmpegAudio = Prefs.enableFfmpegAudioRenderer,
             skipSilence = Prefs.playerSkipSilence,
             skipPgcIntroOutro = Prefs.skipPgcIntroOutro,
+            skipSponsorSegments = Prefs.skipSponsorSegments,
+            showPlayerLogs = Prefs.showPlayerLogs,
             longPressAction = Prefs.playerLongPressAction,
             longPressSpeed = Prefs.playerLongPressSpeed,
         )
@@ -67,6 +69,8 @@ internal fun PlaySettings(container: SettingsContainer) {
     var ffmpegAudio by remember { mutableStateOf(initial.ffmpegAudio) }
     var skipSilence by remember { mutableStateOf(initial.skipSilence) }
     var skipPgcIntroOutro by remember { mutableStateOf(initial.skipPgcIntroOutro) }
+    var skipSponsorSegments by remember { mutableStateOf(initial.skipSponsorSegments) }
+    var showPlayerLogs by remember { mutableStateOf(initial.showPlayerLogs) }
     var longPressAction by remember { mutableStateOf(initial.longPressAction) }
     var longPressSpeed by remember { mutableFloatStateOf(initial.longPressSpeed) }
 
@@ -169,6 +173,24 @@ internal fun PlaySettings(container: SettingsContainer) {
                 PreferenceWrites.enqueue { Prefs.skipPgcIntroOutro = it }
             },
         )
+        SettingSwitchRow(
+            title = stringResource(R.string.settings_play_skip_sponsor_segments),
+            subtitle = stringResource(R.string.settings_play_skip_sponsor_segments_desc),
+            checked = skipSponsorSegments,
+            onCheckedChange = {
+                skipSponsorSegments = it
+                PreferenceWrites.enqueue { Prefs.skipSponsorSegments = it }
+            },
+        )
+        SettingSwitchRow(
+            title = stringResource(R.string.settings_play_show_player_logs),
+            subtitle = stringResource(R.string.settings_play_show_player_logs_desc),
+            checked = showPlayerLogs,
+            onCheckedChange = {
+                showPlayerLogs = it
+                PreferenceWrites.enqueue { Prefs.showPlayerLogs = it }
+            },
+        )
         SettingChoiceGroup(
             label = stringResource(R.string.settings_play_long_press_action),
             options = PlayerLongPressAction.entries,
@@ -205,6 +227,8 @@ private data class PlayPreferences(
     val ffmpegAudio: Boolean,
     val skipSilence: Boolean,
     val skipPgcIntroOutro: Boolean,
+    val skipSponsorSegments: Boolean,
+    val showPlayerLogs: Boolean,
     val longPressAction: PlayerLongPressAction,
     val longPressSpeed: Float,
 )

@@ -88,6 +88,13 @@ data class VideoPlayerStateData(
     val showBackToHistory: Boolean = false,
 )
 
+/** 空降助手标注的推广片段，单位为秒（接口返回带小数）。 */
+data class SponsorSegment(
+    val start: Double,
+    val end: Double,
+    val category: String = "",
+)
+
 data class VideoPlayerConfigData(
     val availableResolutions: List<Resolution> = emptyList(),
     val availableVideoCodec: List<VideoCodec> = emptyList(),
@@ -124,6 +131,11 @@ data class VideoPlayerConfigData(
     val clipInfoList: List<ClipInfo>? = null,
     /** 自动跳过 PGC 片头片尾，默认关闭 */
     val skipPgcIntroOutro: Boolean = false,
+    /** 自动跳过空降助手标注的 UP 推广/赞助片段，默认关闭 */
+    val skipSponsorSegments: Boolean = false,
+    val sponsorSegments: List<SponsorSegment> = emptyList(),
+    /** 是否在左下角显示播放器加载日志 */
+    val showPlayerLogs: Boolean = true,
 )
 
 data class VideoPlayerDanmakuMasksData(

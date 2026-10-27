@@ -426,6 +426,24 @@ object Prefs {
             dsm.editPreference(PrefKeys.prefSkipPgcIntroOutroKey, value)
         }
 
+    /** 显示播放器左下角的加载日志，默认开启 */
+    var showPlayerLogs: Boolean
+        get() = runBlocking {
+            dsm.getPreferenceFlow(PrefKeys.prefShowPlayerLogsRequest).first()
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefShowPlayerLogsKey, value)
+        }
+
+    /** 使用空降助手标注自动跳过 UP 推广/赞助片段，默认关闭 */
+    var skipSponsorSegments: Boolean
+        get() = runBlocking {
+            dsm.getPreferenceFlow(PrefKeys.prefSkipSponsorSegmentsRequest).first()
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefSkipSponsorSegmentsKey, value)
+        }
+
     /** 电视端长按确认键行为，默认加速播放（照搬 fantasy） */
     var playerLongPressAction: PlayerLongPressAction
         get() = runBlocking {
@@ -568,6 +586,8 @@ object PrefKeys {
     val prefPlayerAudioBalanceLevelKey = intPreferencesKey("player_audio_balance_level")
     val prefPlayerSkipSilenceKey = booleanPreferencesKey("player_skip_silence")
     val prefSkipPgcIntroOutroKey = booleanPreferencesKey("skip_pgc_intro_outro")
+    val prefShowPlayerLogsKey = booleanPreferencesKey("show_player_logs")
+    val prefSkipSponsorSegmentsKey = booleanPreferencesKey("skip_sponsor_segments")
     val prefPlayerLongPressActionKey = intPreferencesKey("player_long_press_action")
     val prefPlayerLongPressSpeedKey = floatPreferencesKey("player_long_press_speed")
     val prefBlacklistUserKey = booleanPreferencesKey("blacklist_user")
@@ -646,6 +666,8 @@ object PrefKeys {
         PreferenceRequest(prefPlayerAudioBalanceLevelKey, AudioBalanceLevel.Off.ordinal)
     val prefPlayerSkipSilenceRequest = PreferenceRequest(prefPlayerSkipSilenceKey, false)
     val prefSkipPgcIntroOutroRequest = PreferenceRequest(prefSkipPgcIntroOutroKey, false)
+    val prefShowPlayerLogsRequest = PreferenceRequest(prefShowPlayerLogsKey, true)
+    val prefSkipSponsorSegmentsRequest = PreferenceRequest(prefSkipSponsorSegmentsKey, false)
     val prefPlayerLongPressActionRequest =
         PreferenceRequest(prefPlayerLongPressActionKey, PlayerLongPressAction.SpeedUp.ordinal)
     val prefPlayerLongPressSpeedRequest = PreferenceRequest(prefPlayerLongPressSpeedKey, 2f)

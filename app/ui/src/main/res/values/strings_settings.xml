@@ -79,6 +79,10 @@
     <string name="settings_play_skip_silence_desc">自动跳过音频中的静音片段（仅 2.5 倍速及以上生效）</string>
     <string name="settings_play_skip_pgc_intro_outro">跳过片头片尾</string>
     <string name="settings_play_skip_pgc_intro_outro_desc">自动跳过番剧、影视的片头片尾（需片源提供数据）</string>
+    <string name="settings_play_skip_sponsor_segments">跳过推广片段</string>
+    <string name="settings_play_skip_sponsor_segments_desc">使用空降助手网友标注，自动跳过 UP 主推广与赞助片段（仅普通视频）</string>
+    <string name="settings_play_show_player_logs">显示播放器加载日志</string>
+    <string name="settings_play_show_player_logs_desc">进入视频时在左下角显示加载、弹幕初始化等状态日志</string>
     <string name="settings_play_long_press_action">长按确认键行为（电视）</string>
     <string name="settings_play_long_press_speed">长按加速倍速</string>
 
