@@ -90,6 +90,24 @@ jobs:
           echo "apk=$apk" >> "$GITHUB_ENV"
           echo "apk_name=$(basename "$apk")" >> "$GITHUB_ENV"
 
+      - name: Generate release notes
+        run: |
+          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          if [ -n "$prev_tag" ]; then
+            commits=$(git log "$prev_tag..HEAD" --no-merges --pretty=format:'- %s (%h)')
+          else
+            commits=$(git log -10 --no-merges --pretty=format:'- %s (%h)')
+          fi
+          [ -n "$commits" ] || commits=$(git log -1 --pretty=format:'- %s (%h)')
+          {
+            echo "release_notes<<NOTES_EOF"
+            echo "## 更新内容"
+            echo "$commits"
+            echo
+            echo "从旧版 BV 迁移：先安装 https://github.com/mytv-android/bv/releases/latest ，再安装本版本。"
+            echo "NOTES_EOF"
+          } >> "$GITHUB_ENV"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -103,7 +121,4 @@ jobs:
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || (steps.channel.outputs.value == 'stable' && format('v{0}', env.version_name) || format('alpha-r{0}', env.version_code)) }}
           name: ${{ env.version_name }}
           prerelease: ${{ steps.channel.outputs.value == 'alpha' }}
-          body: |
-            myBV ${{ env.version_name }}
-
-            从旧版 BV 迁移：先安装 https://github.com/mytv-android/bv/releases/latest ，再安装本版本。
+          body: ${{ env.release_notes }}

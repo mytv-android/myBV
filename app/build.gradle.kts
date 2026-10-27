@@ -158,8 +158,8 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            // 与 myDV 一致：软件名+版本号.apk
-            output.outputFileName.set("myBV-${AppConfiguration.versionName}.apk")
+            // 与 myDV 一致：软件名+版本号；<buildType>_ 让旧版更新逻辑仍能匹配 .alpha_/.release_
+            output.outputFileName.set("myBV-${AppConfiguration.versionName}.${variant.buildType}_.apk")
             output.versionName.set("${AppConfiguration.versionName}.${variant.buildType}")
         }
     }
