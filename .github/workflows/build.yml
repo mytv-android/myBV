@@ -86,7 +86,7 @@ jobs:
           meta=$(find app/build/outputs/apk/default -name output-metadata.json | head -1)
           echo "version_code=$(jq -r '.elements[0].versionCode' "$meta")" >> "$GITHUB_ENV"
           echo "version_name=$(jq -r '.elements[0].versionName' "$meta")" >> "$GITHUB_ENV"
-          apk=$(find app/build/outputs/apk/default -name 'BV_*_universal.apk' | head -1)
+          apk=$(find app/build/outputs/apk/default -name 'myBV-*.apk' | head -1)
           echo "apk=$apk" >> "$GITHUB_ENV"
           echo "apk_name=$(basename "$apk")" >> "$GITHUB_ENV"
 

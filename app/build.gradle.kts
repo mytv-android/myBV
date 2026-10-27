@@ -1,6 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.build.api.variant.FilterConfiguration
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.FileInputStream
 import java.util.Properties
@@ -159,13 +158,8 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            val abi = output.filters
-                .find { it.filterType == FilterConfiguration.FilterType.ABI }
-                ?.identifier ?: "universal"
-            output.outputFileName.set(
-                "BV_${AppConfiguration.versionCode}_${AppConfiguration.versionName}." +
-                    "${variant.buildType}_${variant.flavorName}_$abi.apk"
-            )
+            // 与 myDV 一致：软件名+版本号.apk
+            output.outputFileName.set("myBV-${AppConfiguration.versionName}.apk")
             output.versionName.set("${AppConfiguration.versionName}.${variant.buildType}")
         }
     }
