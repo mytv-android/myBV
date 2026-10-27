@@ -47,9 +47,11 @@ data class Release(
         get() = assets.mapNotNull { it.versionCode }.maxOrNull()
             ?: Regex("r(\\d+)").find(tagName)?.groupValues?.get(1)?.toIntOrNull()
 
+    /** 新资产名是 myBV-<versionName>.apk；旧资产靠 .alpha_/.release_ 段区分构建类型。 */
     fun downloadAsset(isDebug: Boolean): Asset? =
         if (isDebug) assets.firstOrNull { it.name.contains(".debug_") }
-        else assets.firstOrNull { it.name.contains(".alpha_") || it.name.contains(".release_") }
+        else assets.firstOrNull { it.name.startsWith("myBV-") && it.name.endsWith(".apk") }
+            ?: assets.firstOrNull { it.name.contains(".alpha_") || it.name.contains(".release_") }
 
     @Serializable
     data class Asset(
