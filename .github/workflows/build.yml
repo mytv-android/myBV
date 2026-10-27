@@ -1,0 +1,108 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "alpha = 预发布；stable = 正式发布"
+        required: true
+        default: alpha
+        type: choice
+        options:
+          - alpha
+          - stable
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build myBV
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve channel
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.channel }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "value=stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=alpha" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write google-services.json
+        env:
+          DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$DATA" > app/google-services.json
+
+      - name: Add signing properties
+        env:
+          SIGNING_PROPERTIES: ${{ secrets.SIGNING_PROPERTIES }}
+        run: |
+          echo "$SIGNING_PROPERTIES" > encoded_signing_properties
+          base64 -d -i encoded_signing_properties > signing.properties
+
+      - name: Add keystore
+        env:
+          SIGN_KEY: ${{ secrets.SIGN_KEY }}
+        run: |
+          echo "$SIGN_KEY" > encoded_key
+          base64 -d -i encoded_key > keystore.jks
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build apk
+        run: |
+          if [ "${{ steps.channel.outputs.value }}" = "stable" ]; then
+            ./gradlew assembleDefaultRelease
+          else
+            ./gradlew assembleDefaultAlpha
+          fi
+
+      - name: Read apk metadata
+        run: |
+          meta=$(find app/build/outputs/apk/default -name output-metadata.json | head -1)
+          echo "version_code=$(jq -r '.elements[0].versionCode' "$meta")" >> "$GITHUB_ENV"
+          echo "version_name=$(jq -r '.elements[0].versionName' "$meta")" >> "$GITHUB_ENV"
+          apk=$(find app/build/outputs/apk/default -name 'BV_*_universal.apk' | head -1)
+          echo "apk=$apk" >> "$GITHUB_ENV"
+          echo "apk_name=$(basename "$apk")" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: myBV ${{ env.version_name }}
+          path: ${{ env.apk }}
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.apk }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || (steps.channel.outputs.value == 'stable' && format('v{0}', env.version_name) || format('alpha-r{0}', env.version_code)) }}
+          name: ${{ env.version_name }}
+          prerelease: ${{ steps.channel.outputs.value == 'alpha' }}
+          body: |
+            myBV ${{ env.version_name }}
+
+            从旧版 BV 迁移：先安装 https://github.com/mytv-android/bv/releases/latest ，再安装本版本。

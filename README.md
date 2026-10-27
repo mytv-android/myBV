@@ -1,58 +1,48 @@
-> **本项目已迁移到 [myBV](https://github.com/mytv-android/myBV)。**
->
-> 后续开发、下载和更新只在 myBV 仓库进行。旧版 BV 用户请先安装 [迁移桥接版](https://github.com/mytv-android/bv/releases/latest)，再安装 [myBV](https://github.com/mytv-android/myBV/releases/latest)；打开 myBV 后按提示迁移设置与登录状态，迁移完成后即可卸载旧版。
-
 <div align="center">
 
 <img src="app/shared/src/main/res/drawable/ic_banner.webp" style="border-radius: 24px; margin-top: 32px;"/>
 
-# BV
+# myBV
 
-~~Bug Video~~
+myBV 是 [BV](https://github.com/mytv-android/bv) 的后续维护版本，适配 `Android 移动端` 和 `Android TV`，使用 `Jetpack Compose` 开发。
 
-[![GitHub Release Release](https://img.shields.io/endpoint?url=https%3A%2F%2Fbadge.versions.bv.aaa1115910.dev%2Fgithub%3Fprerelease%3Dfalse)](https://github.com/mytv-android/bv/releases?q=prerelease%3Afalse)
-[![GitHub Release Pre-Release](https://img.shields.io/endpoint?url=https%3A%2F%2Fbadge.versions.bv.aaa1115910.dev%2Fgithub%3Fprerelease%3Dtrue)](https://github.com/mytv-android/bv/releases?q=prerelease%3Atrue)
+**myBV 无法在中国大陆地区内的智能电视上使用，如有相关使用需求请使用 [云视听小电视](https://app.bilibili.com)**
 
-[![Workflow Release](https://github.com/mytv-android/bv/actions/workflows/release.yml/badge.svg)](https://github.com/mytv-android/bv/actions/workflows/release.yml)
-[![Workflow Alpha](https://github.com/mytv-android/bv/actions/workflows/alpha.yml/badge.svg)](https://github.com/mytv-android/bv/actions/workflows/alpha.yml)
-[![Android Sdk Require](https://img.shields.io/badge/Android-6.0%2B-informational?logo=android)](https://developer.android.com/jetpack/androidx/versions#version-table)
-[![GitHub](https://img.shields.io/github/license/mytv-android/bv)](https://github.com/mytv-android/bv)
-
-**BV 无法在中国大陆地区内的智能电视上使用，如有相关使用需求请使用 [云视听小电视](https://app.bilibili.com)**
-
-**禁止在中国境内传播、宣传、分发 BV**
+**禁止在中国境内传播、宣传、分发 myBV**
 
 </div>
 
 ---
-BV ~~(Bug Video)~~ 是一款 [哔哩哔哩](https://www.bilibili.com) 的第三方应用，适配 `Android 移动端`
-和 `Android TV`，使用 `Jetpack Compose` 开发
 
-**都是随心乱写的代码，能跑就行。**
+## 从旧版 BV 迁移
 
-## 特色
+1. 安装 [迁移桥接版](https://github.com/mytv-android/bv/releases/latest)，覆盖安装后原有设置和登录状态会保留。
+2. 安装 myBV：[Github Releases](https://github.com/mytv-android/myBV/releases/latest)。
+3. 打开 myBV，按提示点击「开始迁移」；完成后即可卸载旧版 BV。
 
-- :bug: 丰富多样的 Bug
-- :children_crossing: 反人类设计
-- :zap: 卡卡卡卡卡
-- :art: 异样审美
-- :disappointed: 巨难用
+桥接版进入应用时会检查 myBV 正式版，并在 myBV 安装后提示打开迁移。
+如果 myBV 与桥接版使用不同签名，构建桥接版时需要把 myBV 签名证书的 SHA-256 写入 bv 仓库变量 `MYBV_CERT_SHA256`，否则迁移会被安全校验拒绝。
 
-## 安装
+## 下载
 
-### 从旧版 BV 迁移到 myBV
+- [Github Releases](https://github.com/mytv-android/myBV/releases)
 
-本仓库已停止功能更新，只保留旧版 BV 的迁移桥接版。
+## 构建与签名
 
-1. 从 [Github Release](https://github.com/mytv-android/bv/releases/latest) 下载并覆盖安装桥接版，原有设置和登录状态会保留。
-2. 从 [myBV Releases](https://github.com/mytv-android/myBV/releases/latest) 下载并安装 myBV。
-3. 打开 myBV，按提示迁移设置与登录状态；完成后即可卸载旧版 BV。
+GitHub Actions 使用以下 secrets（与 myMusic 相同）：
 
-桥接版会同时提供正式和预发布 release；Alpha 通道用户请先手动安装桥接版，再安装 myBV。
+- `SIGNING_PROPERTIES`：base64 后的 `signing.properties`，包含 `storeFile`、`storePassword`、`keyAlias`、`keyPassword`
+- `SIGN_KEY`：base64 后的 keystore，解码为 `keystore.jks`
+- `GOOGLE_SERVICES_JSON`（可选）：Firebase 配置
 
-### myBV
+签名证书 SHA-256 可用 `apksigner verify --print-certs <apk>` 查看。桥接版与 myBV 使用同一签名时可直接迁移；使用不同签名时，把 myBV 的证书 SHA-256 设为 bv 仓库变量 `MYBV_CERT_SHA256` 后重新构建桥接版。
 
-- [Github Release](https://github.com/mytv-android/myBV/releases)
+构建命令：
+
+```bash
+./gradlew assembleDefaultAlpha   # Alpha
+./gradlew assembleDefaultRelease # 正式
+```
 
 ## License
 
