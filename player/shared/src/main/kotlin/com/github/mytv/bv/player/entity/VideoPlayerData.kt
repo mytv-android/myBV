@@ -138,6 +138,11 @@ data class VideoPlayerConfigData(
     val showPlayerLogs: Boolean = true,
     /** 是否显示调试信息（时间 / 分辨率 / 码率 / 编码） */
     val showDebugInfo: Boolean = false,
+    /**
+     * 视频画面渲染方式，默认 [VideoRenderMode.SurfaceView]。
+     * 由调用方进播放页时读一次 Prefs 后传入，播放过程中不变。
+     */
+    val currentVideoRenderMode: VideoRenderMode = VideoRenderMode.SurfaceView,
 )
 
 data class VideoPlayerDanmakuMasksData(

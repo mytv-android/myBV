@@ -73,6 +73,8 @@
     <string name="settings_play_speed_value">%1$sx</string>
     <string name="settings_play_mode">播放模式</string>
     <string name="settings_play_player_type">播放器内核</string>
+    <string name="settings_play_render_mode">渲染方式</string>
+    <string name="settings_play_render_mode_desc">SurfaceView 直出最快；部分电视盒子上它会因合成器把有限范围 YUV 按全范围合成而发白，改用 TextureView / GLSurfaceView 让 App 自己采样即可修正。后两者每帧多一次 GPU 拷贝，且不做 HDR 色调映射（HDR 内容请留在 SurfaceView）</string>
     <string name="settings_play_ffmpeg">启用音频软解</string>
     <string name="settings_play_ffmpeg_desc">尝试使用 FFmpeg 播放硬解不兼容的音频</string>
     <string name="settings_play_skip_silence">跳过静音</string>

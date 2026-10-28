@@ -155,6 +155,8 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
     }
     val danmakuScale = remember { Prefs.defaultDanmakuScale }
     val danmakuOpacity = remember { Prefs.defaultDanmakuOpacity }
+    // 渲染方式进直播间时读一次；直播是最容易撞上 SurfaceView 发白的场景，所以这里也支持
+    val videoRenderMode = remember { Prefs.videoRenderMode }
     // 弹幕引擎 View：离开页面（离开组合）时 release；位置 / 播放状态 / 倍速跟随直播流播放器
     val danmakuView = remember(context, videoPlayer) {
         DanmakuView(context).apply {
@@ -520,6 +522,7 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
                 ),
             videoPlayer = videoPlayer,
             playerListener = playerListener,
+            renderMode = videoRenderMode,
         )
 
         // 弹幕层（透明度由引擎 config 处理）

@@ -1,5 +1,6 @@
 package com.github.mytv.bv.player
 
+import android.view.Surface
 import com.github.mytv.bv.player.entity.AudioLoudness
 
 abstract class AbstractVideoPlayer {
@@ -66,6 +67,19 @@ abstract class AbstractVideoPlayer {
 
     /** 设置其他播放配置 */
     abstract fun setOptions()
+
+    /**
+     * 把一块 Surface 设为视频输出面；null 表示摘掉当前输出面。
+     *
+     * 「TextureView / GLSurfaceView」渲染方式用（见 [BvVideoPlayer] 的 renderMode）：
+     * Surface 由 App 自己创建，调用方负责在它失效前先置空。不同内核的等价调用是
+     * ExoPlayer `setVideoSurface` / IJK `setSurface` / VLC `vlcVout.setVideoSurface`。
+     *
+     * 切换渲染方式、Surface 重建时都遵循「**先置空、再设新的**」：同尺寸的新 Surface 会让
+     * 解码器销毁并重建输出，同时泄漏图形缓冲，所以不能每次重组都重设一次。
+     * 默认实现忽略（没有自建 Surface 能力的内核）。
+     */
+    open fun setVideoSurface(surface: Surface?) {}
 
     /** 播放速度 */
     abstract var speed: Float

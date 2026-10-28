@@ -1,11 +1,20 @@
 package com.github.mytv.bv.ui.feature.settings
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.focusGroup
+import androidx.compose.foundation.layout.focusRestorer
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.github.mytv.bv.appui.R
@@ -16,8 +25,11 @@ import com.github.mytv.bv.player.entity.PlayMode
 import com.github.mytv.bv.player.entity.PlayerLongPressAction
 import com.github.mytv.bv.player.entity.Resolution
 import com.github.mytv.bv.player.entity.VideoCodec
-import com.github.mytv.bv.util.Prefs
+import com.github.mytv.bv.player.entity.VideoRenderMode
 import com.github.mytv.bv.ui.PreferenceWrites
+import com.github.mytv.bv.ui.designsystem.component.BvChip
+import com.github.mytv.bv.ui.designsystem.theme.BvType
+import com.github.mytv.bv.util.Prefs
 import kotlin.math.abs
 
 /** 默认倍速可选值（旧电视播放器菜单：0.25–3.0，每档 0.25）。 */
@@ -33,11 +45,12 @@ private fun formatSpeed(speed: Float): String =
     if (speed % 1f == 0f) speed.toInt().toString() else speed.toString()
 
 /**
- * 「播放」：默认画质 / 视频编码 / 音质 / 倍速 / 播放模式 / 播放器内核 / 音频软解 / 跳过静音 /
- * 长按确认键行为与加速倍速。
+ * 「播放」：默认画质 / 视频编码 / 音质 / 倍速 / 播放模式 / 播放器内核 / 渲染方式 /
+ * 音频软解 / 跳过静音 / 长按确认键行为与加速倍速。
  * 照搬旧电视 ResolutionSetting、VideoCodecSetting、AudioSetting、PlayerTypeSetting、OtherSetting（FFmpeg）
  * 与旧手机 PlayContent，单选列表改为 BvChip。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PlaySettings(container: SettingsContainer) {
     val context = LocalContext.current
@@ -49,6 +62,7 @@ internal fun PlaySettings(container: SettingsContainer) {
             speed = Prefs.defaultPlaySpeed,
             playMode = Prefs.defaultPlayMode,
             playerType = Prefs.playerType,
+            renderMode = Prefs.videoRenderMode,
             audioBalance = Prefs.playerAudioBalanceLevel,
             ffmpegAudio = Prefs.enableFfmpegAudioRenderer,
             skipSilence = Prefs.playerSkipSilence,
@@ -66,6 +80,7 @@ internal fun PlaySettings(container: SettingsContainer) {
     var speed by remember { mutableFloatStateOf(initial.speed) }
     var playMode by remember { mutableStateOf(initial.playMode) }
     var playerType by remember { mutableStateOf(initial.playerType) }
+    var renderMode by remember { mutableStateOf(initial.renderMode) }
     var audioBalance by remember { mutableStateOf(initial.audioBalance) }
     var ffmpegAudio by remember { mutableStateOf(initial.ffmpegAudio) }
     var skipSilence by remember { mutableStateOf(initial.skipSilence) }
@@ -148,6 +163,35 @@ internal fun PlaySettings(container: SettingsContainer) {
                 PreferenceWrites.enqueue { Prefs.playerType = it }
             },
         )
+        // 渲染方式：默认 SurfaceView。另两种把解码帧交给 App 的 SurfaceTexture 采样，
+        // 用来绕开部分电视盒子 SurfaceView 下把有限范围 YUV 按全范围合成导致的发白；
+        // 代价（多一次 GPU 拷贝、不做 HDR 色调映射）写在说明文案里。
+        SettingGroup(stringResource(R.string.settings_play_render_mode)) {
+            FlowRow(
+                Modifier
+                    .fillMaxWidth()
+                    .focusRestorer()
+                    .focusGroup(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                VideoRenderMode.entries.forEach { option ->
+                    BvChip(
+                        text = option.getDisplayName(context),
+                        selected = option == renderMode,
+                        onClick = {
+                            renderMode = option
+                            PreferenceWrites.enqueue { Prefs.videoRenderMode = option }
+                        },
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.settings_play_render_mode_desc),
+                style = BvType.Meta,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         SettingSwitchRow(
             title = stringResource(R.string.settings_play_ffmpeg),
             subtitle = stringResource(R.string.settings_play_ffmpeg_desc),
@@ -243,4 +287,5 @@ private data class PlayPreferences(
     val showDebugInfo: Boolean,
     val longPressAction: PlayerLongPressAction,
     val longPressSpeed: Float,
+    val renderMode: VideoRenderMode,
 )

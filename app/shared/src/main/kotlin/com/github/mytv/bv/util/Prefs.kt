@@ -33,6 +33,7 @@ import com.github.mytv.bv.player.entity.PlayMode
 import com.github.mytv.bv.player.entity.PlayerLongPressAction
 import com.github.mytv.bv.player.entity.Resolution
 import com.github.mytv.bv.player.entity.VideoCodec
+import com.github.mytv.bv.player.entity.VideoRenderMode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -305,6 +306,21 @@ object Prefs {
         }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefPlayerTypeKey, value.ordinal) }
 
+    /**
+     * 视频画面渲染方式，默认 [VideoRenderMode.SurfaceView]。
+     * 只在进入播放页时读一次；GLSurfaceView 用于绕开部分盒子 SurfaceView 下发白的合成问题，
+     * 多一次 GPU 拷贝且不做 HDR 色调映射，所以不是默认。见 [VideoRenderMode]。
+     */
+    var videoRenderMode: VideoRenderMode
+        get() = runBlocking {
+            VideoRenderMode.entries.getOrElse(
+                dsm.getPreferenceFlow(PrefKeys.prefVideoRenderModeRequest).first()
+            ) { VideoRenderMode.SurfaceView }
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefVideoRenderModeKey, value.ordinal)
+        }
+
     val densityFlow: Flow<Float> by lazy { dsm.getPreferenceFlow(PrefKeys.prefDensityRequest) }
     var density: Float
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefDensityRequest).first() }
@@ -576,6 +592,7 @@ object PrefKeys {
     val prefBuvid3Key = stringPreferencesKey("random_buvid3")
     val prefWebExtraCookiesKey = stringPreferencesKey("web_extra_cookies")
     val prefPlayerTypeKey = intPreferencesKey("pt")
+    val prefVideoRenderModeKey = intPreferencesKey("video_render_mode")
     val prefDensityKey = floatPreferencesKey("density")
     val prefLayoutModeKey = intPreferencesKey("bv_layout_mode")
     val prefAlphaKey = booleanPreferencesKey("alpha")
@@ -647,6 +664,8 @@ object PrefKeys {
     val prefBuvid3Request = PreferenceRequest(prefBuvid3Key, "")
     val prefWebExtraCookiesRequest = PreferenceRequest(prefWebExtraCookiesKey, "")
     val prefPlayerTypeRequest = PreferenceRequest(prefPlayerTypeKey, PlayerType.Media3.ordinal)
+    val prefVideoRenderModeRequest =
+        PreferenceRequest(prefVideoRenderModeKey, VideoRenderMode.SurfaceView.ordinal)
     val prefDensityRequest =
         PreferenceRequest(
             prefDensityKey,

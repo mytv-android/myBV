@@ -681,6 +681,7 @@ fun BvPlayerScreen(
                     },
                 videoPlayer = videoPlayer,
                 playerListener = videoPlayerListener,
+                renderMode = configData.currentVideoRenderMode,
             )
         }
 

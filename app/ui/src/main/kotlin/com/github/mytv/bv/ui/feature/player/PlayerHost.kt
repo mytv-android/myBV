@@ -99,6 +99,8 @@ internal fun BvPlayerHost(
     val skipSponsorSegments = remember { Prefs.skipSponsorSegments }
     val showPlayerLogs = remember { Prefs.showPlayerLogs }
     var showDebugInfo by remember { mutableStateOf(Prefs.showDebugInfo) }
+    // 渲染方式进播放页时读一次；切换它只影响画面 View，不需要重建播放内核
+    val videoRenderMode = remember { Prefs.videoRenderMode }
 
     // 旧播放页 onPause：暂停视频（弹幕引擎通过 isPlayingProvider 跟随，无需单独暂停）
     DisposableEffect(lifecycleOwner, videoPlayer) {
@@ -189,6 +191,7 @@ internal fun BvPlayerHost(
                     sponsorSegments = playerVm.sponsorSegments,
                     showPlayerLogs = showPlayerLogs,
                     showDebugInfo = showDebugInfo,
+                    currentVideoRenderMode = videoRenderMode,
                 ),
                 LocalVideoPlayerDanmakuMasksData provides VideoPlayerDanmakuMasksData(
                     danmakuMasks = playerVm.danmakuMasks,

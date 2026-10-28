@@ -2,6 +2,7 @@ package com.github.mytv.bv.player.impl.exo
 
 import android.content.Context
 import android.os.SystemClock
+import android.view.Surface
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -262,6 +263,18 @@ class ExoMediaPlayer(
 
     override fun setOptions() {
         mPlayer?.playWhenReady = true
+    }
+
+    /**
+     * 把一块 Surface 设为视频输出面（TextureView / GLSurfaceView 渲染方式用）。
+     *
+     * 先 clear 再 set：同尺寸的新 Surface 会让解码器销毁并重建输出，同时泄漏图形缓冲。
+     * SurfaceView 模式不走这里，PlayerView 自己 `setVideoSurfaceView`。
+     */
+    override fun setVideoSurface(surface: Surface?) {
+        val player = mPlayer ?: return
+        player.clearVideoSurface()
+        if (surface != null) player.setVideoSurface(surface)
     }
 
     override var speed: Float
