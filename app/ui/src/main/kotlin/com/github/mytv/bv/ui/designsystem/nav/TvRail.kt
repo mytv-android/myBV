@@ -93,10 +93,13 @@ fun TvRail(
     var wasFocused by remember { mutableStateOf(false) }
     var hidden by remember { mutableStateOf(false) }
     var collapsed by remember { mutableStateOf(false) }
-    // 导轨聚焦期间页面被切走（例如确认键切换）时，把焦点同步到新页面对应的项。
-    // 延迟是为了给新页面的初始焦点请求让路，避免导轨把焦点抢回去导致自动隐藏不生效；
-    // 复查 wasFocused：新页面拿到焦点后就不再抢。
+    // 切换页面后立即收起，不等新页面请求焦点：影视、动态要等数据加载完才做初始焦点，
+    // 不主动收起的话导航轨会在这些页面停留数秒，和其它页面的行为不一致。
     LaunchedEffect(current) {
+        open = false
+        // 导轨聚焦期间页面被切走（例如确认键切换）时，把焦点同步到新页面对应的项。
+        // 延迟是为了给新页面的初始焦点请求让路，避免导轨把焦点抢回去导致自动隐藏不生效；
+        // 复查 wasFocused：新页面拿到焦点后就不再抢。
         if (!wasFocused) return@LaunchedEffect
         delay(250L)
         if (wasFocused) runCatching { selectedRequester.requestFocus() }
