@@ -362,12 +362,12 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
         if (isTv) rootFocusRequester.requestFocus(scope)
     }
 
-    // 电视端按键（确认显隐控制栏；菜单键开菜单；左右键切线路；返回关菜单或退出）
+    // 电视端按键（确认显隐控制栏；菜单键开菜单；左右键切线路；返回由 BackHandler 处理）
     val onKeyDown: (BvKey) -> Boolean = handler@{ key ->
-        if (menuOpen) return@handler key == BvKey.Back || key == BvKey.Menu
+        if (menuOpen) return@handler key == BvKey.Menu
         if (buttonsFocused && controlsVisible) {
             return@handler when (key) {
-                BvKey.Back, BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.CenterLong -> true
+                BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.CenterLong -> true
                 else -> false // 确认 / 左右交给聚焦的按钮
             }
         }
@@ -385,13 +385,13 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
                 true
             }
 
-            BvKey.Menu, BvKey.Back -> true
+            BvKey.Menu -> true
             else -> false
         }
     }
     val onKeyUp: (BvKey) -> Boolean = handler@{ key ->
         if (menuOpen) {
-            if (key == BvKey.Back || key == BvKey.Menu) {
+            if (key == BvKey.Menu) {
                 closeMenu()
                 return@handler true
             }
@@ -399,7 +399,7 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
         }
         if (buttonsFocused && controlsVisible) {
             return@handler when (key) {
-                BvKey.Back, BvKey.Up -> {
+                BvKey.Up -> {
                     hideControls()
                     true
                 }
@@ -428,11 +428,6 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
             BvKey.Menu -> {
                 menuOpen = true
                 interactionTick++
-                true
-            }
-
-            BvKey.Back -> {
-                onExit()
                 true
             }
 
@@ -493,8 +488,15 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
         onDispose { view.keepScreenOn = false }
     }
 
-    // 触屏：菜单打开时系统返回先关菜单（电视端返回键在 onKeyDown/onKeyUp 里处理）
-    BackHandler(enabled = menuOpen && !isTv) { closeMenu() }
+    // 电视端返回统一走 OnBackPressedDispatcher：菜单 → 控制层 → 退出。
+    // 触屏菜单关闭时交给 NavHost，保留预测性返回转场。
+    BackHandler(enabled = isTv || menuOpen) {
+        when {
+            menuOpen -> closeMenu()
+            buttonsFocused && controlsVisible -> hideControls()
+            else -> onExit()
+        }
+    }
 
     // ------------------------------------------------------------- 布局
 

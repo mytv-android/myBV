@@ -17,6 +17,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -315,6 +316,12 @@ private fun GeetestTvVerifyContent(
         statusText = if (cancelled) statusDragCancelled else statusDragSubmitted
     }
 
+    // 返回键取消验证；Dialog 的 dispatcher 由 ComponentDialog 提供，API 33+ 同样走这里
+    BackHandler {
+        finishDrag(cancelled = true)
+        onDismiss()
+    }
+
     Column(
         modifier = Modifier
             // 极验面板是固定尺寸（约 340x380 CSS px，WebView 里 1 CSS px == 1 dp）且按视口居中：
@@ -376,11 +383,6 @@ private fun GeetestTvVerifyContent(
                             else -> dispatchClickToWebView()
                         }
                         true
-                    }
-
-                    KeyEvent.KEYCODE_BACK -> {
-                        finishDrag(cancelled = true)
-                        onDismiss(); true
                     }
 
                     else -> false

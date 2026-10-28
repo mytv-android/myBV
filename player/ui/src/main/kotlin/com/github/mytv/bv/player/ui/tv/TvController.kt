@@ -149,7 +149,7 @@ private val ControlsEnd = 48.dp
  * | — | 上（抬起） | 打开选集 |
  * | — | 下（抬起） | 显示控制栏并聚焦按钮行（旧版为显示视频信息） |
  * | — | 左右、快退快进（按下，可连按加速） | 快进 / 快退 |
- * | — | 返回（抬起） | 暂停中直接退出；播放中 3 秒内连按两次退出 |
+ * | — | 返回（遥控器 / 系统返回） | 暂停中直接退出；播放中 3 秒内连按两次退出 |
  * | — | 播放/暂停媒体键（抬起） | 播放 / 暂停 |
  *
  * 焦点在控制栏按钮行时：左右在按钮间移动、确认点击按钮；上 / 返回回到画面；菜单键打开菜单。
@@ -260,9 +260,29 @@ internal fun TvController(
         interactionTick++
     }
 
-    // 系统返回不一定经过遥控按键事件；复用关闭面板逻辑，避免直接退出播放页。
-    BackHandler(enabled = panelOpen && !showRemoteControlHint) {
-        closePanels()
+    // 返回统一走 OnBackPressedDispatcher：API 33+ 开启预测性返回后系统不再下发 KEYCODE_BACK，
+    // 遥控器返回键与触屏手势都从这里处理。状态优先级与旧按键表一致。
+    BackHandler(enabled = !showRemoteControlHint) {
+        when {
+            panelOpen -> closePanels()
+            buttonsFocused -> hideControls()
+            seeking -> seeking = false
+            !videoPlayer.isPlaying -> {
+                logger.fInfo { "Exiting video player" }
+                controller.exit()
+            }
+
+            else -> {
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastPressBack < 1000 * 3) {
+                    logger.fInfo { "Exiting video player" }
+                    controller.exit()
+                } else {
+                    lastPressBack = currentTime
+                    SharedR.string.video_player_press_back_again_to_exit.toast(context)
+                }
+            }
+        }
     }
 
     if (controlsVisible && !panelOpen && !seeking) {
@@ -339,12 +359,12 @@ internal fun TvController(
         if (showRemoteControlHint) return@handler false
         if (panelOpen) {
             interactionTick++
-            return@handler key == BvKey.Back || key == BvKey.Menu
+            return@handler key == BvKey.Menu
         }
         if (buttonsFocused) {
             interactionTick++
             return@handler when (key) {
-                BvKey.Back, BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.PlayPause, BvKey.CenterLong -> true
+                BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.PlayPause, BvKey.CenterLong -> true
                 BvKey.FastForward, BvKey.Rewind -> {
                     // 快进时焦点回到画面，之后的左右 / 确认键按快进处理
                     rootFocusRequester.requestFocus(scope)
@@ -367,7 +387,7 @@ internal fun TvController(
                     onTimeForward(); true
                 }
 
-                BvKey.Back, BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.Center, BvKey.CenterLong -> true
+                BvKey.Menu, BvKey.Up, BvKey.Down, BvKey.Center, BvKey.CenterLong -> true
                 else -> false
             }
         }
@@ -397,7 +417,7 @@ internal fun TvController(
                 true
             }
 
-            BvKey.Menu, BvKey.Back, BvKey.PlayPause -> true
+            BvKey.Menu, BvKey.PlayPause -> true
 
             BvKey.Left, BvKey.Rewind -> {
                 openSeek()
@@ -434,7 +454,7 @@ internal fun TvController(
             restoreLongPressSpeed()
         }
         if (panelOpen) {
-            if (key == BvKey.Back || key == BvKey.Menu) {
+            if (key == BvKey.Menu) {
                 closePanels()
                 return@handler true
             }
@@ -450,11 +470,6 @@ internal fun TvController(
                 return@handler true
             }
             return@handler when (key) {
-                BvKey.Back -> {
-                    hideControls()
-                    true
-                }
-
                 BvKey.Up -> {
                     rootFocusRequester.requestFocus(scope)
                     true
@@ -487,7 +502,7 @@ internal fun TvController(
                     true
                 }
 
-                BvKey.Back, BvKey.Menu, BvKey.Up, BvKey.Down -> {
+                BvKey.Menu, BvKey.Up, BvKey.Down -> {
                     seeking = false
                     true
                 }
@@ -519,23 +534,6 @@ internal fun TvController(
 
             BvKey.Menu -> {
                 if (menuOpen) closePanels() else openMenu(TvMenuCategory.Picture)
-                true
-            }
-
-            BvKey.Back -> {
-                if (!videoPlayer.isPlaying) {
-                    logger.fInfo { "Exiting video player" }
-                    controller.exit()
-                    return@handler true
-                }
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastPressBack < 1000 * 3) {
-                    logger.fInfo { "Exiting video player" }
-                    controller.exit()
-                } else {
-                    lastPressBack = currentTime
-                    SharedR.string.video_player_press_back_again_to_exit.toast(context)
-                }
                 true
             }
 

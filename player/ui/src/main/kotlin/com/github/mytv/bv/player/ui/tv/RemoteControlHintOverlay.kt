@@ -7,6 +7,7 @@
 
 package com.github.mytv.bv.player.ui.tv
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,6 +66,8 @@ fun RemoteControlHintOverlay(
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
 
+    BackHandler { onDismiss() }
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus(scope)
     }
@@ -74,11 +77,12 @@ fun RemoteControlHintOverlay(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
             .focusRequester(focusRequester)
-            // 按下时吞掉所有按键；确认 / 返回在抬起时关闭，避免抬起事件落到下面的播放器上
-            .onBvKey { true }
+            // 按下时吞掉除返回外的按键；确认在抬起时关闭，避免抬起事件落到下面的播放器上。
+            // 返回交给 BackHandler，API 33+ 的预测性返回也只走 dispatcher。
+            .onBvKey { key -> key != BvKey.Back }
             .onBvKeyUp { key ->
-                if (key == BvKey.Center || key == BvKey.Back) onDismiss()
-                true
+                if (key == BvKey.Center) onDismiss()
+                key != BvKey.Back
             }
             .focusable()
             .clickable(
