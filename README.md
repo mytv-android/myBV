@@ -27,6 +27,10 @@ myBV 是 [BV](https://github.com/mytv-android/bv) 的后续维护版本，适配
 
 - [Github Releases](https://github.com/mytv-android/myBV/releases)
 
+## 相关工具
+
+推荐使用 [易用TV助手](https://github.com/pangtugg/easytv-partner) 管理配置：它收录了 myBV 及其他开源 TV 应用，可一键安装，并提供扫码遥控、文件传输、应用安装与更新等模块，方便在电视上集中管理和查看各应用的配置与使用教程，无需注册账号。
+
 ## 构建与签名
 
 GitHub Actions 使用以下 secrets（与 myMusic 相同）：
