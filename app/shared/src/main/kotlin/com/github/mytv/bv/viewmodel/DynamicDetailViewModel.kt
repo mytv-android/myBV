@@ -29,6 +29,8 @@ class DynamicDetailViewModel(
 
     suspend fun loadDynamic() {
         logger.fInfo { "Loading dynamic detail: $dynamicId" }
+        // 重试时先清掉旧数据，避免失败后仍显示上一条动态
+        dynamicItem = null
         runCatching {
             dynamicItem = userRepository.getDynamicDetail(
                 dynamicId = dynamicId,
@@ -37,7 +39,12 @@ class DynamicDetailViewModel(
         }.onFailure {
             logger.fException(it) { "Failed to load dynamic" }
             withContext(Dispatchers.Main) {
-                "Failed to load dynamic: ${it.message}".toast(BVApp.context)
+                when (it) {
+                    is dev.aaa1115910.biliapi.http.entity.RiskControlException ->
+                        "动态被风控拦截，请稍后重试".toast(BVApp.context)
+
+                    else -> "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
+                }
             }
         }
     }

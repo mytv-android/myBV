@@ -157,7 +157,13 @@ fun CommentItem(
                 }
                 Text(
                     replyText,
-                    modifier = if (onReplyClick != null) Modifier.clickable(onClick = onReplyClick) else Modifier,
+                    modifier = if (onReplyClick != null) {
+                        Modifier
+                            .bvFocus(scale = 1.05f, corner = 8.dp, addFocusable = true)
+                            .clickable(onClick = onReplyClick)
+                    } else {
+                        Modifier
+                    },
                     style = BvType.Meta,
                     color = if (comment.repliesCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -206,10 +212,12 @@ private fun CommentText(
     if (overflow) {
         Text(
             stringResource(if (expanded) R.string.ds_collapse else R.string.ds_expand),
-            modifier = Modifier.clickable {
-                if (textExpanded == null) internalExpanded = !internalExpanded
-                else onToggleTextExpand?.invoke()
-            },
+            modifier = Modifier
+                .bvFocus(scale = 1.05f, corner = 8.dp, addFocusable = true)
+                .clickable {
+                    if (textExpanded == null) internalExpanded = !internalExpanded
+                    else onToggleTextExpand?.invoke()
+                },
             style = BvType.Label.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.primary,
         )

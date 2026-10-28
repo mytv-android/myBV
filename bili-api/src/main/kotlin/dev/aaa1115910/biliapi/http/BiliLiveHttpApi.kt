@@ -14,6 +14,7 @@ import dev.aaa1115910.biliapi.http.entity.live.RoomPlayInfoData
 import dev.aaa1115910.biliapi.http.entity.live.RoomPlayInfoV2Data
 import dev.aaa1115910.biliapi.http.entity.live.SimplePlayUrlData
 import dev.aaa1115910.biliapi.http.plugins.BiliUserAgent
+import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.http.util.encApiSign
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
@@ -76,6 +77,11 @@ object BiliLiveHttpApi {
             parameter("id", roomId)
             parameter("type", 0)
             parameter("web_location", "444.8")
+            // token 与鉴权时的 uid 必须对应：登录态下带上 SESSDATA，
+            // 否则 token 发给游客、鉴权却报登录 mid，服务端会拒绝导致无弹幕
+            WebCookieManager.sessDataProvider()
+                .takeIf { it.isNotBlank() }
+                ?.let { header("Cookie", "SESSDATA=$it;") }
         }.body()
 
     /**

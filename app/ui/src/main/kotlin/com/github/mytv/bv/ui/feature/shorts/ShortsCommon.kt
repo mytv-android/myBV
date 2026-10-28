@@ -68,6 +68,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.reply.Comment
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.entity.ShortsItem
@@ -398,14 +399,19 @@ internal fun ShortsCommentList(
     tv: Boolean = false,
     firstItemRequester: FocusRequester? = null,
     onOpenSpace: (Long) -> Unit = {},
+    onPictureClick: ((List<Picture>, Int) -> Unit)? = null,
 ) {
     var replyRoot by remember(item.aid) { mutableStateOf<Comment?>(null) }
+    val replyBackRequester = remember(item.aid) { FocusRequester() }
     BackHandler(enabled = replyRoot != null) { replyRoot = null }
     val root = replyRoot
     val list = if (root == null) comments.comments else comments.replies
     val loading = if (root == null) comments.loading else comments.loadingReplies
     val ready = comments.loadedAid == item.aid
     val latestRoot by rememberUpdatedState(root)
+    LaunchedEffect(root) {
+        if (root != null) runCatching { replyBackRequester.requestFocus() }
+    }
 
     LaunchedEffect(state, item.aid) {
         // 带上总数：一页填不满屏幕时，加载完成后继续加载下一页
@@ -436,6 +442,7 @@ internal fun ShortsCommentList(
                             icon = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(R.string.ds_back),
                             onClick = { replyRoot = null },
+                            modifier = Modifier.focusRequester(replyBackRequester),
                             size = 36.dp,
                             iconSize = 20.dp,
                         )
@@ -443,7 +450,20 @@ internal fun ShortsCommentList(
                     }
                 }
                 item(key = "replyRoot") {
-                    CommentItem(comment = root, onAvatarClick = { onOpenSpace(root.member.mid) })
+                    CommentItem(
+                        comment = root,
+                        onAvatarClick = if (!tv) {
+                            { onOpenSpace(root.member.mid) }
+                        } else {
+                            null
+                        },
+                        onPictureClick = onPictureClick,
+                        modifier = if (tv) {
+                            Modifier.bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                        } else {
+                            Modifier
+                        },
+                    )
                 }
                 item(key = "replyDivider") {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -465,7 +485,8 @@ internal fun ShortsCommentList(
                     CommentItem(
                         comment = comment,
                         modifier = focusModifier,
-                        onReplyClick = if (!tv && root == null && comment.repliesCount > 0) {
+                        onPictureClick = onPictureClick,
+                        onReplyClick = if (root == null && comment.repliesCount > 0) {
                             {
                                 replyRoot = comment
                                 comments.openReplies(comment)

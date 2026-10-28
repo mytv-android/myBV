@@ -14,7 +14,6 @@ import dev.aaa1115910.biliapi.repositories.PgcRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.BuildConfig
 import com.github.mytv.bv.util.addWithMainContext
-import com.github.mytv.bv.util.addAllWithMainContext
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.toast
@@ -48,6 +47,7 @@ abstract class PgcViewModel(
     var updating by mutableStateOf(false)
     var hasNext by mutableStateOf(true)
     private var cursor = 0
+    @Volatile private var updatingCarousel = false
 
     init {
         loadMore()
@@ -79,6 +79,12 @@ abstract class PgcViewModel(
         }
     }
 
+    /** 只重试轮播（TV 精选区无数据时用），不影响已加载的推荐流。 */
+    fun retryCarousel() {
+        if (updatingCarousel) return
+        viewModelScope.launch(Dispatchers.IO) { updateCarousel() }
+    }
+
     /**
      * 清理所有数据
      */
@@ -95,30 +101,40 @@ abstract class PgcViewModel(
      * 更新轮播图
      */
     private suspend fun updateCarousel() {
+        if (updatingCarousel) return
+        updatingCarousel = true
         logger.fInfo { "Updating $pgcType carousel" }
-        runCatching {
-            // 由于未知原因，注入的 PgcRepository 可能获取到的对象为 null
-            var maxRetry = 10
-            while (pgcRepository == null && maxRetry > 0) {
-                delay(10)
-                maxRetry--
-            }
-            if (BuildConfig.DEBUG && maxRetry != 10) {
-                logger.fWarn { "Retry ${10 - maxRetry} times to get pgcRepository" }
+        try {
+            runCatching {
+                // 由于未知原因，注入的 PgcRepository 可能获取到的对象为 null
+                var maxRetry = 10
+                while (pgcRepository == null && maxRetry > 0) {
+                    delay(10)
+                    maxRetry--
+                }
+                if (BuildConfig.DEBUG && maxRetry != 10) {
+                    logger.fWarn { "Retry ${10 - maxRetry} times to get pgcRepository" }
+                    withContext(Dispatchers.Main) {
+                        "Retry ${10 - maxRetry} times to get pgcRepository($pgcType)".toast(BVApp.context)
+                    }
+                }
+
+                val items = pgcRepository.getCarousel(pgcType).items
+                logger.fInfo { "Find $pgcType carousels, size: ${items.size}" }
+                // 重试时替换而不是追加，避免重复项
                 withContext(Dispatchers.Main) {
-                    "Retry ${10 - maxRetry} times to get pgcRepository($pgcType)".toast(BVApp.context)
+                    carouselItems.clear()
+                    carouselItems.addAll(items)
+                }
+                logger.debug { "carouselItems: $carouselItems" }
+            }.onFailure {
+                logger.fInfo { "Update $pgcType carousel failed: ${it.stackTraceToString()}" }
+                withContext(Dispatchers.Main) {
+                    "加载 $pgcType 轮播图失败: ${it.message}".toast(BVApp.context)
                 }
             }
-
-            val carouselData = pgcRepository.getCarousel(pgcType)
-            logger.fInfo { "Find $pgcType carousels, size: ${carouselData.items.size}" }
-            carouselItems.addAllWithMainContext(carouselData.items)
-            logger.debug { "carouselItems: $carouselItems" }
-        }.onFailure {
-            logger.fInfo { "Update $pgcType carousel failed: ${it.stackTraceToString()}" }
-            withContext(Dispatchers.Main) {
-                "加载 $pgcType 轮播图失败: ${it.message}".toast(BVApp.context)
-            }
+        } finally {
+            updatingCarousel = false
         }
     }
 

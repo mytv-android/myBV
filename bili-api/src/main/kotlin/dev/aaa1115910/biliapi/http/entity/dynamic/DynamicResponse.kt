@@ -5,6 +5,7 @@ import dev.aaa1115910.biliapi.http.entity.user.Vip
 import dev.aaa1115910.biliapi.http.util.IntAsBooleanSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class DynamicData(
@@ -16,7 +17,8 @@ data class DynamicData(
     val updateBaseline: String = "",
     @SerialName("update_num")
     val updateNum: Int = 0,
-    val items: List<DynamicItem> = emptyList()
+    // 先按原始 JSON 收下，逐条解码：单条字段变化只跳过该条，不再整页失败
+    val items: List<JsonElement> = emptyList()
 )
 
 /**
@@ -35,18 +37,19 @@ data class DynamicItem(
     val modules: Modules,
     val orig: DynamicItem? = null,
     val type: String,
-    val visible: Boolean
+    val visible: Boolean = true
 ) {
     @Serializable
     data class Basic(
         @SerialName("comment_id_str")
-        val commentIdStr: String,
+        val commentIdStr: String = "0",
         @SerialName("comment_type")
-        val commentType: Long,
+        val commentType: Long = 0,
+        // 部分动态不下发 like_icon，且当前 UI 未使用
         @SerialName("like_icon")
-        val likeIcon: LikeIcon,
+        val likeIcon: LikeIcon? = null,
         @SerialName("rid_str")
-        val ridStr: String
+        val ridStr: String = ""
     ) {
         @Serializable
         data class LikeIcon(
@@ -80,29 +83,29 @@ data class DynamicItem(
     ) {
         @Serializable
         data class Author(
-            val face: String,
+            val face: String = "",
             @SerialName("face_nft")
-            val faceNft: Boolean,
+            val faceNft: Boolean = false,
             // 接口返回的是 0/1 而不是 true/false
             @Serializable(with = IntAsBooleanSerializer::class)
             val following: Boolean = false,
             @SerialName("jump_url")
-            val jumpUrl: String,
-            val label: String,
-            val mid: Long,
-            val name: String,
+            val jumpUrl: String = "",
+            val label: String = "",
+            val mid: Long = 0,
+            val name: String = "",
             @SerialName("official_verify")
             val officialVerify: OfficialVerify? = null,
             val pendant: Pendant? = null,
             @SerialName("pub_action")
-            val pubAction: String,
+            val pubAction: String = "",
             @SerialName("pub_location_text")
             val pubLocationText: String? = null,
             @SerialName("pub_time")
-            val pubTime: String,
+            val pubTime: String = "",
             @SerialName("pub_ts")
-            val pubTs: Int,
-            val type: String,
+            val pubTs: Int = 0,
+            val type: String = "",
             val vip: Vip? = null
         ) {
             @Serializable
@@ -192,8 +195,8 @@ data class DynamicItem(
             @Serializable
             data class Desc(
                 @SerialName("rich_text_nodes")
-                val richTextNodes: List<RichTextNodeItem>,
-                val text: String
+                val richTextNodes: List<RichTextNodeItem> = emptyList(),
+                val text: String = ""
             ) {
                 @Serializable
                 data class RichTextNodeItem(
@@ -230,7 +233,7 @@ data class DynamicItem(
                 val none: None? = null,
                 @SerialName("ugc_season")
                 val ugcSeason: UgcSeason? = null,
-                val type: String
+                val type: String = ""
             ) {
                 @Serializable
                 data class Archive(

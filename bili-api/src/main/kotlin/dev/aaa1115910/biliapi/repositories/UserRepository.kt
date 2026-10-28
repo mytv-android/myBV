@@ -230,11 +230,13 @@ class UserRepository(
                         refreshType =
                             if (offset == "") Refresh.refresh_new else Refresh.refresh_history
                     })
-                    result = DynamicVideoData.fromDynamicData(dynVideoReply!!)
+                    result = DynamicVideoData.fromDynamicData(
+                        dynVideoReply ?: error("动态视频 gRPC 接口无响应")
+                    )
                 }.onFailure {
                     handleGrpcException(it)
                 }
-                result!!
+                result ?: error("动态视频 gRPC 接口无响应")
             }
         }
     }
@@ -267,11 +269,13 @@ class UserRepository(
                         refreshType =
                             if (offset == "") Refresh.refresh_new else Refresh.refresh_history
                     })
-                    result = DynamicData.fromDynamicData(dynAllReply!!)
+                    result = DynamicData.fromDynamicData(
+                        dynAllReply ?: error("动态 gRPC 接口无响应")
+                    )
                 }.onFailure {
                     handleGrpcException(it)
                 }
-                result!!
+                result ?: error("动态 gRPC 接口无响应")
             }
         }
     }
@@ -297,11 +301,13 @@ class UserRepository(
                         this.dynamicId = dynamicId
                         localTime = 8
                     })
-                    result = DynamicItem.fromDynamicItem(dynDetailReply!!.item)
+                    result = DynamicItem.fromDynamicItem(
+                        dynDetailReply?.item ?: error("动态详情 gRPC 接口无响应")
+                    )
                 }.onFailure {
                     handleGrpcException(it)
                 }
-                result!!
+                result ?: error("动态详情 gRPC 接口无响应")
             }
         }
     }

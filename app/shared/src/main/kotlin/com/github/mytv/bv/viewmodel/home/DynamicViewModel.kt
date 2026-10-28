@@ -66,13 +66,15 @@ class DynamicViewModel(
         if (!videoHasMore || !bvUserRepository.isLogin) return
         loadingVideo = true
         logger.fInfo { "Load more dynamic videos [apiType=${Prefs.apiType}, offset=$videoHistoryOffset, page=${currentVideoPage + 1}]" }
+        val nextPage = currentVideoPage + 1
         runCatching {
             val dynamicVideoData = userRepository.getDynamicVideos(
-                page = ++currentVideoPage,
+                page = nextPage,
                 offset = videoHistoryOffset ?: "",
                 updateBaseline = videoUpdateBaseline ?: "",
                 preferApiType = Prefs.apiType
             )
+            currentVideoPage = nextPage
             dynamicVideoList.addAllWithMainContext(dynamicVideoData.videos)
             videoHistoryOffset = dynamicVideoData.historyOffset
             videoUpdateBaseline = dynamicVideoData.updateBaseline
@@ -116,19 +118,21 @@ class DynamicViewModel(
         if (!allHasMore || !bvUserRepository.isLogin) return
         loadingAll = true
         logger.fInfo { "Load more dynamic all [apiType=${Prefs.apiType}, offset=$allHistoryOffset, page=${currentAllPage + 1}]" }
+        val nextPage = currentAllPage + 1
         runCatching {
             val dynamicData = userRepository.getDynamics(
-                page = ++currentAllPage,
+                page = nextPage,
                 offset = allHistoryOffset ?: "",
                 updateBaseline = allUpdateBaseline ?: "",
                 preferApiType = Prefs.apiType
             )
+            currentAllPage = nextPage
             dynamicAllList.addAll(dynamicData.dynamics)
             allHistoryOffset = dynamicData.historyOffset
             allUpdateBaseline = dynamicData.updateBaseline
             allHasMore = dynamicData.hasMore
 
-            logger.fInfo { "Load dynamic all list page: ${currentVideoPage},size: ${dynamicData.dynamics.size}" }
+            logger.fInfo { "Load dynamic all list page: ${currentAllPage},size: ${dynamicData.dynamics.size}" }
         }.onFailure {
             logger.fWarn { "Load dynamic all list failed: ${it.stackTraceToString()}" }
             when (it) {

@@ -81,6 +81,7 @@ class PlayerMenuState internal constructor() {
     val playMode: PlayMode get() = config.currentPlayMode
     val videoList: List<VideoListItem> get() = config.availableVideoList
     val currentVideoCid: Long get() = config.currentVideoCid
+    val showDebugInfo: Boolean get() = config.showDebugInfo
 
     /** 某类弹幕当前是否显示（「全部」包含所有类型）。 */
     fun isDanmakuTypeShown(type: DanmakuType): Boolean =
@@ -174,6 +175,10 @@ class PlayerMenuState internal constructor() {
         handlers?.onPlayModeChange?.invoke(playMode)
     }
 
+    fun setShowDebugInfo(show: Boolean) {
+        handlers?.onShowDebugInfoChange?.invoke(show)
+    }
+
     companion object {
         /** 倍速常用值（触摸端标签、电视端选项）。 */
         val SpeedPresets: List<Float> =
@@ -204,6 +209,7 @@ internal class PlayerMenuHandlers(
     val onSubtitleBackgroundOpacityChange: (Float) -> Unit,
     val onSubtitleBottomPaddingChange: (Dp) -> Unit,
     val onPlayModeChange: (PlayMode) -> Unit,
+    val onShowDebugInfoChange: (Boolean) -> Unit,
 )
 
 /** 创建一个 [PlayerMenuState]，传给 [BvPlayerScreen] 的 `menuState` 参数。 */

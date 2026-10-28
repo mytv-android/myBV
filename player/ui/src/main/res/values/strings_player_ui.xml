@@ -69,6 +69,7 @@
     <string name="player_ui_section_danmaku_type">类型</string>
     <string name="player_ui_section_danmaku_mask">防遮挡</string>
     <string name="player_ui_section_subtitle_track">字幕</string>
+    <string name="player_ui_section_debug_info">调试信息</string>
 
     <!-- 提示 -->
     <string name="player_ui_double_speed_tip">x2 倍速播放中</string>

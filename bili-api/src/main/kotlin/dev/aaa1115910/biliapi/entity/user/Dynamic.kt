@@ -11,7 +11,19 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import okhttp3.internal.toLongOrDefault
+
+/** 逐条解码动态时使用：字段增删 / 类型变化不应让整页失败。 */
+private val dynamicJson = Json {
+    ignoreUnknownKeys = true
+    coerceInputValues = true
+    isLenient = true
+}
+
+private fun JsonElement.decodeDynamicItemOrNull(): dev.aaa1115910.biliapi.http.entity.dynamic.DynamicItem? =
+    runCatching { dynamicJson.decodeFromJsonElement<dev.aaa1115910.biliapi.http.entity.dynamic.DynamicItem>(this) }
+        .getOrNull()
 
 data class DynamicData(
     val dynamics: List<DynamicItem>,
@@ -37,25 +49,31 @@ data class DynamicData(
         fun fromDynamicData(data: dev.aaa1115910.biliapi.http.entity.dynamic.DynamicData) =
             DynamicData(
                 dynamics = data.items
-                    .mapNotNull {
-                        if (!availableWebDynamicTypes.contains(it.type)) {
-                            logger.warn { "unknown dynamic type ${it.type}, up: ${it.modules.moduleAuthor.name}, date: ${it.modules.moduleAuthor.pubTime}" }
+                    .mapNotNull { element ->
+                        // 先逐条反序列化：单条字段缺失 / 类型变化只跳过该条，
+                        // 不能让整页动态都加载不出来
+                        val item = element.decodeDynamicItemOrNull()
+                        if (item == null) {
+                            logger.warn { "decode dynamic item failed: ${element.toString().take(200)}" }
+                            return@mapNotNull null
+                        }
+                        if (!availableWebDynamicTypes.contains(item.type)) {
+                            logger.warn { "unknown dynamic type ${item.type}, up: ${item.modules.moduleAuthor.name}, date: ${item.modules.moduleAuthor.pubTime}" }
                             return@mapNotNull null
                         }
 
-                        if (it.type == DynamicType.Forward.webValue) {
-                            if (!availableWebDynamicTypes.contains(it.orig?.type)) {
-                                logger.warn { "unknown dynamic forward type ${it.orig?.type}, up: ${it.modules.moduleAuthor.name}, date: ${it.modules.moduleAuthor.pubTime}" }
+                        if (item.type == DynamicType.Forward.webValue) {
+                            if (!availableWebDynamicTypes.contains(item.orig?.type)) {
+                                logger.warn { "unknown dynamic forward type ${item.orig?.type}, up: ${item.modules.moduleAuthor.name}, date: ${item.modules.moduleAuthor.pubTime}" }
                                 return@mapNotNull null
                             }
                         }
 
-                        // 单条动态解析失败（B 站改字段、缺模块等）只跳过该条，
-                        // 不能让整页动态都加载不出来
-                        runCatching { DynamicItem.fromDynamicItem(it) }
+                        // 映射阶段失败（缺 major 等）同样只跳过该条
+                        runCatching { DynamicItem.fromDynamicItem(item) }
                             .onFailure { e ->
                                 logger.warn(e) {
-                                    "parse dynamic item failed, type: ${it.type}, up: ${it.modules.moduleAuthor.name}"
+                                    "parse dynamic item failed, type: ${item.type}, up: ${item.modules.moduleAuthor.name}"
                                 }
                             }
                             .getOrNull()
@@ -126,13 +144,29 @@ data class DynamicItem(
                 footer = DynamicFooterModule.fromModuleStat(item.modules.moduleStat)
             )
             when (dynamicType) {
-                DynamicType.Av -> dynamicItem.video =
-                    DynamicVideoModule.fromModuleArchive(item.modules.moduleDynamic.major!!.archive!!)
+                DynamicType.Av -> dynamicItem.video = DynamicVideoModule.fromModuleArchive(
+                    item.modules.moduleDynamic.major?.archive ?: error("missing archive module")
+                )
 
-                DynamicType.UgcSeason -> TODO()
+                DynamicType.UgcSeason -> {
+                    val ugc = item.modules.moduleDynamic.major?.ugcSeason
+                        ?: error("missing ugc season module")
+                    dynamicItem.video = DynamicVideoModule(
+                        aid = ugc.aid,
+                        bvid = ugc.bvid,
+                        cid = 0,
+                        title = ugc.title,
+                        text = ugc.desc.orEmpty(),
+                        cover = ugc.cover,
+                        duration = ugc.durationText,
+                        play = ugc.stat.play,
+                        danmaku = ugc.stat.danmaku,
+                    )
+                }
+
                 DynamicType.Forward -> dynamicItem.apply {
                     word = DynamicWordModule.fromModuleDynamic(item.modules.moduleDynamic)
-                    orig = fromDynamicItem(item.orig!!)
+                    orig = fromDynamicItem(item.orig ?: error("missing forward item"))
                 }
 
                 DynamicType.Word -> dynamicItem.word =
@@ -144,14 +178,17 @@ data class DynamicItem(
                 DynamicType.LiveRcmd -> dynamicItem.liveRcmd =
                     DynamicLiveRcmdModule.fromModuleDynamic(item.modules.moduleDynamic)
 
-                DynamicType.Pgc -> dynamicItem.pgc =
-                    DynamicPgcModule.fromModulePgc(item.modules.moduleDynamic.major!!.pgc!!)
+                DynamicType.Pgc -> dynamicItem.pgc = DynamicPgcModule.fromModulePgc(
+                    item.modules.moduleDynamic.major?.pgc ?: error("missing pgc module")
+                )
 
-                DynamicType.Article -> dynamicItem.article =
-                    DynamicArticleModule.fromModuleArticle(item.modules.moduleDynamic.major!!.article!!)
+                DynamicType.Article -> dynamicItem.article = DynamicArticleModule.fromModuleArticle(
+                    item.modules.moduleDynamic.major?.article ?: error("missing article module")
+                )
 
-                DynamicType.None -> dynamicItem.none =
-                    DynamicNoneModule.fromModuleDynamic(item.modules.moduleDynamic.major!!.none!!)
+                DynamicType.None -> dynamicItem.none = DynamicNoneModule.fromModuleDynamic(
+                    item.modules.moduleDynamic.major?.none ?: error("missing none module")
+                )
             }
             return dynamicItem
         }
@@ -510,8 +547,9 @@ data class DynamicItem(
             }
 
             fun fromModuleDynamic(moduleDynamic: dev.aaa1115910.biliapi.http.entity.dynamic.DynamicItem.Modules.Dynamic): DynamicLiveRcmdModule {
-                val liveRcmdContent =
-                    json.decodeFromString<LiveRcmdContent>(moduleDynamic.major!!.liveRcmd!!.content)
+                val content = moduleDynamic.major?.liveRcmd?.content
+                    ?: error("missing live_rcmd module")
+                val liveRcmdContent = json.decodeFromString<LiveRcmdContent>(content)
                 return DynamicLiveRcmdModule(
                     title = liveRcmdContent.livePlayInfo.title,
                     cover = liveRcmdContent.livePlayInfo.cover,
@@ -715,8 +753,9 @@ data class DynamicVideoData(
         private val logger = KotlinLogging.logger { }
         fun fromDynamicData(data: dev.aaa1115910.biliapi.http.entity.dynamic.DynamicData) =
             DynamicVideoData(
-                videos = data.items.mapNotNull { item ->
-                    // 同上：单条解析失败只跳过该条
+                videos = data.items.mapNotNull { element ->
+                    // 同上：单条反序列化 / 解析失败只跳过该条
+                    val item = element.decodeDynamicItemOrNull() ?: return@mapNotNull null
                     runCatching { DynamicVideo.fromDynamicVideoItem(item) }
                         .onFailure { e ->
                             logger.warn(e) { "parse dynamic video item failed, up: ${item.modules.moduleAuthor.name}" }
@@ -776,7 +815,7 @@ data class DynamicVideo(
 ) {
     companion object {
         fun fromDynamicVideoItem(item: dev.aaa1115910.biliapi.http.entity.dynamic.DynamicItem): DynamicVideo {
-            val archive = item.modules.moduleDynamic.major!!.archive!!
+            val archive = item.modules.moduleDynamic.major?.archive ?: error("missing archive module")
             val author = item.modules.moduleAuthor
             return DynamicVideo(
                 aid = archive.aid.toLong(),

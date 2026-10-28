@@ -86,6 +86,8 @@ class CommentRepository(
                     root = rpid,
                     pageSize = 20,
                     pageNumber = page.nextWebPage,
+                    sessData = authRepository.sessionData,
+                    buvid3 = authRepository.buvid3,
                 ).getResponseData()
                 return CommentRepliesData.fromCommentReplyData(webReplies)
             }

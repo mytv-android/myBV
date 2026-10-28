@@ -434,6 +434,15 @@ private fun LazyListScope.othersOptions(menuState: PlayerMenuState, context: and
         isSelected = { it == menuState.playMode },
         onSelect = { menuState.setPlayMode(it) },
     )
+    optionSection(
+        key = "showDebugInfo",
+        title = { stringResource(R.string.player_ui_section_debug_info) },
+        first = false,
+        options = listOf(true, false),
+        label = { stringResource(if (it) R.string.player_ui_on else R.string.player_ui_off) },
+        isSelected = { it == menuState.showDebugInfo },
+        onSelect = { menuState.setShowDebugInfo(it) },
+    )
 }
 
 /**

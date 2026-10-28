@@ -11,6 +11,8 @@ private val pinnedReplyJson = Json {
     coerceInputValues = true
 }
 
+private val replyCountRegex = Regex("""\d+""")
+
 /** Web 接口 `top` 中的置顶评论可能是对象，也可能是 null / 空对象，解析失败时忽略。 */
 private fun JsonElement?.asPinnedReplyOrNull(): dev.aaa1115910.biliapi.http.entity.reply.CommentData.Reply? {
     if (this == null || this is JsonNull) return null
@@ -125,8 +127,10 @@ data class Comment(
                 emotes = reply.content.emoteMap.values.map { Emote.fromEmote(it) },
                 pictures = reply.content.picturesList.map { Picture.fromPicture(it) },
                 replies = reply.repliesList.map { fromReplyInfo(it) },
-                repliesCount = runCatching { reply.replyControl.subReplyEntryText.split(" ")[1].toInt() }
-                    .getOrDefault(0),
+                // 「共230条回复」「230条回复」等文案不固定，直接取第一段数字
+                repliesCount = runCatching {
+                    replyCountRegex.find(reply.replyControl.subReplyEntryText.orEmpty())?.value?.toInt()
+                }.getOrNull() ?: 0,
                 isPinned = isPinned || reply.replyControl.isUpTop ||
                     reply.replyControl.isAdminTop || reply.replyControl.isVoteTop
             )

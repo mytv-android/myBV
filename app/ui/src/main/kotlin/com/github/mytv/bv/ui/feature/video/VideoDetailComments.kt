@@ -26,11 +26,14 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,6 +52,7 @@ import com.github.mytv.bv.ui.designsystem.component.CommentItem
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
+import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.imageviewer.previewer.ImagePreviewer
 import com.github.mytv.bv.ui.imageviewer.previewer.ImagePreviewerState
@@ -56,6 +60,7 @@ import com.github.mytv.bv.ui.imageviewer.previewer.VerticalDragType
 import com.github.mytv.bv.ui.imageviewer.previewer.rememberPreviewerState
 import com.github.mytv.bv.viewmodel.CommentViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -185,6 +190,16 @@ internal fun RepliesSheet(
     val listState = rememberLazyListState()
     val touchInput = LocalDeviceProfile.current.input == BvInputMode.Touch
     var qrLink by remember { mutableStateOf<String?>(null) }
+    val firstRequester = remember { FocusRequester() }
+    // 电视端打开回复抽屉后把焦点送进内容，否则方向键仍在背后的页面上
+    LaunchedEffect(commentVm.replyRootComment, touchInput) {
+        if (touchInput) return@LaunchedEffect
+        repeat(3) {
+            withFrameNanos { }
+            if (runCatching { firstRequester.requestFocus() }.isSuccess) return@LaunchedEffect
+            delay(80)
+        }
+    }
     val shouldLoadMore by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -211,6 +226,10 @@ internal fun RepliesSheet(
                 item(key = "root") {
                     CommentItem(
                         comment = root,
+                        modifier = if (touchInput) Modifier else Modifier
+                            .focusRequester(firstRequester)
+                            .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                            .padding(8.dp),
                         maxLines = Int.MAX_VALUE,
                         onPictureClick = onShowPictures,
                         onLongClick = if (touchInput) {
@@ -259,6 +278,9 @@ internal fun RepliesSheet(
             ) { reply ->
                 CommentItem(
                     comment = reply,
+                    modifier = if (touchInput) Modifier else Modifier
+                        .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                        .padding(8.dp),
                     onPictureClick = onShowPictures,
                     onLongClick = if (touchInput) {
                         { commentQrLink(reply.content)?.let { qrLink = it } }

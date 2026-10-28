@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,11 +20,16 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.theme.BvTheme
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
+import com.github.mytv.bv.ui.feature.video.show
 import com.github.mytv.bv.ui.navigation.ShortsRoute
 import com.github.mytv.bv.viewmodel.CommentViewModel
 import com.github.mytv.bv.viewmodel.ShortsAction
 import com.github.mytv.bv.viewmodel.ShortsEvent
 import com.github.mytv.bv.viewmodel.ShortsViewModel
+import dev.aaa1115910.biliapi.entity.Picture
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -39,6 +45,11 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
     val pool = rememberShortsPlayerPool(vm)
     val comments = rememberShortsComments(commentVm)
     val actions = rememberShortsActions(vm, nav)
+    val scope = rememberCoroutineScope()
+    val pictures = rememberCommentPictures()
+    val onPictureClick: (List<Picture>, Int) -> Unit = { list, index ->
+        scope.launch { pictures.show(list, index) }
+    }
     val profile = LocalDeviceProfile.current
     val configuration = LocalConfiguration.current
     var started by remember { mutableStateOf(false) }
@@ -66,11 +77,12 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
             }
         } else {
             when (layout) {
-                DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions)
-                DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions)
-                DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions)
+                DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions, onPictureClick)
+                DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions, onPictureClick)
+                DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions, onPictureClick)
             }
         }
+        CommentPicturePreviewer(pictures)
         ShortsActionDialogs(actions)
     }
 }

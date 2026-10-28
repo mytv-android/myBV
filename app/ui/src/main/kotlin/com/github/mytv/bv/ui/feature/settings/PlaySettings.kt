@@ -55,6 +55,7 @@ internal fun PlaySettings(container: SettingsContainer) {
             skipPgcIntroOutro = Prefs.skipPgcIntroOutro,
             skipSponsorSegments = Prefs.skipSponsorSegments,
             showPlayerLogs = Prefs.showPlayerLogs,
+            showDebugInfo = Prefs.showDebugInfo,
             longPressAction = Prefs.playerLongPressAction,
             longPressSpeed = Prefs.playerLongPressSpeed,
         )
@@ -71,6 +72,7 @@ internal fun PlaySettings(container: SettingsContainer) {
     var skipPgcIntroOutro by remember { mutableStateOf(initial.skipPgcIntroOutro) }
     var skipSponsorSegments by remember { mutableStateOf(initial.skipSponsorSegments) }
     var showPlayerLogs by remember { mutableStateOf(initial.showPlayerLogs) }
+    var showDebugInfo by remember { mutableStateOf(initial.showDebugInfo) }
     var longPressAction by remember { mutableStateOf(initial.longPressAction) }
     var longPressSpeed by remember { mutableFloatStateOf(initial.longPressSpeed) }
 
@@ -191,6 +193,15 @@ internal fun PlaySettings(container: SettingsContainer) {
                 PreferenceWrites.enqueue { Prefs.showPlayerLogs = it }
             },
         )
+        SettingSwitchRow(
+            title = stringResource(R.string.settings_play_show_debug_info),
+            subtitle = stringResource(R.string.settings_play_show_debug_info_desc),
+            checked = showDebugInfo,
+            onCheckedChange = {
+                showDebugInfo = it
+                PreferenceWrites.enqueue { Prefs.showDebugInfo = it }
+            },
+        )
         SettingChoiceGroup(
             label = stringResource(R.string.settings_play_long_press_action),
             options = PlayerLongPressAction.entries,
@@ -229,6 +240,7 @@ private data class PlayPreferences(
     val skipPgcIntroOutro: Boolean,
     val skipSponsorSegments: Boolean,
     val showPlayerLogs: Boolean,
+    val showDebugInfo: Boolean,
     val longPressAction: PlayerLongPressAction,
     val longPressSpeed: Float,
 )

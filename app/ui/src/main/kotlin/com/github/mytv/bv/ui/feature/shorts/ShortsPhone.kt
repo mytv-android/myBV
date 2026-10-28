@@ -90,6 +90,7 @@ import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
 import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
 import com.github.mytv.bv.viewmodel.ShortsViewModel
+import dev.aaa1115910.biliapi.entity.Picture
 
 private val ActionWhite = Color.White.copy(alpha = .16f)
 
@@ -104,6 +105,7 @@ internal fun ShortsPhone(
     pool: ShortsPlayerPool,
     comments: ShortsComments,
     actions: ShortsActions,
+    onPictureClick: (List<Picture>, Int) -> Unit,
 ) {
     val items = vm.items
     val pagerState = rememberPagerState(
@@ -154,7 +156,13 @@ internal fun ShortsPhone(
 
     commentTarget?.let { item ->
         CoverTheme(item.cover, forceDark = true) {
-            ShortsCommentSheet(item, comments, actions, onDismiss = { commentTarget = null })
+            ShortsCommentSheet(
+                item = item,
+                comments = comments,
+                actions = actions,
+                onPictureClick = onPictureClick,
+                onDismiss = { commentTarget = null },
+            )
         }
     }
 
@@ -456,6 +464,7 @@ private fun ShortsCommentSheet(
     item: ShortsItem,
     comments: ShortsComments,
     actions: ShortsActions,
+    onPictureClick: (List<Picture>, Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     LaunchedEffect(item.aid) { comments.load(item.aid) }
@@ -483,6 +492,7 @@ private fun ShortsCommentSheet(
                 onDismiss()
                 actions.openSpace(mid)
             },
+            onPictureClick = onPictureClick,
         )
     }
 }

@@ -152,6 +152,7 @@ fun BvPlayerScreen(
     onSubtitleBackgroundOpacityChange: (Float) -> Unit,
     onSubtitleBottomPadding: (Dp) -> Unit,
     onPlayModeChange: (PlayMode) -> Unit,
+    onShowDebugInfoChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     isFullScreen: Boolean = true,
     onEnterFullScreen: () -> Unit = {},
@@ -577,6 +578,7 @@ fun BvPlayerScreen(
         onSubtitleBackgroundOpacityChange = onSubtitleBackgroundOpacityChange,
         onSubtitleBottomPaddingChange = onSubtitleBottomPadding,
         onPlayModeChange = onPlayModeChange,
+        onShowDebugInfoChange = onShowDebugInfoChange,
     )
     SideEffect {
         menuState.config = configData

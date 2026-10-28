@@ -293,7 +293,7 @@ internal fun DynamicDetailPane(
                                 .padding(8.dp)
                         } else Modifier,
                         onPictureClick = onPictures,
-                        onReplyClick = if (!isTv && comment.repliesCount > 0) {
+                        onReplyClick = if (comment.repliesCount > 0) {
                             {
                                 commentVm.prepareReplies(comment)
                                 showReplies = true

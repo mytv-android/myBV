@@ -142,6 +142,23 @@ internal fun HomeTv(nav: NavController, state: HomeState) {
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
+            // 遥控器菜单键刷新当前信息流（推荐 / 热门）
+            .onBvKey { key ->
+                if (key != BvKey.Menu) return@onBvKey false
+                when (chip) {
+                    ChipRecommend -> {
+                        state.refreshRecommend()
+                        true
+                    }
+
+                    ChipPopular -> {
+                        state.refreshPopular()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
     ) {
         if (chip == ChipRecommend) TvBackdrop(cover = current?.cover)
 

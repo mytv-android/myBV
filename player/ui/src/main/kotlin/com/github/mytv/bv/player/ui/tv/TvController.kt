@@ -92,7 +92,6 @@ import com.github.mytv.bv.player.entity.LocalVideoPlayerStateData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerVideoInfoData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerVideoShotData
 import com.github.mytv.bv.player.entity.PlayerLongPressAction
-import com.github.mytv.bv.player.shared.BuildConfig
 import com.github.mytv.bv.player.ui.BottomSubtitle
 import com.github.mytv.bv.player.ui.BufferingTip
 import com.github.mytv.bv.player.ui.KeyedSideEffect
@@ -610,7 +609,7 @@ internal fun TvController(
         ) {
             content()
 
-            if (BuildConfig.DEBUG) {
+            if (configData.showDebugInfo) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)

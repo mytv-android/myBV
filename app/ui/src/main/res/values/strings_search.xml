@@ -60,6 +60,7 @@
     <string name="search_tv_space">空格</string>
     <string name="search_tv_delete">删除</string>
     <string name="search_tv_clear">清空</string>
+    <string name="search_tv_ime">输入法</string>
     <string name="search_tv_voice">按住遥控器语音键说话</string>
     <string name="search_tv_search">搜索</string>
     <string name="search_tv_open_full">全屏结果</string>

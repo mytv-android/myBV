@@ -73,6 +73,7 @@ import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
 import com.github.mytv.bv.viewmodel.ShortsViewModel
+import dev.aaa1115910.biliapi.entity.Picture
 import kotlinx.coroutines.launch
 
 /**
@@ -85,6 +86,7 @@ internal fun ShortsTablet(
     pool: ShortsPlayerPool,
     comments: ShortsComments,
     actions: ShortsActions,
+    onPictureClick: (List<Picture>, Int) -> Unit,
 ) {
     val items = vm.items
     val pagerState = rememberPagerState(
@@ -113,6 +115,7 @@ internal fun ShortsTablet(
                     comments = comments,
                     actions = actions,
                     pagerState = pagerState,
+                    onPictureClick = onPictureClick,
                     modifier = Modifier
                         .width(380.dp)
                         .fillMaxHeight(),
@@ -321,6 +324,7 @@ private fun TabletInfoPanel(
     comments: ShortsComments,
     actions: ShortsActions,
     pagerState: PagerState,
+    onPictureClick: (List<Picture>, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -408,6 +412,7 @@ private fun TabletInfoPanel(
                     .weight(1f),
                 contentPadding = PaddingValues(bottom = 16.dp),
                 onOpenSpace = actions::openSpace,
+                onPictureClick = onPictureClick,
             )
         } else {
             // 「相关」：刷刷队列里接下来的视频，点击跳到那一条

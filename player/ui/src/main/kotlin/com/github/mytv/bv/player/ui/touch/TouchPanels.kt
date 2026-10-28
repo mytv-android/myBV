@@ -506,4 +506,15 @@ private fun MorePanel(menuState: PlayerMenuState) {
             }
         }
     }
+    PanelSection(stringResource(R.string.player_ui_section_debug_info)) {
+        ChipFlow {
+            listOf(true, false).forEach { show ->
+                PlayerChip(
+                    text = stringResource(if (show) R.string.player_ui_on else R.string.player_ui_off),
+                    selected = menuState.showDebugInfo == show,
+                    onClick = { menuState.setShowDebugInfo(show) },
+                )
+            }
+        }
+    }
 }

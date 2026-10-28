@@ -227,14 +227,24 @@ object LiveDataWebSocket {
         }
 
         val reconnectJob = launch {
-            try {
-                fetchDanmuInfo()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                logger.error(e) { "Failed to fetch initial danmu info" }
-                return@launch
+            // 首次取 token 失败不能让 Flow 静默挂起：退避重试，直到拿到 token 或 Flow 取消
+            var fetchAttempt = 0
+            while (isActive) {
+                try {
+                    fetchDanmuInfo()
+                    break
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    fetchAttempt++
+                    val delaySec = (1L shl (fetchAttempt - 1).coerceAtMost(4)).coerceAtMost(30)
+                    logger.error(e) {
+                        "Failed to fetch initial danmu info, retry in ${delaySec}s (attempt=$fetchAttempt)"
+                    }
+                    delay(delaySec * 1000)
+                }
             }
+            if (!isActive) return@launch
 
             while (isActive) {
                 disconnectSignal = CompletableDeferred()

@@ -10,6 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,15 +53,15 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -154,6 +157,7 @@ private fun SearchTvInput(
     val context = LocalContext.current
     val keyword = state.input.keyword
     val keyRequester = remember { FocusRequester() }
+    val imeRequester = remember { FocusRequester() }
     val resultsRequester = remember { FocusRequester() }
     val cards = state.videoCards()
     val rowState = rememberLazyListState()
@@ -199,7 +203,12 @@ private fun SearchTvInput(
             .onFocusChanged { if (it.hasFocus) onArea(TvFocusArea.Keyboard) },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TvQueryField(keyword)
+        TvQueryField(
+            keyword = keyword,
+            onKeywordChange = { state.input.keyword = it },
+            onSearch = { keyword.trim().takeIf { it.isNotEmpty() }?.let(pick) },
+            modifier = Modifier.focusRequester(imeRequester),
+        )
         Column(
             Modifier
                 .focusRestorer()
@@ -239,6 +248,12 @@ private fun SearchTvInput(
             TvKey(
                 text = stringResource(R.string.search_tv_clear),
                 onClick = { state.input.keyword = "" },
+                modifier = Modifier.weight(1f),
+            )
+            // 聚焦搜索框会拉起系统输入法；保留屏幕键盘给没有输入法的盒子
+            TvKey(
+                text = stringResource(R.string.search_tv_ime),
+                onClick = { imeRequester.tryFocus() },
                 modifier = Modifier.weight(1f),
             )
         }
@@ -460,11 +475,20 @@ private fun SearchTvFull(
     }
 }
 
-/** 电视搜索框（原型 `.m-search` 高 52，surfaceContainerHighest）：已输入字母 16sp + primary 光标「|」。不可聚焦。 */
+/**
+ * 电视搜索框（原型 `.m-search` 高 52，surfaceContainerHighest）：可聚焦的 [BasicTextField]，
+ * 聚焦时拉起系统 TV 输入法；屏幕键盘输入仍写回同一个 keyword。
+ */
 @Composable
-private fun TvQueryField(keyword: String) {
+private fun TvQueryField(
+    keyword: String,
+    onKeywordChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scheme = MaterialTheme.colorScheme
     val placeholder = stringResource(R.string.search_tv_placeholder)
+    val keyboard = LocalSoftwareKeyboardController.current
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -475,7 +499,7 @@ private fun TvQueryField(keyword: String) {
         Row(
             Modifier
                 .fillMaxSize()
-                .padding(start = 16.dp, end = 6.dp),
+                .padding(start = 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -485,20 +509,34 @@ private fun TvQueryField(keyword: String) {
                 modifier = Modifier.size(24.dp),
                 tint = scheme.onSurfaceVariant,
             )
-            Text(
-                buildAnnotatedString {
-                    append(keyword)
-                    withStyle(SpanStyle(color = scheme.primary)) { append("|") }
-                    if (keyword.isEmpty()) {
-                        withStyle(SpanStyle(color = scheme.onSurfaceVariant)) { append(placeholder) }
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                style = TextStyle(fontSize = 16.sp, lineHeight = 22.sp),
-                color = scheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (keyword.isEmpty()) {
+                    Text(
+                        placeholder,
+                        style = TextStyle(fontSize = 16.sp, lineHeight = 22.sp),
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                BasicTextField(
+                    value = keyword,
+                    onValueChange = onKeywordChange,
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (it.isFocused) keyboard?.show()
+                        },
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 16.sp, lineHeight = 22.sp, color = scheme.onSurface),
+                    cursorBrush = SolidColor(scheme.primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        keyboard?.hide()
+                        onSearch()
+                    }),
+                )
+            }
         }
     }
 }

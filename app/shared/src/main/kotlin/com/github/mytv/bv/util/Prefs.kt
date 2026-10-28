@@ -435,6 +435,15 @@ object Prefs {
             dsm.editPreference(PrefKeys.prefShowPlayerLogsKey, value)
         }
 
+    /** 播放器左下角显示调试信息（时间 / 分辨率 / 码率 / 编码），默认关闭 */
+    var showDebugInfo: Boolean
+        get() = runBlocking {
+            dsm.getPreferenceFlow(PrefKeys.prefShowDebugInfoRequest).first()
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefShowDebugInfoKey, value)
+        }
+
     /** 使用空降助手标注自动跳过 UP 推广/赞助片段，默认关闭 */
     var skipSponsorSegments: Boolean
         get() = runBlocking {
@@ -587,6 +596,7 @@ object PrefKeys {
     val prefPlayerSkipSilenceKey = booleanPreferencesKey("player_skip_silence")
     val prefSkipPgcIntroOutroKey = booleanPreferencesKey("skip_pgc_intro_outro")
     val prefShowPlayerLogsKey = booleanPreferencesKey("show_player_logs")
+    val prefShowDebugInfoKey = booleanPreferencesKey("show_debug_info")
     val prefSkipSponsorSegmentsKey = booleanPreferencesKey("skip_sponsor_segments")
     val prefPlayerLongPressActionKey = intPreferencesKey("player_long_press_action")
     val prefPlayerLongPressSpeedKey = floatPreferencesKey("player_long_press_speed")
@@ -667,6 +677,7 @@ object PrefKeys {
     val prefPlayerSkipSilenceRequest = PreferenceRequest(prefPlayerSkipSilenceKey, false)
     val prefSkipPgcIntroOutroRequest = PreferenceRequest(prefSkipPgcIntroOutroKey, false)
     val prefShowPlayerLogsRequest = PreferenceRequest(prefShowPlayerLogsKey, true)
+    val prefShowDebugInfoRequest = PreferenceRequest(prefShowDebugInfoKey, false)
     val prefSkipSponsorSegmentsRequest = PreferenceRequest(prefSkipSponsorSegmentsKey, false)
     val prefPlayerLongPressActionRequest =
         PreferenceRequest(prefPlayerLongPressActionKey, PlayerLongPressAction.SpeedUp.ordinal)

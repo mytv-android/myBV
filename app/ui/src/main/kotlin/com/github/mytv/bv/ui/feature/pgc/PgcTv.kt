@@ -1,6 +1,7 @@
 package com.github.mytv.bv.ui.feature.pgc
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,28 +34,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import dev.aaa1115910.biliapi.entity.CarouselData
 import dev.aaa1115910.biliapi.entity.pgc.PgcItem
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
+import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PosterCard
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.TvBackdrop
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
+import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
@@ -78,20 +88,42 @@ internal fun PgcTv(nav: NavController, state: PgcUiState) {
     val featured = feed.featured
     val type = state.type
     val model = state.model
-    val current = if (featured.isEmpty()) null else featured[model.featuredIndex(type) % featured.size]
+    // 轮播接口失败（HTML 解析失败 / 风控）时用热门数据兜底，精选区不再整块空掉
+    val heroItems = if (featured.isNotEmpty()) {
+        featured
+    } else {
+        feed.hot.take(10).map {
+            CarouselData.CarouselItem(
+                cover = it.cover,
+                title = it.title,
+                seasonId = it.seasonId,
+                episodeId = it.episodeId.takeIf { id -> id > 0 },
+            )
+        }
+    }
+    val current = if (heroItems.isEmpty()) null else heroItems[model.featuredIndex(type) % heroItems.size]
+
+    // 精选为空但热门已有数据时，自动重试一次轮播接口
+    LaunchedEffect(type, featured.isEmpty()) {
+        if (featured.isEmpty() && feed.hot.isNotEmpty()) {
+            delay(2_500L)
+            if (featured.isEmpty()) feed.vm.retryCarousel()
+        }
+    }
 
     val playRequester = remember { FocusRequester() }
     val chipRequesters = remember { List(PgcTabs.size) { FocusRequester() } }
     var entryPending by remember { mutableStateOf(true) }
     var focusInInfo by remember { mutableStateOf(false) }
+    var focusInCarousel by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    // 精选每 8 秒切换到下一条；焦点在信息区时不切换
-    LaunchedEffect(type, focusInInfo, featured.size) {
-        if (focusInInfo || featured.size < 2) return@LaunchedEffect
+    // 精选每 8 秒切换到下一条；焦点在信息区 / 海报轮播上时不切换
+    LaunchedEffect(type, focusInInfo, focusInCarousel, heroItems.size) {
+        if (focusInInfo || focusInCarousel || heroItems.size < 2) return@LaunchedEffect
         while (true) {
             delay(8_000L)
-            model.setFeaturedIndex(type, (model.featuredIndex(type) + 1) % featured.size)
+            model.setFeaturedIndex(type, (model.featuredIndex(type) + 1) % heroItems.size)
         }
     }
 
@@ -156,6 +188,17 @@ internal fun PgcTv(nav: NavController, state: PgcUiState) {
                         .width(420.dp)
                         .onFocusChanged { focusInInfo = it.hasFocus },
                 )
+                TvPosterCarousel(
+                    items = heroItems,
+                    currentIndex = model.featuredIndex(type) % heroItems.size,
+                    onSelect = { model.setFeaturedIndex(type, it) },
+                    onOpen = { nav.openFeatured(it) },
+                    onFocusChanged = { focusInCarousel = it },
+                    modifier = Modifier
+                        .padding(start = 560.dp, top = 78.dp, end = 48.dp)
+                        .height(210.dp)
+                        .fillMaxWidth(),
+                )
             }
 
             if (featured.isEmpty() && feed.hot.isEmpty() && feed.ranks.isEmpty()) {
@@ -175,6 +218,83 @@ internal fun PgcTv(nav: NavController, state: PgcUiState) {
                 ) {
                     TvPgcRows(nav, state, names[state.tab], listState)
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 精选海报轮播：信息区右侧一排 3:4 海报，跟随 [currentIndex] 自动滚动；
+ * 聚焦某张海报时同步精选信息，确认键打开详情。
+ */
+@Composable
+private fun TvPosterCarousel(
+    items: List<CarouselData.CarouselItem>,
+    currentIndex: Int,
+    onSelect: (Int) -> Unit,
+    onOpen: (CarouselData.CarouselItem) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    // 用户聚焦海报时只同步信息，不再把该海报滚到最前，避免抢焦点
+    var skipNextScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(currentIndex, items.size) {
+        if (items.isEmpty()) return@LaunchedEffect
+        if (skipNextScroll) {
+            skipNextScroll = false
+            return@LaunchedEffect
+        }
+        runCatching {
+            listState.animateScrollToItem(currentIndex.coerceIn(0, items.lastIndex))
+        }
+    }
+    LazyRow(
+        state = listState,
+        modifier = modifier.onFocusChanged { onFocusChanged(it.hasFocus) },
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(end = 24.dp),
+    ) {
+        itemsIndexed(
+            items = items,
+            key = { index, item -> "${item.seasonId}-${item.episodeId}-$index" },
+        ) { index, item ->
+            Box(
+                Modifier
+                    .width(158.dp)
+                    .height(210.dp)
+                    .bvFocus(scale = 1.06f, corner = 18.dp)
+                    .onFocusChanged {
+                        if (it.isFocused && index != currentIndex) {
+                            skipNextScroll = true
+                            onSelect(index)
+                        }
+                    }
+                    .clickable { onOpen(item) }
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            ) {
+                AsyncImage(
+                    model = item.cover,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                CinemaScrim()
+                Text(
+                    item.title,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp),
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

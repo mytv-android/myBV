@@ -83,6 +83,8 @@
     <string name="settings_play_skip_sponsor_segments_desc">使用空降助手网友标注，自动跳过 UP 主推广与赞助片段（仅普通视频）</string>
     <string name="settings_play_show_player_logs">显示播放器加载日志</string>
     <string name="settings_play_show_player_logs_desc">进入视频时在左下角显示加载、弹幕初始化等状态日志</string>
+    <string name="settings_play_show_debug_info">显示播放器调试信息</string>
+    <string name="settings_play_show_debug_info_desc">在播放器左上角显示时间、分辨率、码率与编码；播放菜单里也能随时切换</string>
     <string name="settings_play_long_press_action">长按确认键行为（电视）</string>
     <string name="settings_play_long_press_speed">长按加速倍速</string>
 

@@ -1975,13 +1975,16 @@ object BiliHttpApi {
         type: Long,
         root: Long,
         pageSize: Int = 10,
-        pageNumber: Int = 1
+        pageNumber: Int = 1,
+        sessData: String? = null,
+        buvid3: String? = null
     ): BiliResponse<CommentReplyData> = client.get("/x/v2/reply/reply") {
         parameter("oid", oid)
         parameter("type", type)
         parameter("root", root)
         parameter("ps", pageSize)
         parameter("pn", pageNumber)
+        sessData?.let { header("Cookie", "SESSDATA=$it;buvid3=${buvid3.orEmpty()};") }
     }.body()
 
     suspend fun getSeasonIdByAvid(

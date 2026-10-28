@@ -64,6 +64,6 @@ fun DynamicScreen(nav: NavController) {
             DeviceLayout.Tablet -> DynamicTablet(state, actions)
             DeviceLayout.Tv -> DynamicTv(state, actions)
         }
-        if (layout != DeviceLayout.Tv) CommentPicturePreviewer(pictures)
+        CommentPicturePreviewer(pictures)
     }
 }

@@ -8,6 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -96,6 +98,7 @@ internal fun BvPlayerHost(
     val skipPgcIntroOutro = remember { Prefs.skipPgcIntroOutro }
     val skipSponsorSegments = remember { Prefs.skipSponsorSegments }
     val showPlayerLogs = remember { Prefs.showPlayerLogs }
+    var showDebugInfo by remember { mutableStateOf(Prefs.showDebugInfo) }
 
     // 旧播放页 onPause：暂停视频（弹幕引擎通过 isPlayingProvider 跟随，无需单独暂停）
     DisposableEffect(lifecycleOwner, videoPlayer) {
@@ -185,6 +188,7 @@ internal fun BvPlayerHost(
                     skipSponsorSegments = skipSponsorSegments,
                     sponsorSegments = playerVm.sponsorSegments,
                     showPlayerLogs = showPlayerLogs,
+                    showDebugInfo = showDebugInfo,
                 ),
                 LocalVideoPlayerDanmakuMasksData provides VideoPlayerDanmakuMasksData(
                     danmakuMasks = playerVm.danmakuMasks,
@@ -330,6 +334,10 @@ internal fun BvPlayerHost(
                     onPlayModeChange = { playMode ->
                         PreferenceWrites.enqueue { Prefs.defaultPlayMode = playMode }
                         playerVm.currentPlayMode = playMode
+                    },
+                    onShowDebugInfoChange = { show ->
+                        showDebugInfo = show
+                        PreferenceWrites.enqueue { Prefs.showDebugInfo = show }
                     },
                     modifier = modifier,
                     isFullScreen = isFullScreen,

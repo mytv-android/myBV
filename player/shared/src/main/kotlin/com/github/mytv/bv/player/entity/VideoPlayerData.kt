@@ -136,6 +136,8 @@ data class VideoPlayerConfigData(
     val sponsorSegments: List<SponsorSegment> = emptyList(),
     /** 是否在左下角显示播放器加载日志 */
     val showPlayerLogs: Boolean = true,
+    /** 是否显示调试信息（时间 / 分辨率 / 码率 / 编码） */
+    val showDebugInfo: Boolean = false,
 )
 
 data class VideoPlayerDanmakuMasksData(

@@ -100,6 +100,7 @@ import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
 import com.github.mytv.bv.ui.navigation.LocalTvRailReveal
 import com.github.mytv.bv.viewmodel.ShortsViewModel
+import dev.aaa1115910.biliapi.entity.Picture
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -133,6 +134,7 @@ internal fun ShortsTv(
     pool: ShortsPlayerPool,
     comments: ShortsComments,
     actions: ShortsActions,
+    onPictureClick: (List<Picture>, Int) -> Unit,
 ) {
     val items = vm.items
     var index by rememberSaveable { mutableIntStateOf(vm.currentIndex) }
@@ -572,6 +574,7 @@ internal fun ShortsTv(
                                 .weight(1f),
                             tv = true,
                             firstItemRequester = panelRequester,
+                            onPictureClick = onPictureClick,
                         )
                     }
                 }
