@@ -716,8 +716,8 @@ object PrefKeys {
     val prefCoverThemeKey = booleanPreferencesKey("bv_cover_theme")
     val prefReduceMotionKey = booleanPreferencesKey("bv_reduce_motion")
 
-    val prefThemeSourceRequest = PreferenceRequest(prefThemeSourceKey, ThemeSource.Custom.ordinal)
-    val prefSeedColorRequest = PreferenceRequest(prefSeedColorKey, 0xFFFB7299.toInt())
+    val prefThemeSourceRequest = PreferenceRequest(prefThemeSourceKey, ThemeSource.Content.ordinal)
+    val prefSeedColorRequest = PreferenceRequest(prefSeedColorKey, 0xFF23ADE5.toInt())
     val prefContentSeedRequest = PreferenceRequest(prefContentSeedKey, 0)
     val prefPaletteStyleRequest = PreferenceRequest(prefPaletteStyleKey, PaletteStyle.Vibrant.ordinal)
     val prefContrastRequest = PreferenceRequest(prefContrastKey, 0f)
