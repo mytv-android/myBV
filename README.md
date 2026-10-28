@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="app/shared/src/main/res/drawable/ic_banner.webp" style="border-radius: 24px; margin-top: 32px;"/>
+<img src="artwork/bv-tv-banner.png" alt="myBV" width="640" style="border-radius: 24px; margin-top: 32px;"/>
 
 # myBV
 
