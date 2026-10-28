@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.SurfaceTexture
-import android.opengl.GLES11
+import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Handler
@@ -211,7 +211,7 @@ class BvGLSurfaceView(context: Context) : GLSurfaceView(context), GLSurfaceView.
         GLES20.glUniformMatrix4fv(uTexMatrixLoc, 1, false, texMatrix, 0)
         GLES20.glUniform1i(uTextureLoc, 0)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11.GL_TEXTURE_EXTERNAL_OES, textureId)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
 
         positionBuffer.position(0)
         GLES20.glVertexAttribPointer(aPositionLoc, 2, GLES20.GL_FLOAT, false, 0, positionBuffer)
@@ -225,10 +225,10 @@ class BvGLSurfaceView(context: Context) : GLSurfaceView(context), GLSurfaceView.
 
         GLES20.glDisableVertexAttribArray(aPositionLoc)
         GLES20.glDisableVertexAttribArray(aTextureCoordLoc)
-        GLES20.glBindTexture(GLES11.GL_TEXTURE_EXTERNAL_OES, 0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
     }
 
-    override fun onSurfaceDestroyed(gl: GL10?) {
+    private fun onSurfaceDestroyed(gl: GL10?) {
         // EGL 输出面已销毁（正常流程随后就是 onDetachedFromWindow）。
         // 这里只删 GL 对象；Surface / SurfaceTexture 先留着——提前释放会让解码器继续往一块
         // 已销毁的 BufferQueue 写帧。真正的释放在 onDetachedFromWindow：先把播放器的
@@ -331,20 +331,20 @@ class BvGLSurfaceView(context: Context) : GLSurfaceView(context), GLSurfaceView.
         GLES20.glGenTextures(1, ids, 0)
         check(ids[0] != 0) { "glGenTextures failed" }
         val id = ids[0]
-        GLES20.glBindTexture(GLES11.GL_TEXTURE_EXTERNAL_OES, id)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, id)
         GLES20.glTexParameterf(
-            GLES11.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR.toFloat()
+            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR.toFloat()
         )
         GLES20.glTexParameterf(
-            GLES11.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR.toFloat()
+            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR.toFloat()
         )
         GLES20.glTexParameteri(
-            GLES11.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE
+            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE
         )
         GLES20.glTexParameteri(
-            GLES11.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE
+            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE
         )
-        GLES20.glBindTexture(GLES11.GL_TEXTURE_EXTERNAL_OES, 0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
         return id
     }
 
