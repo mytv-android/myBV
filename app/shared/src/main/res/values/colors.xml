@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Mid stop of the launcher gradient (drawable/ic_launcher_background); the splash ground. -->
+    <color name="ic_launcher_background">#D93B76</color>
     <color name="ic_banner_background">#FFFFFF</color>
 </resources>

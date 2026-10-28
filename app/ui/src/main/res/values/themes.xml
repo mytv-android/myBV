@@ -2,6 +2,7 @@
 
     <style name="Theme.BV.Main" parent="Theme.SplashScreen">
         <item name="postSplashScreenTheme">@style/Theme.BV.Main.App</item>
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
 

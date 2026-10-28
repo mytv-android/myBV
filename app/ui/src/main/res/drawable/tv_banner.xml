@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV banner, 320 x 180 dp: the launcher icon's gradient under tv_banner_content.
+     Generated from my-series-brand/index.html by my-series-brand/tools/build_assets.py;
+     do not edit by hand. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background" />
+    <item android:drawable="@drawable/tv_banner_content" />
+</layer-list>
