@@ -48,6 +48,16 @@ GitHub Actions 使用以下 secrets（与 myMusic 相同）：
 ./gradlew assembleDefaultRelease # 正式
 ```
 
+## 参考项目与许可证
+
+myBV 参考并改写了以下上游项目的代码，三者均使用 MIT 许可证：
+
+- [aaa1115910/bv](https://github.com/aaa1115910/bv) — [MIT License](https://github.com/aaa1115910/bv/blob/develop/LICENSE)
+- [Frost819/newBV](https://github.com/Frost819/newBV) — [MIT License](https://github.com/Frost819/newBV/blob/main/LICENSE)
+- [fantasytyx/bv](https://github.com/fantasytyx/bv) — [MIT License](https://github.com/fantasytyx/bv/blob/develop/LICENSE)
+
+各项目的版权归其原作者所有。
+
 ## License
 
 [MIT](LICENSE) © aaa1115910
