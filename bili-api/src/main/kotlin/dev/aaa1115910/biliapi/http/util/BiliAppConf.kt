@@ -1,6 +1,10 @@
 package dev.aaa1115910.biliapi.http.util
 
 object BiliAppConf {
+    /** 仅使用 IPv4：由应用设置写入，[BiliDns] 与 gRPC 通道构建读取。 */
+    @Volatile
+    var ipv4Only: Boolean = false
+
     const val GRPC_HOST = "grpc.biliapi.net"
     const val GRPC_PORT = 443
     const val APP_ID = 5

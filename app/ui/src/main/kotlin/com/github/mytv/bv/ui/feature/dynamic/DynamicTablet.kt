@@ -96,7 +96,8 @@ internal fun DynamicTablet(state: DynamicPageState, actions: DynamicActions) {
                         EmptyOrLoading(
                             loading = state.loading || state.pulling,
                             modifier = Modifier.fillMaxSize(),
-                            message = stringResource(R.string.dynamic_empty),
+                            // 加载失败显示失败原因，避免把失败误报成「还没有动态」
+                            message = state.loadError ?: stringResource(R.string.dynamic_empty),
                             onRetry = state::loadMore,
                         )
                     } else {

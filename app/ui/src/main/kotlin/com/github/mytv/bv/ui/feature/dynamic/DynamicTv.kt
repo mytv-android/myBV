@@ -59,8 +59,9 @@ internal fun DynamicTv(state: DynamicPageState, actions: DynamicActions) {
     var entryPending by remember { mutableStateOf(true) }
 
     val items = state.items
+    // 与手机端一致：文字动态没有封面也照常显示（卡片封面位显示占位色块 + 标题）
     val groups = remember(items) {
-        val byDate = items.asSequence().filter { it.coverUrl() != null }.groupBy { it.dateGroup() }
+        val byDate = items.groupBy { it.dateGroup() }
         DynamicDateGroup.entries.mapNotNull { group -> byDate[group]?.let { group to it } }
     }
 
@@ -164,7 +165,8 @@ internal fun DynamicTv(state: DynamicPageState, actions: DynamicActions) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(start = 96.dp),
-                        message = stringResource(R.string.dynamic_empty),
+                        // 加载失败显示失败原因，避免把失败误报成「还没有动态」
+                        message = state.loadError ?: stringResource(R.string.dynamic_empty),
                         onRetry = state::loadMore,
                     )
                 } else {

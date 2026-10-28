@@ -1,5 +1,6 @@
 package com.github.mytv.bv.ui.feature.video
 
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -49,6 +54,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.BvInputMode
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
+import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
@@ -228,7 +234,11 @@ internal fun RepliesSheet(
                         comment = root,
                         modifier = if (touchInput) Modifier else Modifier
                             .focusRequester(firstRequester)
-                            .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                            .bvFocus(scale = 1f, corner = 16.dp)
+                            // 电视端确认键打开根评论的图片预览
+                            .clickable(
+                                onClick = commentCardAction(root, onReplyClick = null, onPictureClick = onShowPictures)
+                            )
                             .padding(8.dp),
                         maxLines = Int.MAX_VALUE,
                         onPictureClick = onShowPictures,
@@ -279,7 +289,11 @@ internal fun RepliesSheet(
                 CommentItem(
                     comment = reply,
                     modifier = if (touchInput) Modifier else Modifier
-                        .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                        .bvFocus(scale = 1f, corner = 16.dp)
+                        // 电视端确认键打开图片预览
+                        .clickable(
+                            onClick = commentCardAction(reply, onReplyClick = null, onPictureClick = onShowPictures)
+                        )
                         .padding(8.dp),
                     onPictureClick = onShowPictures,
                     onLongClick = if (touchInput) {
@@ -366,6 +380,69 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
                 rememberAsyncImagePainter(request)
             },
         )
+    }
+}
+
+/**
+ * 图片预览宿主：包住页面内容（预览层是它的兄弟覆盖层，同时它是内容里焦点节点的祖先）。
+ * 预览打开期间在预览阶段拦截遥控器按键：左右翻页、确认关闭，其余方向 / 菜单键吞掉——
+ * 不拦截的话这些键会漏给背后的播放器 / 页面，在预览后面快进甚至闪退；返回键不拦，仍走
+ * PredictiveBackHandler 的关闭流程。
+ */
+@Composable
+internal fun CommentPicturePreviewerHost(
+    state: CommentPictures,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val previewer = state.previewer
+    val scope = rememberCoroutineScope()
+    Box(
+        modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (!previewer.visible && previewer.visibleTarget != true) return@onPreviewKeyEvent false
+                val keyCode = event.nativeKeyEvent.keyCode
+                val left = keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT ||
+                    keyCode == AndroidKeyEvent.KEYCODE_MEDIA_REWIND
+                val right = keyCode == AndroidKeyEvent.KEYCODE_DPAD_RIGHT ||
+                    keyCode == AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD
+                val center = keyCode == AndroidKeyEvent.KEYCODE_DPAD_CENTER ||
+                    keyCode == AndroidKeyEvent.KEYCODE_ENTER ||
+                    keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER ||
+                    keyCode == 763
+                val swallow = left || right || center ||
+                    keyCode == AndroidKeyEvent.KEYCODE_DPAD_UP ||
+                    keyCode == AndroidKeyEvent.KEYCODE_DPAD_DOWN ||
+                    keyCode == AndroidKeyEvent.KEYCODE_MENU
+                when (event.type) {
+                    KeyEventType.KeyDown -> when {
+                        // 翻页：到头就停在当前页
+                        left || right -> {
+                            val target = previewer.currentPage + if (right) 1 else -1
+                            if (target in 0 until state.pictures.size) {
+                                scope.launch { runCatching { previewer.animateScrollToPage(target) } }
+                            }
+                            true
+                        }
+
+                        center -> {
+                            if (previewer.canClose) scope.launch { runCatching { previewer.close() } }
+                            true
+                        }
+
+                        swallow -> true
+                        else -> false
+                    }
+
+                    // 抬起也吞掉，避免背后的播放器把确认键抬起当播放 / 暂停
+                    KeyEventType.KeyUp -> swallow
+                    else -> false
+                }
+            }
+    ) {
+        content()
+        CommentPicturePreviewer(state)
     }
 }
 

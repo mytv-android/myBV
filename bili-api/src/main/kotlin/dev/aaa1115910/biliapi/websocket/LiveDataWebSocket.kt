@@ -10,6 +10,7 @@ import dev.aaa1115910.biliapi.http.entity.live.OnlineRankCountEvent
 import dev.aaa1115910.biliapi.http.entity.live.PreparingEvent
 import dev.aaa1115910.biliapi.http.entity.live.RoomRealTimeMessageUpdateEvent
 import dev.aaa1115910.biliapi.http.entity.live.WatchedChangeEvent
+import dev.aaa1115910.biliapi.http.util.BiliDns
 import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.http.util.brotliDecompress
 import dev.aaa1115910.biliapi.http.util.zlibDecompress
@@ -71,6 +72,8 @@ object LiveDataWebSocket {
         // 配 pingInterval 会在 30s 后误判超时并每 60s 断线重连
         OkHttpClient.Builder()
             .pingInterval(0, TimeUnit.MILLISECONDS)
+            // 仅 IPv4 开关对弹幕服务器同样生效
+            .dns(BiliDns)
             .build()
     }
 

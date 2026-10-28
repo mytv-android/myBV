@@ -32,7 +32,7 @@ import com.github.mytv.bv.entity.proxy.ProxyArea
 import com.github.mytv.bv.player.danmaku.DanmakuView
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
-import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
 import com.github.mytv.bv.ui.feature.video.show
 import com.github.mytv.bv.ui.navigation.PlayerRoute
@@ -140,10 +140,11 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
         }
     }
 
-    Box(
-        Modifier
+    CommentPicturePreviewerHost(
+        state = commentPictures,
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black),
     ) {
         Box(
             Modifier
@@ -194,7 +195,6 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
                 },
             )
         }
-        CommentPicturePreviewer(commentPictures)
     }
 }
 

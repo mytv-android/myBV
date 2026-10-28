@@ -42,12 +42,35 @@ import coil.compose.AsyncImage
 import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.reply.Comment
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.adaptive.BvInputMode
+import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 
 /**
+ * 电视端评论卡确认键行为：卡片整体聚焦（图片、「回复 N」等内部小按钮方向键够不到），
+ * 确认键按可用性挑最有用的动作——先开楼中楼（里面能看到根评论全文），其次图片预览，
+ * 都没有时执行 [fallback]（如展开长评论文本）。
+ */
+fun commentCardAction(
+    comment: Comment,
+    onReplyClick: (() -> Unit)?,
+    onPictureClick: ((pictures: List<Picture>, index: Int) -> Unit)?,
+    fallback: (() -> Unit)? = null,
+): () -> Unit = {
+    when {
+        comment.repliesCount > 0 && onReplyClick != null -> onReplyClick()
+        comment.pictures.isNotEmpty() && onPictureClick != null -> onPictureClick(comment.pictures, 0)
+        else -> fallback?.invoke()
+    }
+}
+
+/**
  * 原型 `comment()`：Sunny 头像 30 + 名字（12sp Bold onSurfaceVariant）+ 正文（13sp 行高 1.5，表情内联）
  * + 图片 + 底行（点赞 · 时间 · 回复）。
+ *
+ * 方向键模式下内部小按钮不再各自可聚焦/可点：整条评论由调用方包成一张可聚焦的卡，
+ * 确认键走 [commentCardAction]，否则焦点永远进不了卡片内部。
  */
 @Composable
 fun CommentItem(
@@ -65,6 +88,7 @@ fun CommentItem(
     onLongClick: (() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val dpad = LocalDeviceProfile.current.input == BvInputMode.DPad
     Row(
         modifier
             .fillMaxWidth()
@@ -111,7 +135,7 @@ fun CommentItem(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            CommentText(comment.content, comment.emotes, maxLines, textExpanded, onToggleTextExpand)
+            CommentText(comment.content, comment.emotes, maxLines, textExpanded, onToggleTextExpand, dpad)
             if (comment.pictures.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     comment.pictures.take(3).forEachIndexed { index, picture ->
@@ -125,7 +149,7 @@ fun CommentItem(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .then(
-                                    if (onPictureClick != null) Modifier
+                                    if (onPictureClick != null && !dpad) Modifier
                                         .bvFocus(scale = 1.06f, corner = 10.dp)
                                         .clickable { onPictureClick(comment.pictures, index) }
                                     else Modifier
@@ -157,7 +181,7 @@ fun CommentItem(
                 }
                 Text(
                     replyText,
-                    modifier = if (onReplyClick != null) {
+                    modifier = if (onReplyClick != null && !dpad) {
                         Modifier
                             .bvFocus(scale = 1.05f, corner = 8.dp, addFocusable = true)
                             .clickable(onClick = onReplyClick)
@@ -179,6 +203,7 @@ private fun CommentText(
     maxLines: Int,
     textExpanded: Boolean?,
     onToggleTextExpand: (() -> Unit)?,
+    dpad: Boolean,
 ) {
     val emoteNames = remember(emotes) { emotes.map { it.text }.toSet() }
     val inline = remember(emotes) {
@@ -212,7 +237,7 @@ private fun CommentText(
     if (overflow) {
         Text(
             stringResource(if (expanded) R.string.ds_collapse else R.string.ds_expand),
-            modifier = Modifier
+            modifier = if (dpad) Modifier else Modifier
                 .bvFocus(scale = 1.05f, corner = 8.dp, addFocusable = true)
                 .clickable {
                     if (textExpanded == null) internalExpanded = !internalExpanded

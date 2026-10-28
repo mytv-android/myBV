@@ -362,6 +362,11 @@ object Prefs {
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefEnabelProxyRequest).first() }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefEnableProxyKey, value) }
 
+    /** 仅使用 IPv4：过滤 AAAA 解析，规避部分盒子 IPv6 路由异常 */
+    var ipv4Only: Boolean
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefIpv4OnlyRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefIpv4OnlyKey, value) }
+
     var proxyHttpServer: String
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefProxyHttpServerRequest).first() }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefProxyHttpServerKey, value) }
@@ -600,6 +605,7 @@ object PrefKeys {
     val prefRefreshTokenKey = stringPreferencesKey("refresh_token")
     val prefApiTypeKey = intPreferencesKey("api_type")
     val prefEnableProxyKey = booleanPreferencesKey("enable_proxy")
+    val prefIpv4OnlyKey = booleanPreferencesKey("ipv4_only")
     val prefProxyHttpServerKey = stringPreferencesKey("proxy_http_server")
     val prefProxyGRPCServerKey = stringPreferencesKey("proxy_grpc_server")
     val prefLastVersionCodeKey = intPreferencesKey("last_version_code")
@@ -681,6 +687,7 @@ object PrefKeys {
     val prefRefreshTokenRequest = PreferenceRequest(prefRefreshTokenKey, "")
     val prefApiTypeRequest = PreferenceRequest(prefApiTypeKey, 0)
     val prefEnabelProxyRequest = PreferenceRequest(prefEnableProxyKey, false)
+    val prefIpv4OnlyRequest = PreferenceRequest(prefIpv4OnlyKey, false)
     val prefProxyHttpServerRequest = PreferenceRequest(prefProxyHttpServerKey, "")
     val prefProxyGRPCServerRequest = PreferenceRequest(prefProxyGRPCServerKey, "")
     val prefLastVersionCodeRequest = PreferenceRequest(prefLastVersionCodeKey, 0)

@@ -1,6 +1,5 @@
 package com.github.mytv.bv.ui.feature.dynamic
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,7 +12,7 @@ import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.user.DynamicItem
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
-import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
 import com.github.mytv.bv.ui.feature.video.show
 import com.github.mytv.bv.ui.navigation.LoginRoute
@@ -58,12 +57,11 @@ fun DynamicScreen(nav: NavController) {
         )
     }
 
-    Box(Modifier.fillMaxSize()) {
+    CommentPicturePreviewerHost(state = pictures, modifier = Modifier.fillMaxSize()) {
         when (layout) {
             DeviceLayout.Phone -> DynamicPhone(state, actions)
             DeviceLayout.Tablet -> DynamicTablet(state, actions)
             DeviceLayout.Tv -> DynamicTv(state, actions)
         }
-        CommentPicturePreviewer(pictures)
     }
 }

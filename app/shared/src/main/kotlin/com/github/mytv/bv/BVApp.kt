@@ -15,6 +15,7 @@ import de.schnettler.datastore.manager.DataStoreManager
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.BiliHttpProxyApi
 import dev.aaa1115910.biliapi.http.util.BiliAppConf
+import dev.aaa1115910.biliapi.http.util.BiliDns
 import dev.aaa1115910.biliapi.http.util.BiliWebConf
 import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.repositories.AuthRepository
@@ -36,6 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.KoinApplication
@@ -67,6 +69,9 @@ class BVApp : Application() {
         LegacyDataMigrator.prepareDatabase(this)
         HandroidLoggerAdapter.DEBUG = BuildConfig.DEBUG
         dataStoreManager = DataStoreManager(applicationContext.dataStore)
+        // 仅 IPv4 开关要在构建 gRPC 通道 / 预热 HTTP client 之前就位
+        BiliAppConf.ipv4Only = Prefs.ipv4Only
+        PlayerHttpClient.ipv4Only = Prefs.ipv4Only
         initImageLoader()
         if (Prefs.blacklistUser) {
             R.string.blacklist_user_toast.toast(context)
@@ -97,10 +102,16 @@ class BVApp : Application() {
     /**
      * 全局 Coil ImageLoader：封面等图片到达时 150ms 淡入（内存缓存命中不会重复淡入），
      * 避免图片突兀跳出造成「应用反应慢」的观感。内存 / 磁盘缓存都用 Coil 默认策略。
+     * OkHttpClient 走 [BiliDns]，仅 IPv4 开关对图片加载同样生效。
      */
     private fun initImageLoader() {
         Coil.setImageLoader(
             ImageLoader.Builder(this)
+                .okHttpClient {
+                    OkHttpClient.Builder()
+                        .dns(BiliDns)
+                        .build()
+                }
                 .crossfade(150)
                 .build()
         )

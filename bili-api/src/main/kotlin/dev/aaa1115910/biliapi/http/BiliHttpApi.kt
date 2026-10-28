@@ -76,6 +76,7 @@ import dev.aaa1115910.biliapi.http.entity.video.VideoShot
 import dev.aaa1115910.biliapi.http.entity.web.NavResponseData
 import dev.aaa1115910.biliapi.http.plugins.BiliUserAgent
 import dev.aaa1115910.biliapi.http.util.BiliAppConf
+import dev.aaa1115910.biliapi.http.util.BiliDns
 import dev.aaa1115910.biliapi.http.util.encApiSign
 import dev.aaa1115910.biliapi.http.util.skipAddBuvid3Cookie
 import io.ktor.client.HttpClient
@@ -174,6 +175,12 @@ object BiliHttpApi {
 
     private fun createClient(): HttpClient {
         return HttpClient(OkHttp) {
+            // 仅 IPv4 时过滤 AAAA 记录，见 BiliDns
+            engine {
+                config {
+                    dns(BiliDns)
+                }
+            }
             BiliUserAgent()
             install(ContentNegotiation) {
                 json(json)

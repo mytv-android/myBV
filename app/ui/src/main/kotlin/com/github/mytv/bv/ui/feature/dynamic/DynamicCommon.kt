@@ -255,6 +255,9 @@ internal class DynamicPageState(
     val isLogin: Boolean get() = vm.isLogin
     val loading: Boolean get() = vm.loadingAll
 
+    /** 最近一次加载失败的信息；为 null 且列表为空时才是「真的没有动态」。 */
+    val loadError: String? get() = vm.allError
+
     /** 头像行：关注列表前 20 个（FollowViewModel 的顺序）。 */
     val ups: List<FollowedUser> by derivedStateOf { follow.followedUsers.take(20) }
 

@@ -45,6 +45,9 @@ class DynamicViewModel(
     private var currentAllPage = 0
     var loadingAll by mutableStateOf(false)
     var allHasMore by mutableStateOf(true)
+    /** 最近一次「全部动态」加载的失败信息；成功后清空。列表页据此区分「加载失败」和「真的没有动态」。 */
+    var allError by mutableStateOf<String?>(null)
+        private set
     private var allHistoryOffset: String? = null
     private var allUpdateBaseline: String? = null
 
@@ -131,30 +134,19 @@ class DynamicViewModel(
             allHistoryOffset = dynamicData.historyOffset
             allUpdateBaseline = dynamicData.updateBaseline
             allHasMore = dynamicData.hasMore
+            allError = null
 
             logger.fInfo { "Load dynamic all list page: ${currentAllPage},size: ${dynamicData.dynamics.size}" }
         }.onFailure {
             logger.fWarn { "Load dynamic all list failed: ${it.stackTraceToString()}" }
-            when (it) {
-                is AuthFailureException -> {
-                    withContext(Dispatchers.Main) {
-                        BVApp.context.getString(R.string.exception_auth_failure)
-                            .toast(BVApp.context)
-                    }
-                    logger.fInfo { "User auth failure" }
-                }
-
-                is RiskControlException -> {
-                    withContext(Dispatchers.Main) {
-                        "动态被风控拦截，请稍后重试".toast(BVApp.context)
-                    }
-                }
-
-                else -> {
-                    withContext(Dispatchers.Main) {
-                        "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
-                    }
-                }
+            allError = when (it) {
+                is AuthFailureException -> BVApp.context.getString(R.string.exception_auth_failure)
+                is RiskControlException -> "动态被风控拦截，请稍后重试"
+                else -> "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+            }
+            if (it is AuthFailureException) logger.fInfo { "User auth failure" }
+            withContext(Dispatchers.Main) {
+                allError!!.toast(BVApp.context)
             }
         }
         loadingAll = false
@@ -173,6 +165,7 @@ class DynamicViewModel(
         currentAllPage = 0
         loadingAll = false
         allHasMore = true
+        allError = null
         allHistoryOffset = null
     }
 }

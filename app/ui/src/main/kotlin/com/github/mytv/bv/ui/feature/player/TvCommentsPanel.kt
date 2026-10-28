@@ -49,6 +49,7 @@ import dev.aaa1115910.biliapi.entity.reply.CommentSort
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
+import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
@@ -215,6 +216,13 @@ internal fun TvCommentsPanel(
                         item(key = "replyRoot", contentType = "replyRoot") {
                             CommentItem(
                                 comment = rootComment,
+                                modifier = Modifier
+                                    .bvFocus(scale = 1f, corner = 16.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable(
+                                        onClick = commentCardAction(rootComment, onReplyClick = null, onPictureClick = onPictureClick)
+                                    )
+                                    .padding(8.dp),
                                 maxLines = Int.MAX_VALUE,
                                 onPictureClick = onPictureClick,
                             )
@@ -257,7 +265,8 @@ internal fun TvCommentsPanel(
                             }
                             CommentItem(
                                 comment = comment,
-                                // clickable 让遥控器确认键展开 / 收起长评论（短评论不溢出，切换无变化）
+                                // 确认键：有楼中楼开楼中楼，其次图片预览，都没有时展开 / 收起长评论
+                                // （卡片内部的「回复 N」/缩略图方向键够不到，动作统一收在卡片上）
                                 // onPreviewKeyEvent 捕获长按确认键：带链接的评论弹出二维码，无链接时保持原行为
                                 modifier = Modifier
                                     .bvFocus(scale = 1f, corner = 16.dp)
@@ -265,19 +274,25 @@ internal fun TvCommentsPanel(
                                     .onPreviewKeyEvent { event ->
                                         longPressGuard.handle(event, qrLinkOfComment) { qrLink = it }
                                     }
-                                    .clickable {
-                                        expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
-                                    }
+                                    .clickable(
+                                        onClick = commentCardAction(
+                                            comment,
+                                            onReplyClick = if (comment.repliesCount > 0) {
+                                                {
+                                                    commentVm.prepareReplies(comment)
+                                                    replyRoot = comment
+                                                    scope.launch { commentVm.refreshReplies() }
+                                                }
+                                            } else null,
+                                            onPictureClick = onPictureClick,
+                                            fallback = {
+                                                expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
+                                            },
+                                        )
+                                    )
                                     .padding(8.dp),
                                 maxLines = 8,
                                 onPictureClick = onPictureClick,
-                                onReplyClick = if (comment.repliesCount > 0) {
-                                    {
-                                        commentVm.prepareReplies(comment)
-                                        replyRoot = comment
-                                        scope.launch { commentVm.refreshReplies() }
-                                    }
-                                } else null,
                                 textExpanded = expandedComments[comment.rpid] == true,
                                 onToggleTextExpand = {
                                     expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
@@ -312,7 +327,7 @@ internal fun TvCommentsPanel(
     }
 }
 
-/** 楼中楼列表项：可聚焦用于遥控器滚动，长按确认键查看评论链接二维码。 */
+/** 楼中楼列表项：可聚焦用于遥控器滚动，确认键打开图片，长按确认键查看评论链接二维码。 */
 @Composable
 private fun ReplyItem(
     comment: Comment,
@@ -324,11 +339,12 @@ private fun ReplyItem(
     CommentItem(
         comment = comment,
         modifier = Modifier
-            .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+            .bvFocus(scale = 1f, corner = 16.dp)
             .clip(RoundedCornerShape(16.dp))
             .onPreviewKeyEvent { event ->
                 longPressGuard.handle(event, qrLink, onShowQrCode)
             }
+            .clickable(onClick = commentCardAction(comment, onReplyClick = null, onPictureClick = onPictureClick))
             .padding(8.dp),
         maxLines = Int.MAX_VALUE,
         onPictureClick = onPictureClick,

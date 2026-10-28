@@ -13,6 +13,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.BvIconButton
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
+import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
@@ -459,7 +461,11 @@ internal fun ShortsCommentList(
                         },
                         onPictureClick = onPictureClick,
                         modifier = if (tv) {
-                            Modifier.bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                            Modifier
+                                .bvFocus(scale = 1f, corner = 16.dp)
+                                .clickable(
+                                    onClick = commentCardAction(root, onReplyClick = null, onPictureClick = onPictureClick)
+                                )
                         } else {
                             Modifier
                         },
@@ -475,10 +481,21 @@ internal fun ShortsCommentList(
                     key = { _, comment -> comment.rpid },
                     contentType = { _, _ -> "comment" },
                 ) { index, comment ->
+                    val openReplies: (() -> Unit)? =
+                        if (root == null && comment.repliesCount > 0) {
+                            {
+                                replyRoot = comment
+                                comments.openReplies(comment)
+                            }
+                        } else null
                     val focusModifier = if (tv) {
                         Modifier
                             .then(if (index == 0 && firstItemRequester != null) Modifier.focusRequester(firstItemRequester) else Modifier)
-                            .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                            .bvFocus(scale = 1f, corner = 16.dp)
+                            // 确认键：开楼中楼 / 图片预览（卡片内部的小按钮方向键够不到）
+                            .clickable(
+                                onClick = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictureClick)
+                            )
                     } else {
                         Modifier
                     }
@@ -486,14 +503,7 @@ internal fun ShortsCommentList(
                         comment = comment,
                         modifier = focusModifier,
                         onPictureClick = onPictureClick,
-                        onReplyClick = if (root == null && comment.repliesCount > 0) {
-                            {
-                                replyRoot = comment
-                                comments.openReplies(comment)
-                            }
-                        } else {
-                            null
-                        },
+                        onReplyClick = if (!tv) openReplies else null,
                         onAvatarClick = if (!tv) {
                             { onOpenSpace(comment.member.mid) }
                         } else {

@@ -139,6 +139,7 @@ object LogCatcherUtil {
                     appendLine("Default Codec: ${Prefs.defaultVideoCodec.name}")
                     appendLine("Default Audio: ${Prefs.defaultAudio.name}")
                     appendLine("Enabled Proxy: ${Prefs.enableProxy}")
+                    appendLine("IPv4 Only: ${Prefs.ipv4Only}")
                 }.trimEnd()
             }.getOrNull()
         }

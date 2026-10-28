@@ -124,6 +124,8 @@
     <string name="settings_net_proxy_warning">请谨慎使用代理服务器，因为您的登录凭证将会发送至代理服务器，使用代理服务器所带来的一切后果均由用户自行承担</string>
     <string name="settings_net_cdn">优先使用官方 CDN</string>
     <string name="settings_net_cdn_desc">P(M)CDN 快走开</string>
+    <string name="settings_net_ipv4_only">仅使用 IPv4</string>
+    <string name="settings_net_ipv4_only_desc">接口、图片与视频连接只走 IPv4 地址；IPv6 路由异常（能登录但加载不出内容）时打开</string>
     <string name="settings_net_api">接口偏好</string>
     <string name="settings_net_tools">工具</string>
     <string name="settings_net_speed_test">网络测试</string>

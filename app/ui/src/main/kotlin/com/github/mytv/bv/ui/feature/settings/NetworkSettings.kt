@@ -29,8 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.aaa1115910.biliapi.entity.ApiType
 import dev.aaa1115910.biliapi.http.BiliHttpProxyApi
+import dev.aaa1115910.biliapi.http.util.BiliAppConf
 import dev.aaa1115910.biliapi.repositories.ChannelRepository
 import com.github.mytv.bv.BVApp
+import com.github.mytv.bv.player.PlayerHttpClient
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.util.Prefs
@@ -53,9 +55,11 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
             proxyGrpcServer = Prefs.proxyGRPCServer,
             preferOfficialCdn = Prefs.preferOfficialCdn,
             apiType = Prefs.apiType,
+            ipv4Only = Prefs.ipv4Only,
         )
     } ?: return
     var enableProxy by remember { mutableStateOf(initial.enableProxy) }
+    var ipv4Only by remember { mutableStateOf(initial.ipv4Only) }
     var proxyHttpServer by remember { mutableStateOf(initial.proxyHttpServer) }
     var proxyGrpcServer by remember { mutableStateOf(initial.proxyGrpcServer) }
     var preferOfficialCdn by remember { mutableStateOf(initial.preferOfficialCdn) }
@@ -105,6 +109,25 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
             onCheckedChange = {
                 preferOfficialCdn = it
                 PreferenceWrites.enqueue { Prefs.preferOfficialCdn = it }
+            },
+        )
+
+        SettingSwitchRow(
+            title = stringResource(R.string.settings_net_ipv4_only),
+            subtitle = stringResource(R.string.settings_net_ipv4_only_desc),
+            checked = ipv4Only,
+            onCheckedChange = { enable ->
+                ipv4Only = enable
+                // HTTP / 图片 client 的 DNS 实时读取开关，立即生效；
+                // gRPC 通道没有过滤入口，重建一次默认通道
+                BiliAppConf.ipv4Only = enable
+                PlayerHttpClient.ipv4Only = enable
+                PreferenceWrites.enqueue {
+                    Prefs.ipv4Only = enable
+                    runCatching {
+                        channelRepository.initDefaultChannel(Prefs.accessToken, Prefs.buvid)
+                    }
+                }
             },
         )
 
@@ -231,4 +254,5 @@ private data class NetworkPreferences(
     val proxyGrpcServer: String,
     val preferOfficialCdn: Boolean,
     val apiType: ApiType,
+    val ipv4Only: Boolean,
 )

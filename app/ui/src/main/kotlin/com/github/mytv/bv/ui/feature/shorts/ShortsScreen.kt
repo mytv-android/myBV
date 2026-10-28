@@ -2,7 +2,6 @@ package com.github.mytv.bv.ui.feature.shorts
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +19,7 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.theme.BvTheme
-import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
 import com.github.mytv.bv.ui.feature.video.show
 import com.github.mytv.bv.ui.navigation.ShortsRoute
@@ -65,25 +64,26 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
     // 平板右侧信息栏与对话框跟随全局明暗（视频区域的强制深色在 ShortsTablet 里处理）；手机、电视整页深色。
     // 对话框必须与页面放在同一个主题作用域里：页面旁边再并列一个 BvTheme 会让页面整个不显示。
     BvTheme(forceDark = layout != DeviceLayout.Tablet) {
-        if (vm.items.isEmpty()) {
-            BvTheme(forceDark = true) {
-                ShortsStatus(
-                    vm = vm,
-                    started = started,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black),
-                )
+        CommentPicturePreviewerHost(state = pictures) {
+            if (vm.items.isEmpty()) {
+                BvTheme(forceDark = true) {
+                    ShortsStatus(
+                        vm = vm,
+                        started = started,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black),
+                    )
+                }
+            } else {
+                when (layout) {
+                    DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions, onPictureClick)
+                    DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions, onPictureClick)
+                    DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions, onPictureClick)
+                }
             }
-        } else {
-            when (layout) {
-                DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions, onPictureClick)
-                DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions, onPictureClick)
-                DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions, onPictureClick)
-            }
+            ShortsActionDialogs(actions)
         }
-        CommentPicturePreviewer(pictures)
-        ShortsActionDialogs(actions)
     }
 }
 

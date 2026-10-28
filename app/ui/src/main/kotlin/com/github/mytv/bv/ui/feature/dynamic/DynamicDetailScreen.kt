@@ -61,6 +61,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvTabRow
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
+import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
@@ -72,7 +73,7 @@ import com.github.mytv.bv.ui.feature.timeline.SubPagePhone
 import com.github.mytv.bv.ui.feature.timeline.SubPageTabletHeader
 import com.github.mytv.bv.ui.feature.timeline.SubPageTvTitle
 import com.github.mytv.bv.ui.feature.timeline.tryRequestFocus
-import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewer
+import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.RepliesSheet
 import com.github.mytv.bv.ui.feature.video.prepareReplies
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
@@ -146,7 +147,7 @@ fun DynamicDetailScreen(nav: NavController, route: DynamicDetailRoute) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    CommentPicturePreviewerHost(state = pictures, modifier = Modifier.fillMaxSize()) {
         when (layout) {
             DeviceLayout.Phone -> SubPagePhone(title = title, onBack = onBack) { bottom ->
                 body(PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottom), null)
@@ -197,7 +198,6 @@ fun DynamicDetailScreen(nav: NavController, route: DynamicDetailRoute) {
                 }
             }
         }
-        CommentPicturePreviewer(pictures)
     }
 }
 
@@ -285,22 +285,27 @@ internal fun DynamicDetailPane(
                     key = { comment -> comment.rpid },
                     contentType = { "comment" },
                 ) { comment ->
+                    val openReplies: (() -> Unit)? = if (comment.repliesCount > 0) {
+                        {
+                            commentVm.prepareReplies(comment)
+                            showReplies = true
+                            // 不随界面取消（取消会让 refreshingReplies 停在 true）
+                            commentVm.viewModelScope.launch { commentVm.refreshReplies() }
+                        }
+                    } else null
                     CommentItem(
                         comment = comment,
                         modifier = if (isTv) {
                             Modifier
-                                .bvFocus(scale = 1f, corner = 16.dp, addFocusable = true)
+                                .bvFocus(scale = 1f, corner = 16.dp)
+                                // 确认键：开楼中楼 / 图片预览（卡片内部的小按钮方向键够不到）
+                                .clickable(
+                                    onClick = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictures)
+                                )
                                 .padding(8.dp)
                         } else Modifier,
                         onPictureClick = onPictures,
-                        onReplyClick = if (comment.repliesCount > 0) {
-                            {
-                                commentVm.prepareReplies(comment)
-                                showReplies = true
-                                // 不随界面取消（取消会让 refreshingReplies 停在 true）
-                                commentVm.viewModelScope.launch { commentVm.refreshReplies() }
-                            }
-                        } else null,
+                        onReplyClick = if (!isTv) openReplies else null,
                     )
                 }
                 when {

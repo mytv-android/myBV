@@ -18,6 +18,8 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
+import java.net.Inet4Address
+import java.net.InetAddress
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import io.grpc.Metadata as GrpcMetadata
@@ -28,12 +30,29 @@ fun generateChannel(
     endPoint: String = BiliAppConf.GRPC_HOST,
     port: Int = BiliAppConf.GRPC_PORT,
     enableTransportSecurity: Boolean = true
-): ManagedChannel = ManagedChannelBuilder
-    .forAddress(endPoint, port)
-    .apply { if (enableTransportSecurity) useTransportSecurity() else usePlaintext() }
-    .executor(Dispatchers.IO.asExecutor())
-    .intercept(MetadataInterceptor(accessKey, buvid))
-    .build()
+): ManagedChannel {
+    val builder = if (BiliAppConf.ipv4Only) {
+        // grpc 自带 DNS 解析没有 IPv4 过滤入口：先解析出 A 记录 IP 直连，
+        // overrideAuthority 保持原域名，TLS SNI / 证书校验不受影响
+        val ipv4 = runCatching {
+            InetAddress.getAllByName(endPoint).firstOrNull { it is Inet4Address }
+        }.getOrNull()
+        if (ipv4 != null) {
+            ManagedChannelBuilder
+                .forAddress(ipv4.hostAddress, port)
+                .overrideAuthority("$endPoint:$port")
+        } else {
+            ManagedChannelBuilder.forAddress(endPoint, port)
+        }
+    } else {
+        ManagedChannelBuilder.forAddress(endPoint, port)
+    }
+    return builder
+        .apply { if (enableTransportSecurity) useTransportSecurity() else usePlaintext() }
+        .executor(Dispatchers.IO.asExecutor())
+        .intercept(MetadataInterceptor(accessKey, buvid))
+        .build()
+}
 
 private class MetadataInterceptor(
     private val accessKey: String,

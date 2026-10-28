@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.WatchLater
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -104,7 +103,7 @@ internal fun DetailPage(
     }
 
     CoverTheme(ui?.cover, forceDark = profile.isTv) {
-        Box(Modifier.fillMaxSize()) {
+        CommentPicturePreviewerHost(state = pictures, modifier = Modifier.fillMaxSize()) {
             when {
                 ui == null && loadError != null -> DetailEmptyBox {
                     PageMessage(message = loadError, onRetry = onRetry)
@@ -238,9 +237,6 @@ internal fun DetailPage(
                     onShowPictures = callbacks.onShowPictures,
                     onDismiss = { showReplies = false },
                 )
-            }
-            if (!profile.isTv) {
-                CommentPicturePreviewer(pictures)
             }
         }
     }
