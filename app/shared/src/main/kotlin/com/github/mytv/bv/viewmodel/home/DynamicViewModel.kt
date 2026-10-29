@@ -19,6 +19,7 @@ import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.toast
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
@@ -70,51 +71,57 @@ class DynamicViewModel(
         loadingVideo = true
         logger.fInfo { "Load more dynamic videos [apiType=${Prefs.apiType}, offset=$videoHistoryOffset, page=${currentVideoPage + 1}]" }
         val nextPage = currentVideoPage + 1
-        runCatching {
-            val dynamicVideoData = userRepository.getDynamicVideos(
-                page = nextPage,
-                offset = videoHistoryOffset ?: "",
-                updateBaseline = videoUpdateBaseline ?: "",
-                preferApiType = Prefs.apiType
-            )
-            currentVideoPage = nextPage
-            dynamicVideoList.addAllWithMainContext(dynamicVideoData.videos)
-            videoHistoryOffset = dynamicVideoData.historyOffset
-            videoUpdateBaseline = dynamicVideoData.updateBaseline
-            videoHasMore = dynamicVideoData.hasMore
+        try {
+            runCatching {
+                val dynamicVideoData = userRepository.getDynamicVideos(
+                    page = nextPage,
+                    offset = videoHistoryOffset ?: "",
+                    updateBaseline = videoUpdateBaseline ?: "",
+                    preferApiType = Prefs.apiType
+                )
+                currentVideoPage = nextPage
+                dynamicVideoList.addAllWithMainContext(dynamicVideoData.videos)
+                videoHistoryOffset = dynamicVideoData.historyOffset
+                videoUpdateBaseline = dynamicVideoData.updateBaseline
+                videoHasMore = dynamicVideoData.hasMore
 
-            logger.fInfo { "Load dynamic video list page: ${currentVideoPage},size: ${dynamicVideoData.videos.size}" }
-            val avList = dynamicVideoData.videos.map {
-                it.aid
+                logger.fInfo { "Load dynamic video list page: ${currentVideoPage},size: ${dynamicVideoData.videos.size}" }
+                val avList = dynamicVideoData.videos.map {
+                    it.aid
+                }
+                logger.fInfo { "Load dynamic video size: ${avList.size}" }
+                logger.info { "Load dynamic video list ${avList}}" }
+            }.onFailure {
+                // 取消不是失败，别拿它弹错误提示
+                if (it is CancellationException) throw it
+                logger.fWarn { "Load dynamic video list failed: ${it.stackTraceToString()}" }
+                when (it) {
+                    is AuthFailureException -> {
+                        withContext(Dispatchers.Main) {
+                            BVApp.context.getString(R.string.exception_auth_failure)
+                                .toast(BVApp.context)
+                        }
+                        logger.fInfo { "User auth failure" }
+                        if (!BuildConfig.DEBUG) bvUserRepository.logout()
+                    }
+
+                    is RiskControlException -> {
+                        withContext(Dispatchers.Main) {
+                            "动态被风控拦截，请稍后重试".toast(BVApp.context)
+                        }
+                    }
+
+                    else -> {
+                        withContext(Dispatchers.Main) {
+                            "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
+                        }
+                    }
+                }
             }
-            logger.fInfo { "Load dynamic video size: ${avList.size}" }
-            logger.info { "Load dynamic video list ${avList}}" }
-        }.onFailure {
-            logger.fWarn { "Load dynamic video list failed: ${it.stackTraceToString()}" }
-            when (it) {
-                is AuthFailureException -> {
-                    withContext(Dispatchers.Main) {
-                        BVApp.context.getString(R.string.exception_auth_failure)
-                            .toast(BVApp.context)
-                    }
-                    logger.fInfo { "User auth failure" }
-                    if (!BuildConfig.DEBUG) bvUserRepository.logout()
-                }
-
-                is RiskControlException -> {
-                    withContext(Dispatchers.Main) {
-                        "动态被风控拦截，请稍后重试".toast(BVApp.context)
-                    }
-                }
-
-                else -> {
-                    withContext(Dispatchers.Main) {
-                        "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
-                    }
-                }
-            }
+        } finally {
+            // 不管成功失败还是被取消，loading 都要落下：停在 true 会让页面永远转圈
+            loadingVideo = false
         }
-        loadingVideo = false
     }
 
     private suspend fun loadAllData() {
@@ -122,34 +129,39 @@ class DynamicViewModel(
         loadingAll = true
         logger.fInfo { "Load more dynamic all [apiType=${Prefs.apiType}, offset=$allHistoryOffset, page=${currentAllPage + 1}]" }
         val nextPage = currentAllPage + 1
-        runCatching {
-            val dynamicData = userRepository.getDynamics(
-                page = nextPage,
-                offset = allHistoryOffset ?: "",
-                updateBaseline = allUpdateBaseline ?: "",
-                preferApiType = Prefs.apiType
-            )
-            currentAllPage = nextPage
-            dynamicAllList.addAll(dynamicData.dynamics)
-            allHistoryOffset = dynamicData.historyOffset
-            allUpdateBaseline = dynamicData.updateBaseline
-            allHasMore = dynamicData.hasMore
-            allError = null
+        try {
+            runCatching {
+                val dynamicData = userRepository.getDynamics(
+                    page = nextPage,
+                    offset = allHistoryOffset ?: "",
+                    updateBaseline = allUpdateBaseline ?: "",
+                    preferApiType = Prefs.apiType
+                )
+                currentAllPage = nextPage
+                dynamicAllList.addAll(dynamicData.dynamics)
+                allHistoryOffset = dynamicData.historyOffset
+                allUpdateBaseline = dynamicData.updateBaseline
+                allHasMore = dynamicData.hasMore
+                allError = null
 
-            logger.fInfo { "Load dynamic all list page: ${currentAllPage},size: ${dynamicData.dynamics.size}" }
-        }.onFailure {
-            logger.fWarn { "Load dynamic all list failed: ${it.stackTraceToString()}" }
-            allError = when (it) {
-                is AuthFailureException -> BVApp.context.getString(R.string.exception_auth_failure)
-                is RiskControlException -> "动态被风控拦截，请稍后重试"
-                else -> "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+                logger.fInfo { "Load dynamic all list page: ${currentAllPage},size: ${dynamicData.dynamics.size}" }
+            }.onFailure {
+                if (it is CancellationException) throw it
+                logger.fWarn { "Load dynamic all list failed: ${it.stackTraceToString()}" }
+                val message = when (it) {
+                    is AuthFailureException -> BVApp.context.getString(R.string.exception_auth_failure)
+                    is RiskControlException -> "动态被风控拦截，请稍后重试"
+                    else -> "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+                }
+                allError = message
+                if (it is AuthFailureException) logger.fInfo { "User auth failure" }
+                withContext(Dispatchers.Main) {
+                    message.toast(BVApp.context)
+                }
             }
-            if (it is AuthFailureException) logger.fInfo { "User auth failure" }
-            withContext(Dispatchers.Main) {
-                allError!!.toast(BVApp.context)
-            }
+        } finally {
+            loadingAll = false
         }
-        loadingAll = false
     }
 
     fun clearVideoData() {

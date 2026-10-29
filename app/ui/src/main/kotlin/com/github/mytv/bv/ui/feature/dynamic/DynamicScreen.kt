@@ -28,6 +28,8 @@ internal class DynamicActions(
     val open: (DynamicItem) -> Unit,
     /** 点图片：打开图片查看器。 */
     val onPictures: (List<Picture>, Int) -> Unit,
+    /** 重新加载动态（电视端菜单键 / 触屏下拉刷新）。 */
+    val refresh: () -> Unit,
     val onLogin: () -> Unit,
 )
 
@@ -53,6 +55,7 @@ fun DynamicScreen(nav: NavController) {
         DynamicActions(
             open = { openDynamic(nav, context, it) },
             onPictures = { list, index -> scope.launch { pictures.show(list, index) } },
+            refresh = state::refresh,
             onLogin = { nav.navigate(LoginRoute) },
         )
     }

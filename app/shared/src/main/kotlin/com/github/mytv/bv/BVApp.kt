@@ -28,6 +28,7 @@ import com.github.mytv.bv.migration.LegacyDataMigrator
 import com.github.mytv.bv.network.HttpServer
 import com.github.mytv.bv.player.PlayerHttpClient
 import com.github.mytv.bv.repository.UserRepository
+import com.github.mytv.bv.util.BitmapSizeLimitInterceptor
 import com.github.mytv.bv.util.BlacklistUtil
 import com.github.mytv.bv.util.FirebaseUtil
 import com.github.mytv.bv.util.LogCatcherUtil
@@ -111,6 +112,11 @@ class BVApp : Application() {
                     OkHttpClient.Builder()
                         .dns(BiliDns)
                         .build()
+                }
+                // 超长图（评论/动态配图）按原图解码会超过部分盒子的显示列表上限，
+                // 绘制时抛 "Canvas: trying to draw too large bitmap" 直接崩，统一压到上限内
+                .components {
+                    add(BitmapSizeLimitInterceptor())
                 }
                 .crossfade(150)
                 .build()

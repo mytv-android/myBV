@@ -35,8 +35,10 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
+import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
+import com.github.mytv.bv.ui.designsystem.focus.onBvKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
 import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
@@ -93,6 +95,16 @@ internal fun DynamicTv(state: DynamicPageState, actions: DynamicActions) {
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
+            // 电视端没有下拉刷新：遥控器菜单键重新拉一次动态（首页同款交互）
+            .onBvKey { key ->
+                if (key != BvKey.Menu) return@onBvKey false
+                if (state.isLogin) {
+                    actions.refresh()
+                    true
+                } else {
+                    false
+                }
+            }
     ) {
         Column(
             Modifier

@@ -536,11 +536,15 @@ object BiliHttpApi {
         val bodyText = client.get("/x/polymer/web-dynamic/v1/feed/all") {
             parameter("timezone_offset", timezoneOffset)
             parameter("type", type)
+            // 网页端一直带 platform=web，缺了偶尔会被服务端判成非法请求
+            parameter("platform", "web")
             parameter("page", page)
-            offset?.let { parameter("offset", offset) }
+            // 空 offset 不带上去：首页带一个空游标容易被服务端当成非法分页参数
+            offset?.takeIf { it.isNotEmpty() }?.let { parameter("offset", it) }
             // 不带 referer 容易被风控返回 -352（见 getVideoDetail）
             header("referer", "https://www.bilibili.com/")
-            header("Cookie", "SESSDATA=$sessData;")
+            // 没有会话时不要发 "SESSDATA=;"，空 cookie 会让后面的 Web 指纹 cookie 也白带
+            if (sessData.isNotEmpty()) header("Cookie", "SESSDATA=$sessData;")
         }.bodyAsText()
         // -352 响应的 data 里常只有 v_voucher，直接按目标实体反序列化会抛
         // MissingFieldException，先检查原始响应体把凭证带出来
@@ -2157,10 +2161,17 @@ object BiliHttpApi {
 }
 
 enum class SeasonIndexType(val id: Int) {
-    Anime(1), Movie(2), Documentary(3), Guochuang(4), Tv(5), Variety(7);
+    Anime(1), Movie(2), Documentary(3), Guochuang(4), Tv(5), Variety(7),
+    /** 接口返回了枚举外的 season_type 时兜底。 */
+    Unknown(-1);
 
     companion object {
-        fun fromId(id: Int) = entries.first { it.id == id }
+        /**
+         * 按接口的 season_type 取枚举，取不到时返回 [Unknown] 而不是抛异常：
+         * 国创推荐流的排行榜里混过 season_type=12 的纪录片，用 first 抛
+         * NoSuchElementException 会让整页推荐（热门 + 排行榜）都加载不出来。
+         */
+        fun fromId(id: Int) = entries.firstOrNull { it.id == id } ?: Unknown
     }
 }
 

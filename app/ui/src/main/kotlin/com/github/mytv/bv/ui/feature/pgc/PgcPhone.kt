@@ -214,7 +214,7 @@ internal fun PgcPhone(nav: NavController, state: PgcUiState) {
                                 }
                             }
                         } else {
-                            itemsIndexed(episodes, key = { _, episode -> episode.seasonId }, contentType = { _, _ -> "episode" }) { index, episode ->
+                            itemsIndexed(episodes, key = { index, episode -> "${episode.seasonId}-$index" }, contentType = { _, _ -> "episode" }) { index, episode ->
                                 TimelineEpisodeRow(
                                     episode = episode,
                                     followed = state.follow.isFollowed(episode.seasonId),
@@ -403,7 +403,8 @@ private fun PhoneFeedRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(posters.size, key = { posters[it].seasonId }, contentType = { "poster" }) { index ->
+            // 带上 index：同一剧目可能重复出现，只用 seasonId 会撞 key
+            items(posters.size, key = { "${posters[it].seasonId}-$it" }, contentType = { "poster" }) { index ->
                 val item = posters[index]
                 PosterCard(data = item.toCard(), onClick = { onOpen(item) }, width = 112.dp)
             }

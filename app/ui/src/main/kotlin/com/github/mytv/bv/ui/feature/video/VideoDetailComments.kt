@@ -67,6 +67,7 @@ import com.github.mytv.bv.ui.imageviewer.previewer.ImagePreviewer
 import com.github.mytv.bv.ui.imageviewer.previewer.ImagePreviewerState
 import com.github.mytv.bv.ui.imageviewer.previewer.VerticalDragType
 import com.github.mytv.bv.ui.imageviewer.previewer.rememberPreviewerState
+import com.github.mytv.bv.util.MAX_IMAGE_DIMENSION
 import com.github.mytv.bv.viewmodel.CommentViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -351,6 +352,13 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
     val previewer = state.previewer
     val closeScope = rememberCoroutineScope()
     var backProgress by remember { mutableFloatStateOf(0f) }
+    // 预览取图的上限：屏幕两倍，单边再夹到 4096（跟全局位图拦截器同源）
+    val previewSize = remember(context) {
+        val metrics = context.resources.displayMetrics
+        val width = (metrics.widthPixels * 2).coerceAtMost(MAX_IMAGE_DIMENSION)
+        val height = (metrics.heightPixels * 2).coerceAtMost(MAX_IMAGE_DIMENSION)
+        width to height
+    }
     // 手势返回时跟随进度缩小淡出，松手后再交给预览器自己的关闭动画
     PredictiveBackHandler(previewer.canClose || previewer.animating) { progress ->
         try {
@@ -381,10 +389,12 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
             state = previewer,
             imageLoader = { index ->
                 val url = state.pictures.getOrNull(index)?.url
-                val request = remember(url) {
+                // 预览按「屏幕两倍」取图：原图（Size.ORIGINAL）在超长图上会超过盒子的
+                // 显示列表上限直接崩，两倍于屏幕对 fit 显示和几倍缩放都够用
+                val request = remember(url, previewSize) {
                     ImageRequest.Builder(context)
                         .data(url)
-                        .size(coil.size.Size.ORIGINAL)
+                        .size(previewSize.first, previewSize.second)
                         .build()
                 }
                 rememberAsyncImagePainter(request)

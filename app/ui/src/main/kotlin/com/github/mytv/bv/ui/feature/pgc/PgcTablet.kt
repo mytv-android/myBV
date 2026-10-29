@@ -197,7 +197,8 @@ internal fun PgcTablet(nav: NavController, state: PgcUiState) {
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-                items(feed.hot.size, key = { feed.hot[it].seasonId }, contentType = { "poster" }) { index ->
+                // 带上 index：同一剧目可能重复出现，只用 seasonId 会撞 key
+                items(feed.hot.size, key = { "${feed.hot[it].seasonId}-$it" }, contentType = { "poster" }) { index ->
                     val item = feed.hot[index]
                     PosterCard(data = item.toCard(), onClick = { nav.openSeason(item.seasonId) })
                 }

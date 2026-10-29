@@ -17,6 +17,7 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.unit.toIntSize
 import com.caverock.androidsvg.SVG
+import com.github.mytv.bv.util.limitPixels
 import dev.aaa1115910.biliapi.entity.danmaku.DanmakuMaskFrame
 import dev.aaa1115910.biliapi.entity.danmaku.DanmakuMobMaskFrame
 import dev.aaa1115910.biliapi.entity.danmaku.DanmakuWebMaskFrame
@@ -104,7 +105,9 @@ private fun decodeWebMask(frame: DanmakuWebMaskFrame): Bitmap? {
     if (svgWidth <= 0 || svgHeight <= 0) return null
     val bitmap = Bitmap.createBitmap(svgWidth, svgHeight, Bitmap.Config.ARGB_8888)
     svgObj.renderToCanvas(Canvas(bitmap))
-    return bitmap
+    // 蒙版按控件尺寸绘制，超大的 SVG（高分辨率视频）缩到上限以内看不出差别，
+    // 但能避开部分盒子「draw too large bitmap」的崩溃
+    return bitmap.limitPixels()
 }
 
 private fun decodeMobMask(frame: DanmakuMobMaskFrame): Bitmap? {
@@ -122,5 +125,5 @@ private fun decodeMobMask(frame: DanmakuMobMaskFrame): Bitmap? {
         if (bit == 1) Color.TRANSPARENT else Color.BLACK
     }
     bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
-    return bitmap
+    return bitmap.limitPixels()
 }

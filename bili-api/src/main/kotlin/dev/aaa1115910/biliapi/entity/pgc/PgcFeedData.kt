@@ -11,19 +11,29 @@ data class PgcFeedData(
             return PgcFeedData(
                 hasNext = data.hasNext,
                 cursor = data.coursor,
-                items = data.items.map { PgcItem.fromFeedSubItem(it) },
+                items = data.items.mapNotNull { subItem ->
+                    runCatching { PgcItem.fromFeedSubItem(subItem) }.getOrNull()
+                        ?.takeIf { it.seasonId > 0 }
+                },
                 ranks = emptyList()
             )
         }
 
         fun fromPgcFeedData(data: dev.aaa1115910.biliapi.http.entity.pgc.PgcFeedV3Data): PgcFeedData {
-            val itemsList = data.items.find { it.subItems.first().cardStyle == "v_card" }
-            val ranksList = data.items.find { it.subItems.first().cardStyle == "rank" }
+            // firstOrNull：接口偶尔会下发 sub_items 为空的条目，first 会抛异常把整页推荐带走
+            val itemsList = data.items.find { it.subItems.firstOrNull()?.cardStyle == "v_card" }
+            val ranksList = data.items.find { it.subItems.firstOrNull()?.cardStyle == "rank" }
             return PgcFeedData(
                 hasNext = data.hasNext,
                 cursor = data.coursor,
-                items = itemsList?.subItems?.map { PgcItem.fromFeedSubItem(it) } ?: emptyList(),
-                ranks = ranksList?.subItems?.map { FeedRank.fromFeedSubItem(it) } ?: emptyList()
+                // 逐条兜底：单条缺字段只跳过该条（没有 seasonId 的条目点了也打不开详情）
+                items = itemsList?.subItems?.mapNotNull { subItem ->
+                    runCatching { PgcItem.fromFeedSubItem(subItem) }.getOrNull()
+                        ?.takeIf { it.seasonId > 0 }
+                } ?: emptyList(),
+                ranks = ranksList?.subItems?.mapNotNull { subItem ->
+                    runCatching { FeedRank.fromFeedSubItem(subItem) }.getOrNull()
+                } ?: emptyList()
             )
         }
     }
@@ -40,8 +50,10 @@ data class PgcFeedData(
                     cover = feedSubItem.cover,
                     title = feedSubItem.title,
                     subTitle = feedSubItem.subTitle,
-                    items = feedSubItem.subItems?.map { PgcItem.fromFeedSubItem(it) }
-                        ?: emptyList()
+                    items = feedSubItem.subItems?.mapNotNull { subItem ->
+                        runCatching { PgcItem.fromFeedSubItem(subItem) }.getOrNull()
+                            ?.takeIf { it.seasonId > 0 }
+                    } ?: emptyList()
                 )
             }
         }

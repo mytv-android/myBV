@@ -145,18 +145,23 @@ abstract class PgcViewModel(
         if (updating) return
         withContext(Dispatchers.Main) { updating = true }
         logger.fInfo { "Update anime feed" }
-        runCatching {
-            val pgcFeedData = pgcRepository.getFeed(
-                pgcType = pgcType,
-                cursor = cursor
-            )
-            cursor = pgcFeedData.cursor
-            withContext(Dispatchers.Main) { hasNext = pgcFeedData.hasNext }
-            updateFeedItems(pgcFeedData)
-        }.onFailure {
-            logger.fInfo { "Update $pgcType feeds failed: ${it.stackTraceToString()}" }
+        try {
+            runCatching {
+                val pgcFeedData = pgcRepository.getFeed(
+                    pgcType = pgcType,
+                    cursor = cursor
+                )
+                cursor = pgcFeedData.cursor
+                withContext(Dispatchers.Main) { hasNext = pgcFeedData.hasNext }
+                updateFeedItems(pgcFeedData)
+            }.onFailure {
+                logger.fInfo { "Update $pgcType feeds failed: ${it.stackTraceToString()}" }
+            }
+        } finally {
+            // 被取消（切页面）时也要落下，否则 updating 停在 true，之后再也不会加载。
+            // 这里直接写而不 withContext(Main)：协程已取消时切不回主线程，状态会永远停在 true
+            updating = false
         }
-        withContext(Dispatchers.Main) { updating = false }
     }
 
     /**

@@ -451,7 +451,8 @@ private fun TvPosterRow(
                 contentPadding = PaddingValues(start = 24.dp, end = 48.dp, top = 12.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                items(posters.size, key = { posters[it].seasonId }, contentType = { "poster" }) { index ->
+                // 带上 index：同一剧目在推荐/排行榜里可能重复出现，只用 seasonId 会撞 key
+                items(posters.size, key = { "${posters[it].seasonId}-$it" }, contentType = { "poster" }) { index ->
                     val item = posters[index]
                     PosterCard(data = item.toCard(), onClick = { onOpen(item) }, width = 112.dp)
                 }

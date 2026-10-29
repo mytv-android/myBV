@@ -17,9 +17,9 @@ data class PgcItem(
                 cover = feedSubItem.cover,
                 title = feedSubItem.title,
                 subTitle = feedSubItem.subTitle,
-                seasonId = feedSubItem.seasonId!!,
+                seasonId = feedSubItem.seasonId ?: 0,
                 episodeId = feedSubItem.episodeId,
-                seasonType = SeasonIndexType.fromId(feedSubItem.seasonType!!),
+                seasonType = SeasonIndexType.fromId(feedSubItem.seasonType ?: -1),
                 rating = feedSubItem.rating ?: "0"
             )
         }
@@ -29,9 +29,9 @@ data class PgcItem(
                 cover = feedSubItem.cover,
                 title = feedSubItem.title,
                 subTitle = feedSubItem.subTitle,
-                seasonId = feedSubItem.seasonId!!,
-                episodeId = feedSubItem.episodeId ?: feedSubItem.inline!!.epId,
-                seasonType = SeasonIndexType.fromId(feedSubItem.seasonType!!),
+                seasonId = feedSubItem.seasonId ?: 0,
+                episodeId = feedSubItem.episodeId ?: feedSubItem.inline?.epId ?: 0,
+                seasonType = SeasonIndexType.fromId(feedSubItem.seasonType ?: -1),
                 rating = feedSubItem.rating ?: "0"
             )
         }

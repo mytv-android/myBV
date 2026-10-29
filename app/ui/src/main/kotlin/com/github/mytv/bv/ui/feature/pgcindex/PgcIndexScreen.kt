@@ -242,7 +242,8 @@ private fun PgcIndexGrid(
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
-            items(content.items.size, key = { content.items[it].seasonId }, contentType = { "poster" }) { index ->
+            // 带上 index：索引结果里同一剧目可能重复出现，只用 seasonId 会撞 key
+            items(content.items.size, key = { "${content.items[it].seasonId}-$it" }, contentType = { "poster" }) { index ->
                 val item = content.items[index]
                 PosterCard(
                     data = SeasonCardData.fromPgcItem(item),
