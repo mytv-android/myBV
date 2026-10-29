@@ -1,7 +1,7 @@
 package com.github.mytv.bv.util
 
 import android.graphics.Bitmap
-import android.graphics.BitmapDrawable
+import android.graphics.drawable.BitmapDrawable
 import coil.intercept.Interceptor
 import coil.request.ImageResult
 import coil.request.SuccessResult
