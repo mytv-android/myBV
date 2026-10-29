@@ -1,6 +1,7 @@
 package com.github.mytv.bv.ui.feature.video
 
 import android.view.KeyEvent as AndroidKeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -348,6 +349,7 @@ internal fun rememberCommentPictures(): CommentPictures {
 internal fun CommentPicturePreviewer(state: CommentPictures) {
     val context = LocalContext.current
     val previewer = state.previewer
+    val closeScope = rememberCoroutineScope()
     var backProgress by remember { mutableFloatStateOf(0f) }
     // 手势返回时跟随进度缩小淡出，松手后再交给预览器自己的关闭动画
     PredictiveBackHandler(previewer.canClose || previewer.animating) { progress ->
@@ -359,6 +361,12 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
             backProgress = 0f
             throw e
         }
+    }
+    // 部分盒子的返回键让 PredictiveBackHandler 的进度流不完成（表现为按一次返回没反应，
+    // 要连按几次才退出）。经典 BackHandler 直接关闭：组合在其后，分发优先级更高，
+    // 手势返回的进度动画被它接管后表现为直接关闭，可接受
+    BackHandler(enabled = previewer.canClose) {
+        closeScope.launch { runCatching { previewer.close() } }
     }
     Box(Modifier.fillMaxSize()) {
         ImagePreviewer(
@@ -387,9 +395,9 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
 
 /**
  * 图片预览宿主：包住页面内容（预览层是它的兄弟覆盖层，同时它是内容里焦点节点的祖先）。
- * 预览打开期间在预览阶段拦截遥控器按键：左右翻页、确认关闭，其余方向 / 菜单键吞掉——
- * 不拦截的话这些键会漏给背后的播放器 / 页面，在预览后面快进甚至闪退；返回键不拦，仍走
- * PredictiveBackHandler 的关闭流程。
+ * 预览打开期间在预览阶段拦截遥控器按键：左右翻页、确认 / 返回键关闭，其余方向 / 菜单键
+ * 吞掉——不拦截的话这些键会漏给背后的播放器 / 页面，在预览后面快进甚至闪退。
+ * API < 33 的盒子把返回键当按键下发，这里直接消费并关闭，不再依赖 BackHandler 链。
  */
 @Composable
 internal fun CommentPicturePreviewerHost(
@@ -413,7 +421,8 @@ internal fun CommentPicturePreviewerHost(
                     keyCode == AndroidKeyEvent.KEYCODE_ENTER ||
                     keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER ||
                     keyCode == 763
-                val swallow = left || right || center ||
+                val back = keyCode == AndroidKeyEvent.KEYCODE_BACK
+                val swallow = left || right || center || back ||
                     keyCode == AndroidKeyEvent.KEYCODE_DPAD_UP ||
                     keyCode == AndroidKeyEvent.KEYCODE_DPAD_DOWN ||
                     keyCode == AndroidKeyEvent.KEYCODE_MENU
@@ -428,7 +437,8 @@ internal fun CommentPicturePreviewerHost(
                             true
                         }
 
-                        center -> {
+                        // 返回 / 确认键关闭预览
+                        center || back -> {
                             if (previewer.canClose) scope.launch { runCatching { previewer.close() } }
                             true
                         }
