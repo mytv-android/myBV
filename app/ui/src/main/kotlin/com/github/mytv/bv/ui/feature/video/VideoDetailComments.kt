@@ -2,8 +2,10 @@ package com.github.mytv.bv.ui.feature.video
 
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +39,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.nativeKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
@@ -394,7 +395,7 @@ internal fun CommentPicturePreviewer(state: CommentPictures) {
 internal fun CommentPicturePreviewerHost(
     state: CommentPictures,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val previewer = state.previewer
     val scope = rememberCoroutineScope()
