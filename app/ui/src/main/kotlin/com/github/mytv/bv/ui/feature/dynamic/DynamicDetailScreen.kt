@@ -62,6 +62,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvTabRow
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
 import com.github.mytv.bv.ui.designsystem.component.commentCardAction
+import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
@@ -293,15 +294,15 @@ internal fun DynamicDetailPane(
                             commentVm.viewModelScope.launch { commentVm.refreshReplies() }
                         }
                     } else null
+                    val cardAction = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictures)
                     CommentItem(
                         comment = comment,
                         modifier = if (isTv) {
                             Modifier
                                 .bvFocus(scale = 1f, corner = 16.dp)
                                 // 确认键：开楼中楼 / 图片预览（卡片内部的小按钮方向键够不到）
-                                .clickable(
-                                    onClick = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictures)
-                                )
+                                .tvConfirmClick(cardAction)
+                                .clickable(onClick = cardAction)
                                 .padding(8.dp)
                         } else Modifier,
                         onPictureClick = onPictures,

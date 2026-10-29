@@ -79,6 +79,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvIconButton
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
 import com.github.mytv.bv.ui.designsystem.component.commentCardAction
+import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
@@ -452,6 +453,7 @@ internal fun ShortsCommentList(
                     }
                 }
                 item(key = "replyRoot") {
+                    val rootAction = commentCardAction(root, onReplyClick = null, onPictureClick = onPictureClick)
                     CommentItem(
                         comment = root,
                         onAvatarClick = if (!tv) {
@@ -463,9 +465,8 @@ internal fun ShortsCommentList(
                         modifier = if (tv) {
                             Modifier
                                 .bvFocus(scale = 1f, corner = 16.dp)
-                                .clickable(
-                                    onClick = commentCardAction(root, onReplyClick = null, onPictureClick = onPictureClick)
-                                )
+                                .tvConfirmClick(rootAction)
+                                .clickable(onClick = rootAction)
                         } else {
                             Modifier
                         },
@@ -488,14 +489,14 @@ internal fun ShortsCommentList(
                                 comments.openReplies(comment)
                             }
                         } else null
+                    val cardAction = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictureClick)
                     val focusModifier = if (tv) {
                         Modifier
                             .then(if (index == 0 && firstItemRequester != null) Modifier.focusRequester(firstItemRequester) else Modifier)
                             .bvFocus(scale = 1f, corner = 16.dp)
                             // 确认键：开楼中楼 / 图片预览（卡片内部的小按钮方向键够不到）
-                            .clickable(
-                                onClick = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictureClick)
-                            )
+                            .tvConfirmClick(cardAction)
+                            .clickable(onClick = cardAction)
                     } else {
                         Modifier
                     }

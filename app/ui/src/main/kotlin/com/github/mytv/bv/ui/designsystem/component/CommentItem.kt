@@ -1,5 +1,6 @@
 package com.github.mytv.bv.ui.designsystem.component
 
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -28,6 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
@@ -62,6 +67,32 @@ fun commentCardAction(
         comment.repliesCount > 0 && onReplyClick != null -> onReplyClick()
         comment.pictures.isNotEmpty() && onPictureClick != null -> onPictureClick(comment.pictures, 0)
         else -> fallback?.invoke()
+    }
+}
+
+/**
+ * 电视端卡片确认键：在预览阶段直接处理确认键——KeyUp 触发 [action]，按下与抬起都消费。
+ * 不依赖 clickable 自带的按下-抬起状态机：部分盒子的确认键事件序列不标准，短按会被
+ * clickable 漏掉（表现为要按很久才有反应）。放在长按处理（如二维码）之后、clickable
+ * 之前；触摸点击不受影响，仍走 clickable（两处应传同一个动作）。
+ */
+fun Modifier.tvConfirmClick(action: () -> Unit): Modifier = onPreviewKeyEvent { event ->
+    val code = event.nativeKeyEvent.keyCode
+    val center = code == AndroidKeyEvent.KEYCODE_DPAD_CENTER ||
+        code == AndroidKeyEvent.KEYCODE_ENTER ||
+        code == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER
+    if (!center) {
+        false
+    } else {
+        when (event.type) {
+            KeyEventType.KeyDown -> true
+            KeyEventType.KeyUp -> {
+                action()
+                true
+            }
+
+            else -> false
+        }
     }
 }
 

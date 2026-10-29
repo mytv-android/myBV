@@ -50,6 +50,7 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
 import com.github.mytv.bv.ui.designsystem.component.commentCardAction
+import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
@@ -214,14 +215,14 @@ internal fun TvCommentsPanel(
                     if (root != null) {
                         val rootComment = commentVm.replyRootComment ?: root
                         item(key = "replyRoot", contentType = "replyRoot") {
+                            val rootAction = commentCardAction(rootComment, onReplyClick = null, onPictureClick = onPictureClick)
                             CommentItem(
                                 comment = rootComment,
                                 modifier = Modifier
                                     .bvFocus(scale = 1f, corner = 16.dp)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .clickable(
-                                        onClick = commentCardAction(rootComment, onReplyClick = null, onPictureClick = onPictureClick)
-                                    )
+                                    .tvConfirmClick(rootAction)
+                                    .clickable(onClick = rootAction)
                                     .padding(8.dp),
                                 maxLines = Int.MAX_VALUE,
                                 onPictureClick = onPictureClick,
@@ -263,40 +264,40 @@ internal fun TvCommentsPanel(
                             val qrLinkOfComment = remember(comment.rpid, comment.content) {
                                 commentQrLink(comment.content)
                             }
+                            // 确认键（短按）/ 触摸点击共用：有楼中楼开楼中楼，其次图片预览，
+                            // 都没有时展开 / 收起长评论（卡片内部的「回复 N」/缩略图方向键够不到）
+                            val openReplies: (() -> Unit)? = if (comment.repliesCount > 0) {
+                                {
+                                    commentVm.prepareReplies(comment)
+                                    replyRoot = comment
+                                    scope.launch { commentVm.refreshReplies() }
+                                }
+                            } else null
+                            val toggleExpand = {
+                                expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
+                            }
+                            val cardAction = commentCardAction(
+                                comment,
+                                onReplyClick = openReplies,
+                                onPictureClick = onPictureClick,
+                                fallback = toggleExpand,
+                            )
                             CommentItem(
                                 comment = comment,
-                                // 确认键：有楼中楼开楼中楼，其次图片预览，都没有时展开 / 收起长评论
-                                // （卡片内部的「回复 N」/缩略图方向键够不到，动作统一收在卡片上）
-                                // onPreviewKeyEvent 捕获长按确认键：带链接的评论弹出二维码，无链接时保持原行为
+                                // onPreviewKeyEvent 捕获长按确认键：带链接的评论弹出二维码
                                 modifier = Modifier
                                     .bvFocus(scale = 1f, corner = 16.dp)
                                     .clip(RoundedCornerShape(16.dp))
                                     .onPreviewKeyEvent { event ->
                                         longPressGuard.handle(event, qrLinkOfComment) { qrLink = it }
                                     }
-                                    .clickable(
-                                        onClick = commentCardAction(
-                                            comment,
-                                            onReplyClick = if (comment.repliesCount > 0) {
-                                                {
-                                                    commentVm.prepareReplies(comment)
-                                                    replyRoot = comment
-                                                    scope.launch { commentVm.refreshReplies() }
-                                                }
-                                            } else null,
-                                            onPictureClick = onPictureClick,
-                                            fallback = {
-                                                expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
-                                            },
-                                        )
-                                    )
+                                    .tvConfirmClick(cardAction)
+                                    .clickable(onClick = cardAction)
                                     .padding(8.dp),
                                 maxLines = 8,
                                 onPictureClick = onPictureClick,
                                 textExpanded = expandedComments[comment.rpid] == true,
-                                onToggleTextExpand = {
-                                    expandedComments[comment.rpid] = expandedComments[comment.rpid] != true
-                                },
+                                onToggleTextExpand = toggleExpand,
                             )
                         }
                         if (commentVm.updatingComments) {
@@ -336,6 +337,7 @@ private fun ReplyItem(
     longPressGuard: CommentLongPressGuard,
     onPictureClick: ((List<Picture>, Int) -> Unit)?,
 ) {
+    val action = commentCardAction(comment, onReplyClick = null, onPictureClick = onPictureClick)
     CommentItem(
         comment = comment,
         modifier = Modifier
@@ -344,7 +346,8 @@ private fun ReplyItem(
             .onPreviewKeyEvent { event ->
                 longPressGuard.handle(event, qrLink, onShowQrCode)
             }
-            .clickable(onClick = commentCardAction(comment, onReplyClick = null, onPictureClick = onPictureClick))
+            .tvConfirmClick(action)
+            .clickable(onClick = action)
             .padding(8.dp),
         maxLines = Int.MAX_VALUE,
         onPictureClick = onPictureClick,

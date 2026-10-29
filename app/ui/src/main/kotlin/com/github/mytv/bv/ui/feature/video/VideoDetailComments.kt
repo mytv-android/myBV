@@ -55,6 +55,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CommentItem
 import com.github.mytv.bv.ui.designsystem.component.commentCardAction
+import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
@@ -230,15 +231,15 @@ internal fun RepliesSheet(
         ) {
             commentVm.replyRootComment?.let { root ->
                 item(key = "root") {
+                    val rootAction = commentCardAction(root, onReplyClick = null, onPictureClick = onShowPictures)
                     CommentItem(
                         comment = root,
                         modifier = if (touchInput) Modifier else Modifier
                             .focusRequester(firstRequester)
                             .bvFocus(scale = 1f, corner = 16.dp)
                             // 电视端确认键打开根评论的图片预览
-                            .clickable(
-                                onClick = commentCardAction(root, onReplyClick = null, onPictureClick = onShowPictures)
-                            )
+                            .tvConfirmClick(rootAction)
+                            .clickable(onClick = rootAction)
                             .padding(8.dp),
                         maxLines = Int.MAX_VALUE,
                         onPictureClick = onShowPictures,
@@ -286,14 +287,14 @@ internal fun RepliesSheet(
                 key = { it.rpid },
                 contentType = { "reply" },
             ) { reply ->
+                val replyAction = commentCardAction(reply, onReplyClick = null, onPictureClick = onShowPictures)
                 CommentItem(
                     comment = reply,
                     modifier = if (touchInput) Modifier else Modifier
                         .bvFocus(scale = 1f, corner = 16.dp)
                         // 电视端确认键打开图片预览
-                        .clickable(
-                            onClick = commentCardAction(reply, onReplyClick = null, onPictureClick = onShowPictures)
-                        )
+                        .tvConfirmClick(replyAction)
+                        .clickable(onClick = replyAction)
                         .padding(8.dp),
                     onPictureClick = onShowPictures,
                     onLongClick = if (touchInput) {

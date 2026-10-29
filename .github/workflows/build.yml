@@ -21,7 +21,9 @@ permissions:
 jobs:
   build:
     name: Build myBV
-    runs-on: macos-latest
+    # 2026-10-29：macos-latest 托管 runner 持续容量不足（整晚分配不到），换 ubuntu；
+    # 构建产物一致（原生解码器是预编译 AAR），且 ubuntu 排队更稳、计费更低
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -60,14 +62,15 @@ jobs:
           SIGNING_PROPERTIES: ${{ secrets.SIGNING_PROPERTIES }}
         run: |
           echo "$SIGNING_PROPERTIES" > encoded_signing_properties
-          base64 -Dd -i encoded_signing_properties > signing.properties
+          # GNU base64：-d 解码（macOS 是 -D，已随 ubuntu 切换一并调整）
+          base64 -d -i encoded_signing_properties > signing.properties
 
       - name: Add keystore
         env:
           SIGN_KEY: ${{ secrets.SIGN_KEY }}
         run: |
           echo "$SIGN_KEY" > encoded_key
-          base64 -Dd -i encoded_key > keystore.jks
+          base64 -d -i encoded_key > keystore.jks
           cp keystore.jks key.jks
 
       - name: Grant execute permission for gradlew
