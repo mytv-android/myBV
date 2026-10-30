@@ -56,6 +56,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -405,6 +406,9 @@ internal fun ShortsCommentList(
     onPictureClick: ((List<Picture>, Int) -> Unit)? = null,
 ) {
     var replyRoot by remember(item.aid) { mutableStateOf<Comment?>(null) }
+    // 打开楼中楼的那条评论：返回时把焦点还给它，否则焦点会掉到背后的播放器控制栏上
+    var replyRootSource by remember(item.aid) { mutableStateOf<Comment?>(null) }
+    val replyRestoreRequester = remember(item.aid) { FocusRequester() }
     val replyBackRequester = remember(item.aid) { FocusRequester() }
     BackHandler(enabled = replyRoot != null) { replyRoot = null }
     val root = replyRoot
@@ -413,7 +417,28 @@ internal fun ShortsCommentList(
     val ready = comments.loadedAid == item.aid
     val latestRoot by rememberUpdatedState(root)
     LaunchedEffect(root) {
-        if (root != null) runCatching { replyBackRequester.requestFocus() }
+        if (root != null) {
+            runCatching { replyBackRequester.requestFocus() }
+        } else {
+            // 楼中楼的返回按钮和整个楼中楼列表一起离开组合，焦点不显式交回去就会丢掉
+            val source = replyRootSource ?: return@LaunchedEffect
+            val index = comments.comments.indexOfFirst { it.rpid == source.rpid }
+            if (index >= 0) {
+                runCatching { state.scrollToItem(index) }
+                var focused = false
+                var frames = 0
+                while (!focused && frames < 4) {
+                    withFrameNanos { }
+                    focused = runCatching { replyRestoreRequester.requestFocus() }.isSuccess
+                    frames++
+                }
+                if (!focused && firstItemRequester != null) {
+                    runCatching { firstItemRequester.requestFocus() }
+                }
+            } else if (firstItemRequester != null) {
+                runCatching { firstItemRequester.requestFocus() }
+            }
+        }
     }
 
     LaunchedEffect(state, item.aid) {
@@ -485,6 +510,8 @@ internal fun ShortsCommentList(
                     val openReplies: (() -> Unit)? =
                         if (root == null && comment.repliesCount > 0) {
                             {
+                                // 记下来源，从楼中楼返回时焦点回到这条
+                                replyRootSource = comment
                                 replyRoot = comment
                                 comments.openReplies(comment)
                             }
@@ -492,6 +519,13 @@ internal fun ShortsCommentList(
                     val cardAction = commentCardAction(comment, onReplyClick = openReplies, onPictureClick = onPictureClick)
                     val focusModifier = if (tv) {
                         Modifier
+                            .then(
+                                if (replyRootSource?.rpid == comment.rpid) {
+                                    Modifier.focusRequester(replyRestoreRequester)
+                                } else {
+                                    Modifier
+                                }
+                            )
                             .then(if (index == 0 && firstItemRequester != null) Modifier.focusRequester(firstItemRequester) else Modifier)
                             .bvFocus(scale = 1f, corner = 16.dp)
                             // 确认键：开楼中楼 / 图片预览（卡片内部的小按钮方向键够不到）

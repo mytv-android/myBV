@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +58,7 @@ import com.github.mytv.bv.ui.designsystem.component.commentQrLink
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
+import com.github.mytv.bv.ui.feature.timeline.tryRequestFocus
 import com.github.mytv.bv.ui.feature.video.prepareReplies
 import com.github.mytv.bv.viewmodel.CommentViewModel
 import kotlinx.coroutines.launch
@@ -82,6 +84,9 @@ internal fun TvCommentsPanel(
     var qrLink by remember { mutableStateOf<String?>(null) }
     // 楼中楼：非空时列表切换为「根评论 + 回复」，返回键先退回评论列表
     var replyRoot by remember { mutableStateOf<Comment?>(null) }
+    // 打开楼中楼的那条一级评论：返回时把焦点还给它
+    var replyRootSource by remember { mutableStateOf<Comment?>(null) }
+    val restoreRequester = remember { FocusRequester() }
 
     BackHandler {
         if (replyRoot != null) replyRoot = null else onDismiss()
@@ -95,6 +100,26 @@ internal fun TvCommentsPanel(
         if (replyRoot != null) {
             listState.scrollToItem(0)
             runCatching { backRequester.requestFocus() }
+        } else {
+            // 楼中楼的「返回」按钮和整个楼中楼列表是一起离开组合的，焦点不显式交回去
+            // 就会掉到播放器控制栏（暂停键）上，一级评论接着往下翻不动。回到打开时的那条，
+            // 不在当前列表里（切换过排序 / 被移出视野）就退回排序栏。
+            val source = replyRootSource ?: return@LaunchedEffect
+            val index = commentVm.comments.indexOfFirst { it.rpid == source.rpid }
+            if (index >= 0) {
+                runCatching { listState.scrollToItem(index) }
+                // 列表要把这条重新组合出来，FocusRequester 才挂得上节点；最多等几帧
+                var focused = false
+                var frames = 0
+                while (!focused && frames < 4) {
+                    withFrameNanos { }
+                    focused = restoreRequester.tryRequestFocus()
+                    frames++
+                }
+                if (!focused) firstRequester.tryRequestFocus()
+            } else {
+                firstRequester.tryRequestFocus()
+            }
         }
     }
 
@@ -268,6 +293,8 @@ internal fun TvCommentsPanel(
                             // 都没有时展开 / 收起长评论（卡片内部的「回复 N」/缩略图方向键够不到）
                             val openReplies: (() -> Unit)? = if (comment.repliesCount > 0) {
                                 {
+                                    // 记下来源，从楼中楼返回时焦点回到这条
+                                    replyRootSource = comment
                                     commentVm.prepareReplies(comment)
                                     replyRoot = comment
                                     scope.launch { commentVm.refreshReplies() }
@@ -286,6 +313,14 @@ internal fun TvCommentsPanel(
                                 comment = comment,
                                 // onPreviewKeyEvent 捕获长按确认键：带链接的评论弹出二维码
                                 modifier = Modifier
+                                    // 楼中楼返回时的焦点落点
+                                    .then(
+                                        if (replyRootSource?.rpid == comment.rpid) {
+                                            Modifier.focusRequester(restoreRequester)
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
                                     .bvFocus(scale = 1f, corner = 16.dp)
                                     .clip(RoundedCornerShape(16.dp))
                                     .onPreviewKeyEvent { event ->
