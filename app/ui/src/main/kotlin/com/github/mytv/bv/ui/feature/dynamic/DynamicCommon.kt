@@ -253,23 +253,35 @@ internal class DynamicPageState(
     private var commentJob: Job? = null
 
     val isLogin: Boolean get() = vm.isLogin
-    val loading: Boolean get() = vm.loadingAll
+    val loading: Boolean get() = if (upFilter != null) vm.loadingSpace else vm.loadingAll
 
     /** 最近一次加载失败的信息；为 null 且列表为空时才是「真的没有动态」。 */
-    val loadError: String? get() = vm.allError
+    val loadError: String? get() = if (upFilter != null) vm.spaceError else vm.allError
+
+    private val hasMore: Boolean get() = if (upFilter != null) vm.spaceHasMore else vm.allHasMore
 
     /** 头像行：关注列表前 20 个（FollowViewModel 的顺序）。 */
     val ups: List<FollowedUser> by derivedStateOf { follow.followedUsers.take(20) }
 
+    /**
+     * 选了 UP 就读该 UP 的空间动态，否则读关注动态流。
+     *
+     * 关注动态流是分页的，不活跃的 UP 动态可能远在几十页之后，只在这份列表里筛
+     * 永远筛不出来（实测关注列表与动态作者的交集很小），所以按 UP 取数是另一条接口。
+     */
     val items: List<DynamicItem> by derivedStateOf {
         val up = upFilter
         val currentKind = kind
-        vm.dynamicAllList.filter { (up == null || it.author.mid == up) && currentKind.matches(it) }
+        val source = if (up != null) vm.dynamicSpaceList else vm.dynamicAllList
+        source.filter { (up == null || it.author.mid == up) && currentKind.matches(it) }
     }
 
     fun selectUp(mid: Long?) {
+        if (upFilter == mid) return
         upFilter = mid
         autoLoads = 0
+        // 第一次选这个 UP 就拉一页，别让用户盯着空页面等 autoFill
+        if (mid != null && vm.dynamicSpaceList.isEmpty() && !vm.loadingSpace) loadMore()
     }
 
     fun isSelected(item: DynamicItem): Boolean {
@@ -289,17 +301,28 @@ internal class DynamicPageState(
     }
 
     fun loadMore() {
-        if (vm.loadingAll || !vm.allHasMore || !vm.isLogin) return
-        vm.viewModelScope.launch { vm.loadMoreAll() }
+        val up = upFilter
+        if (up != null) {
+            if (vm.loadingSpace || !vm.spaceHasMore || !vm.isLogin) return
+            vm.viewModelScope.launch { vm.loadMoreSpace(up) }
+        } else {
+            if (vm.loadingAll || !vm.allHasMore || !vm.isLogin) return
+            vm.viewModelScope.launch { vm.loadMoreAll() }
+        }
     }
 
     fun refresh() {
-        if (vm.loadingAll) return
+        if (loading) return
         pulling = true
         vm.viewModelScope.launch {
             try {
-                vm.clearAllData()
-                vm.loadMoreAll()
+                if (upFilter != null) {
+                    vm.clearSpaceData()
+                    upFilter?.let { vm.loadMoreSpace(it) }
+                } else {
+                    vm.clearAllData()
+                    vm.loadMoreAll()
+                }
             } finally {
                 pulling = false
             }
@@ -309,7 +332,7 @@ internal class DynamicPageState(
     /** 筛选（UP 主 / 类型）后结果太少时自动再加载几页（最多 5 页）。 */
     fun autoFill() {
         if (upFilter == null && kind == DynamicKind.All) return
-        if (items.size >= 6 || autoLoads >= 5 || vm.loadingAll || !vm.allHasMore) return
+        if (items.size >= 6 || autoLoads >= 5 || loading || !hasMore) return
         autoLoads++
         loadMore()
     }

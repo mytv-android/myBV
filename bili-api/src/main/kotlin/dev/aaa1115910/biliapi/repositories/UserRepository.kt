@@ -280,8 +280,28 @@ class UserRepository(
         }
     }
 
-    suspend fun getDynamicDetail(
-        dynamicId: String,
+    /**
+     * 获取用户[hostMid]的动态列表（UP 主空间动态）。
+     *
+     * 只有 Web 端有这个接口（App 的 gRPC 没有对应的 space 动态方法），
+     * 所以这里不走 [ApiType] 分支，统一用 HTTP + SESSDATA。
+     */
+    suspend fun getSpaceDynamics(
+        hostMid: Long,
+        page: Int,
+        offset: String,
+        sessData: String? = null
+    ): DynamicData {
+        val responseData = BiliHttpApi.getDynamicSpaceList(
+            hostMid = hostMid,
+            page = page,
+            offset = offset,
+            sessData = sessData ?: authRepository.sessionData ?: ""
+        ).getResponseData()
+        return DynamicData.fromDynamicData(responseData)
+    }
+
+    suspend fun getDynamicDetail(        dynamicId: String,
         preferApiType: ApiType = ApiType.Web
     ): DynamicItem {
         return when (preferApiType) {

@@ -553,6 +553,38 @@ object BiliHttpApi {
     }
 
     /**
+     * 获取用户[hostMid]的动态列表（UP 主空间动态）
+     *
+     * 关注动态流是分页的，某个 UP 不活跃时它的动态可能远在几十页之后，只在前端
+     * 已加载的页面里筛永远筛不出来；这个接口直接按 UP 取，返回结构与
+     * [getDynamicList] 一致。
+     *
+     * @param hostMid 用户 uid
+     * @param offset 请求第2页及其之后时填写，填写上一次请求获得的offset
+     */
+    suspend fun getDynamicSpaceList(
+        timezoneOffset: Int = -480,
+        hostMid: Long,
+        page: Int = 1,
+        offset: String? = null,
+        sessData: String = ""
+    ): BiliResponse<DynamicData> {
+        val bodyText = client.get("/x/polymer/web-dynamic/v1/feed/space") {
+            parameter("timezone_offset", timezoneOffset)
+            parameter("host_mid", hostMid)
+            // 网页端一直带 platform=web（见 getDynamicList）
+            parameter("platform", "web")
+            parameter("page", page)
+            // 空 offset 不带上去：首页带一个空游标容易被服务端当成非法分页参数
+            offset?.takeIf { it.isNotEmpty() }?.let { parameter("offset", it) }
+            header("referer", "https://space.bilibili.com/$hostMid/dynamic")
+            if (sessData.isNotEmpty()) header("Cookie", "SESSDATA=$sessData;")
+        }.bodyAsText()
+        checkForVVoucher(bodyText)
+        return json.decodeFromString(bodyText)
+    }
+
+    /**
      * 获取动态详情
      *
      * @param id 动态id

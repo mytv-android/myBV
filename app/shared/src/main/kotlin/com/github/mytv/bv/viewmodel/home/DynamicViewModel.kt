@@ -52,6 +52,18 @@ class DynamicViewModel(
     private var allHistoryOffset: String? = null
     private var allUpdateBaseline: String? = null
 
+    /** 按 UP 主筛选时的动态列表（走空间动态接口，不在全部动态里筛）。 */
+    val dynamicSpaceList = mutableStateListOf<DynamicItem>()
+    private var currentSpacePage = 0
+    var loadingSpace by mutableStateOf(false)
+    var spaceHasMore by mutableStateOf(true)
+    /** 最近一次 UP 主动态加载的失败信息。 */
+    var spaceError by mutableStateOf<String?>(null)
+        private set
+    private var spaceHistoryOffset: String? = null
+    /** 当前 dynamicSpaceList 对应的 UP，换了 UP 要重新拉。 */
+    private var spaceHostMid: Long? = null
+
     val isLogin get() = bvUserRepository.isLogin
 
     init {
@@ -64,6 +76,44 @@ class DynamicViewModel(
 
     suspend fun loadMoreAll() {
         if (!loadingAll) loadAllData()
+    }
+
+    /**
+     * 加载用户[hostMid]的动态。换了 UP 会先清掉上一份，避免两个 UP 的动态混在一列里。
+     */
+    suspend fun loadMoreSpace(hostMid: Long) {
+        if (loadingSpace) return
+        if (spaceHostMid != null && spaceHostMid != hostMid) clearSpaceData()
+        spaceHostMid = hostMid
+        if (!spaceHasMore || !bvUserRepository.isLogin) return
+        loadingSpace = true
+        logger.fInfo { "Load more space dynamics [mid=$hostMid, offset=$spaceHistoryOffset, page=${currentSpacePage + 1}]" }
+        val nextPage = currentSpacePage + 1
+        try {
+            runCatching {
+                val dynamicData = userRepository.getSpaceDynamics(
+                    hostMid = hostMid,
+                    page = nextPage,
+                    offset = spaceHistoryOffset ?: ""
+                )
+                currentSpacePage = nextPage
+                dynamicSpaceList.addAll(dynamicData.dynamics)
+                spaceHistoryOffset = dynamicData.historyOffset
+                spaceHasMore = dynamicData.hasMore
+                spaceError = null
+                logger.fInfo { "Load space dynamics page: $nextPage, size: ${dynamicData.dynamics.size}" }
+            }.onFailure {
+                if (it is CancellationException) throw it
+                logger.fWarn { "Load space dynamics failed: ${it.stackTraceToString()}" }
+                val message = "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+                spaceError = message
+                withContext(Dispatchers.Main) {
+                    message.toast(BVApp.context)
+                }
+            }
+        } finally {
+            loadingSpace = false
+        }
     }
 
     private suspend fun loadVideoData() {
@@ -179,5 +229,15 @@ class DynamicViewModel(
         allHasMore = true
         allError = null
         allHistoryOffset = null
+    }
+
+    fun clearSpaceData() {
+        dynamicSpaceList.clear()
+        currentSpacePage = 0
+        loadingSpace = false
+        spaceHasMore = true
+        spaceError = null
+        spaceHistoryOffset = null
+        spaceHostMid = null
     }
 }
