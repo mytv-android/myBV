@@ -45,5 +45,32 @@ sealed class BvScheme(open val host: String) {
             return uri.toString()
         }
     }
+
+    data class Video(val aid: Long) : BvScheme(HOST) {
+        companion object {
+            const val HOST = "video"
+        }
+
+        override fun buildUri(): String {
+            return Uri.Builder()
+                .scheme(SCHEME)
+                .authority(host)
+                .appendPath(aid.toString())
+                .build()
+                .toString()
+        }
+    }
+
+    data object Recommend : BvScheme("recommend") {
+        override fun buildUri(): String {
+            return Uri.Builder().scheme(SCHEME).authority(host).build().toString()
+        }
+    }
+
+    data object ToView : BvScheme("toview") {
+        override fun buildUri(): String {
+            return Uri.Builder().scheme(SCHEME).authority(host).build().toString()
+        }
+    }
 }
 

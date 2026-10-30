@@ -11,4 +11,6 @@
     <string name="toview_delete_confirm_text">将「%s」从稍后再看移除，此操作不可撤销。</string>
     <string name="toview_clear_confirm_title">清空稍后再看？</string>
     <string name="toview_clear_confirm_text">将清空稍后再看的全部视频，此操作不可撤销。</string>
+    <!-- 电视桌面频道 -->
+    <string name="toview_add_to_tv_launcher">添加到电视桌面</string>
 </resources>

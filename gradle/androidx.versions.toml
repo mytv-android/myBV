@@ -13,6 +13,7 @@ media3 = "1.11.1"
 navigation = "2.9.8"
 profileinstaller = "1.4.1"
 room = "2.8.5"
+tvprovider = "1.1.0"
 webkit = "1.15.0"
 
 [libraries]
@@ -84,6 +85,9 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-testing = { module = "androidx.room:room-ktx", version.ref = "room" }
+
+# https://developer.android.com/jetpack/androidx/releases/tvprovider
+tvprovider = { module = "androidx.tvprovider:tvprovider", version.ref = "tvprovider" }
 
 # https://developer.android.com/jetpack/androidx/releases/webkit
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }

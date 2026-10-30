@@ -13,6 +13,7 @@
             android:name="com.github.mytv.bv.ui.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|density|uiMode"
             android:exported="true"
+            android:launchMode="singleTop"
             android:resizeableActivity="true"
             android:theme="@style/Theme.BV.Main">
             <intent-filter>
@@ -26,6 +27,30 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="qrtoken"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="video"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="recommend"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="toview"
                     android:scheme="bugvideo" />
             </intent-filter>
 

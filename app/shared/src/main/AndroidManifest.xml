@@ -42,6 +42,15 @@
             android:exported="true"
             android:grantUriPermissions="false"
             android:process=":migration" />
+
+        <!-- 用户在电视桌面移除节目后，删除本地映射并记墓碑 -->
+        <receiver
+            android:name=".tv.TvProgramRemovedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.tv.action.PREVIEW_PROGRAM_BROWSABLE_DISABLED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

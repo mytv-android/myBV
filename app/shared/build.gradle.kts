@@ -114,6 +114,7 @@ dependencies {
     api(androidx.navigation.compose)
     api(androidx.room.ktx)
     api(androidx.room.runtime)
+    api(androidx.tvprovider)
     api(androidx.webkit)
     api(libs.accompanist.systemuicontroller)
     api(libs.coil.compose)

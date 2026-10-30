@@ -10,9 +10,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
 import com.github.mytv.bv.entity.BvScheme
+import com.github.mytv.bv.ui.navigation.ToViewRoute
+import com.github.mytv.bv.ui.navigation.TopLevel
+import com.github.mytv.bv.ui.navigation.VideoRoute
+import com.github.mytv.bv.ui.navigation.navigateTopLevel
 
 /**
- * 处理 bugvideo://qrtoken 深链（第 8.1 节）：在新界面里弹出「导入账号」对话框（移植旧 QrTokenResultScreen）。
+ * 处理外部深链：bugvideo://qrtoken 导入账号，bugvideo://video/{aid} 打开视频，
+ * bugvideo://recommend 回首页，bugvideo://toview 打开稍后再看。
  * 每个 Intent 只处理一次（rememberSaveable 记住已处理过）。
  */
 @Composable
@@ -22,9 +27,29 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
     LaunchedEffect(intent) {
         val uri = intent?.data ?: return@LaunchedEffect
         val text = uri.toString()
-        if (uri.host == BvScheme.QrToken.HOST && handled != text) {
-            handled = text
-            pending = text
+        if (handled == text) return@LaunchedEffect
+
+        when (uri.host) {
+            BvScheme.Video.HOST -> {
+                handled = text
+                uri.pathSegments.firstOrNull()?.toLongOrNull()
+                    ?.let { nav.navigate(VideoRoute(it)) }
+            }
+
+            BvScheme.Recommend.host -> {
+                handled = text
+                nav.navigateTopLevel(TopLevel.Home)
+            }
+
+            BvScheme.ToView.host -> {
+                handled = text
+                nav.navigate(ToViewRoute) { launchSingleTop = true }
+            }
+
+            BvScheme.QrToken.HOST -> {
+                handled = text
+                pending = text
+            }
         }
     }
     pending?.let { text ->

@@ -13,6 +13,7 @@ import dev.aaa1115910.biliapi.entity.FavoriteFolderMetadata
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.entity.AuthFailureException
 import dev.aaa1115910.biliapi.repositories.VideoActionRepository
+import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
@@ -41,7 +42,8 @@ import org.koin.android.annotation.KoinViewModel
  */
 @KoinViewModel
 class VideoActionsViewModel(
-    private val videoActionRepository: VideoActionRepository
+    private val videoActionRepository: VideoActionRepository,
+    private val tvPublisher: TvLauncherPublisher,
 ) : ViewModel() {
     companion object {
         private val logger = KotlinLogging.logger { }
@@ -421,6 +423,7 @@ class VideoActionsViewModel(
                 }.onSuccess {
                     if (this@VideoActionsViewModel.aid == aid) inToView = !remove
                     _events.tryEmit(VideoActionEvent.Succeeded(action))
+                    runCatching { tvPublisher.syncToView(force = true) }
                 }.onFailure {
                     if (it is CancellationException) throw it
                     logger.fWarn { "${action.name} av$aid failed: ${it.stackTraceToString()}" }

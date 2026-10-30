@@ -14,6 +14,7 @@ import com.github.mytv.bv.BuildConfig
 import com.github.mytv.bv.R
 import com.github.mytv.bv.entity.carddata.VideoCardData
 import com.github.mytv.bv.repository.UserRepository
+import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.util.addWithMainContext
 import com.github.mytv.bv.util.fInfo
@@ -29,7 +30,8 @@ import org.koin.android.annotation.KoinViewModel
 @KoinViewModel
 class ToViewViewModel(
     private val userRepository: UserRepository,
-    private val ToViewRepository: ToViewRepository
+    private val ToViewRepository: ToViewRepository,
+    private val tvPublisher: TvLauncherPublisher,
 ) : ViewModel() {
     companion object {
         private val logger = KotlinLogging.logger { }
@@ -92,7 +94,10 @@ class ToViewViewModel(
                             .toast(BVApp.context)
                     }
                     logger.fInfo { "User auth failure" }
-                    if (!BuildConfig.DEBUG) userRepository.logout()
+                    if (!BuildConfig.DEBUG) {
+                        userRepository.logout()
+                        runCatching { tvPublisher.syncToView(force = true) }
+                    }
                 }
 
                 else -> {}
@@ -112,6 +117,7 @@ class ToViewViewModel(
                     histories.removeAll { it.avid == item.avid }
                 }
                 logger.fInfo { "Delete toview success: avid=${item.avid}" }
+                runCatching { tvPublisher.syncToView(force = true) }
                 withContext(Dispatchers.Main) {
                     BVApp.context.getString(R.string.toview_delete_success)
                         .toast(BVApp.context)
@@ -144,6 +150,7 @@ class ToViewViewModel(
                     noMore = false
                 }
                 logger.fInfo { "Clear toview success" }
+                runCatching { tvPublisher.syncToView(force = true) }
                 withContext(Dispatchers.Main) {
                     BVApp.context.getString(R.string.toview_clear_success)
                         .toast(BVApp.context)

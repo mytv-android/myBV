@@ -1,6 +1,10 @@
 package com.github.mytv.bv.ui.feature.toview
 
+import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +25,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.tvprovider.media.tv.TvContractCompat
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.entity.carddata.VideoCardData
 import com.github.mytv.bv.ui.designsystem.adaptive.BvInputMode
@@ -40,7 +46,9 @@ import com.github.mytv.bv.ui.feature.timeline.deleteModeKeys
 import com.github.mytv.bv.ui.feature.timeline.rememberPendingLoad
 import com.github.mytv.bv.ui.navigation.LoginRoute
 import com.github.mytv.bv.ui.navigation.openVideo
+import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.viewmodel.user.ToViewViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import com.github.mytv.bv.repository.UserRepository as BvUserRepository
@@ -80,6 +88,15 @@ internal fun ToViewContent(
     firstRequester: FocusRequester? = null,
 ) {
     val profile = LocalDeviceProfile.current
+    val tvPublisher: TvLauncherPublisher = koinInject()
+    val scope = rememberCoroutineScope()
+    val requestChannel = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            scope.launch { tvPublisher.syncToView(force = true) }
+        }
+    }
     val pending = rememberPendingLoad()
     val items = vm.histories.toList()
     val hintPadding = when (profile.layout) {
@@ -91,6 +108,7 @@ internal fun ToViewContent(
     var deleteMode by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<VideoCardData?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
+    var addingToLauncher by remember { mutableStateOf(false) }
 
     BackHandler(enabled = deleteMode) { deleteMode = false }
 
@@ -118,6 +136,39 @@ internal fun ToViewContent(
             dpad = profile.input == BvInputMode.DPad,
             modifier = Modifier.padding(horizontal = hintPadding),
         )
+        if (grid.tv) {
+            BvButton(
+                text = stringResource(R.string.toview_add_to_tv_launcher),
+                modifier = Modifier.padding(horizontal = hintPadding, vertical = 4.dp),
+                enabled = !addingToLauncher,
+                onClick = {
+                    if (!addingToLauncher) {
+                        addingToLauncher = true
+                        scope.launch {
+                            try {
+                                val status = tvPublisher.ensureToViewChannel() ?: return@launch
+                                if (status.browsable) {
+                                    tvPublisher.syncToView(force = true)
+                                } else {
+                                    runCatching {
+                                        requestChannel.launch(
+                                            Intent(
+                                                TvContractCompat.ACTION_REQUEST_CHANNEL_BROWSABLE
+                                            ).putExtra(
+                                                TvContractCompat.EXTRA_CHANNEL_ID,
+                                                status.channelId
+                                            )
+                                        )
+                                    }
+                                }
+                            } finally {
+                                addingToLauncher = false
+                            }
+                        }
+                    }
+                },
+            )
+        }
         SubPageGrid(
             list = items,
             grid = grid,

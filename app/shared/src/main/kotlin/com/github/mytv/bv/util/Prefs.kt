@@ -358,6 +358,15 @@ object Prefs {
         }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefApiTypeKey, value.ordinal) }
 
+    /** 电视桌面频道的 channelId / programId / 墓碑，JSON 串 */
+    var tvChannelsState: String
+        get() = runBlocking {
+            dsm.getPreferenceFlow(PrefKeys.prefTvChannelsStateRequest).first()
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefTvChannelsStateKey, value)
+        }
+
     var enableProxy: Boolean
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefEnabelProxyRequest).first() }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefEnableProxyKey, value) }
@@ -628,6 +637,7 @@ object PrefKeys {
     val prefPlayModeKey = intPreferencesKey("play_mode")
     val prefCacheThresholdKey = intPreferencesKey("cache_threshold")
     val prefCacheAutoCleanKey = booleanPreferencesKey("cache_auto_clean")
+    val prefTvChannelsStateKey = stringPreferencesKey("tv_channels_state")
 
     val prefIsLoginRequest = PreferenceRequest(prefIsLoginKey, false)
     val prefUidRequest = PreferenceRequest(prefUidKey, 0)
@@ -713,6 +723,7 @@ object PrefKeys {
     val prefPlayModeRequest = PreferenceRequest(prefPlayModeKey, PlayMode.Sequential.ordinal)
     val prefCacheThresholdRequest = PreferenceRequest(prefCacheThresholdKey, 0)
     val prefCacheAutoCleanRequest = PreferenceRequest(prefCacheAutoCleanKey, true)
+    val prefTvChannelsStateRequest = PreferenceRequest(prefTvChannelsStateKey, "")
 
     val prefThemeSourceKey = intPreferencesKey("bv_theme_source")
     val prefSeedColorKey = intPreferencesKey("bv_seed_color")
