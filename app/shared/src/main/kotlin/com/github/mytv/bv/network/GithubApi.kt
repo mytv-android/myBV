@@ -14,6 +14,7 @@ import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
+import io.ktor.client.request.head
 import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.url
@@ -48,12 +49,11 @@ object GithubApi {
     private const val REPO = "myBV"
     private const val MAX_RELEASE_PAGES = 3
 
-    /** 上次成功的加速线路（镜像前缀，空串为直连），只在进程内记忆。 */
-    @Volatile
-    private var preferredApiMirror: String? = null
+    /** 测速结果缓存有效期：5 分钟，检查更新与下载各自独立。 */
+    private const val PROBE_TTL_MS = 5 * 60 * 1000L
 
-    @Volatile
-    private var preferredDownloadMirror: String? = null
+    private val apiProbe = ProbeCache()
+    private val downloadProbe = ProbeCache()
     private lateinit var client: HttpClient
     private val json = Json {
         coerceInputValues = true
@@ -101,8 +101,7 @@ object GithubApi {
         page: Int = 1
     ): List<Release> = requestWithMirrors(
         url = "$API_BASE/repos/$owner/$repo/releases",
-        preferredMirror = preferredApiMirror,
-        onWorkingMirror = { preferredApiMirror = it },
+        cache = apiProbe,
     ) { url ->
         decode(
             client.get(url) {
@@ -119,8 +118,7 @@ object GithubApi {
         repo: String = REPO
     ): Release = requestWithMirrors(
         url = "$API_BASE/repos/$owner/$repo/releases/latest",
-        preferredMirror = preferredApiMirror,
-        onWorkingMirror = { preferredApiMirror = it },
+        cache = apiProbe,
     ) { url ->
         decode(client.get(url))
     }
@@ -171,21 +169,20 @@ object GithubApi {
         if (!isLegacyBridge && isAlpha) getLatestPreReleaseBuild() else getLatestStableBuild()
 
     /**
-     * 直连失败时依次换乘加速镜像；上次成功的线路优先。
+     * 先并发测速（5 分钟内复用结果），再按耗时从快到慢逐镜像回退；实际走通的线路提到最前。
      * 404/401 是 GitHub 的确定答复，换线路也没用，直接抛出。
      */
     private suspend fun <T> requestWithMirrors(
         url: String,
-        preferredMirror: String?,
-        onWorkingMirror: (String) -> Unit,
+        cache: ProbeCache,
         block: suspend (String) -> T,
     ): T {
         var lastFailure: Exception? = null
         var rateLimitFailure: Exception? = null
-        for (candidate in GithubRoutes.candidates(url, preferredMirror)) {
+        for (candidate in GithubRoutes.candidates(url, routeOrder(url, cache))) {
             try {
                 val result = block(candidate.url)
-                onWorkingMirror(candidate.mirror)
+                cache.promote(candidate.mirror)
                 return result
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -196,6 +193,42 @@ object GithubApi {
             }
         }
         throw rateLimitFailure ?: lastFailure ?: GithubApiException("GitHub 更新线路全部不可用")
+    }
+
+    /** 命中 5 分钟缓存就直接用，否则并发测速所有线路并按耗时排序。 */
+    private suspend fun routeOrder(target: String, cache: ProbeCache): List<String> {
+        cache.get()?.let { return it }
+        val order = GithubRoutes.probeOrder(target) { probeReachable(it) }
+        cache.put(order)
+        return order
+    }
+
+    /** HEAD 探测单条线路；个别镜像不支持 HEAD（405）时，有明确响应也视为可达。 */
+    private suspend fun probeReachable(url: String): Boolean {
+        val status = client.head(url).status.value
+        return status in 200..399 || status == 405
+    }
+
+    /** 进程内的测速结果：每条线路的耗时顺序，外加 TTL 内实际成功的线路提升。 */
+    private class ProbeCache {
+        @Volatile
+        private var expiresAt = 0L
+
+        @Volatile
+        private var order: List<String>? = null
+
+        fun get(): List<String>? = order?.takeIf { System.currentTimeMillis() < expiresAt }
+
+        fun put(value: List<String>) {
+            order = value
+            expiresAt = System.currentTimeMillis() + PROBE_TTL_MS
+        }
+
+        fun promote(mirror: String) {
+            val current = order ?: return
+            if (current.firstOrNull() == mirror || mirror !in current) return
+            order = listOf(mirror) + current.filterNot { it == mirror }
+        }
     }
 
     private fun Exception.isRateLimited(): Boolean =
@@ -251,8 +284,7 @@ object GithubApi {
         try {
             requestWithMirrors(
                 url = downloadAsset.browserDownloadUrl,
-                preferredMirror = preferredDownloadMirror,
-                onWorkingMirror = { preferredDownloadMirror = it },
+                cache = downloadProbe,
             ) { url ->
                 file.delete()
                 client.prepareRequest {
