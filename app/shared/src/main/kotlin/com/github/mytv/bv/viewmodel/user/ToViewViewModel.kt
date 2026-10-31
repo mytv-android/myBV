@@ -16,6 +16,7 @@ import com.github.mytv.bv.entity.carddata.VideoCardData
 import com.github.mytv.bv.repository.UserRepository
 import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.util.Prefs
+import com.github.mytv.bv.util.WidgetSignals
 import com.github.mytv.bv.util.addWithMainContext
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
@@ -117,6 +118,7 @@ class ToViewViewModel(
                     histories.removeAll { it.avid == item.avid }
                 }
                 logger.fInfo { "Delete toview success: avid=${item.avid}" }
+                WidgetSignals.notifyChanged()
                 runCatching { tvPublisher.syncToView(force = true) }
                 withContext(Dispatchers.Main) {
                     BVApp.context.getString(R.string.toview_delete_success)
@@ -150,6 +152,7 @@ class ToViewViewModel(
                     noMore = false
                 }
                 logger.fInfo { "Clear toview success" }
+                WidgetSignals.notifyChanged()
                 runCatching { tvPublisher.syncToView(force = true) }
                 withContext(Dispatchers.Main) {
                     BVApp.context.getString(R.string.toview_clear_success)

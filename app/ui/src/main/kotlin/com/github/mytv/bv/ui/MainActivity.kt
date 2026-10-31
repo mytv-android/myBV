@@ -2,6 +2,7 @@ package com.github.mytv.bv.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,9 +20,16 @@ import com.github.mytv.bv.ui.feature.login.DeepLinkEffect
 import com.github.mytv.bv.ui.feature.migration.LegacyMigrationPrompts
 import com.github.mytv.bv.ui.feature.settings.LaunchUpdatePrompt
 import com.github.mytv.bv.ui.navigation.AppShell
+import com.github.mytv.bv.ui.widget.WidgetAuthObserver
+import com.github.mytv.bv.ui.widget.WidgetRefresher
+import com.github.mytv.bv.ui.widget.WidgetScheduler
 import com.github.mytv.bv.util.CacheManager
 import com.github.mytv.bv.util.Prefs
+import com.github.mytv.bv.util.WidgetSignals
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +49,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         deepLinkIntent = intent
+        WidgetScheduler.ensureScheduled(applicationContext)
+        observeWidgetSignals()
+        observeThemeChanges()
         // 启动时后台检查缓存阈值（默认「不限制」，只有用户设置上限后才会清理）
         lifecycleScope.launch(Dispatchers.IO) {
             runCatching { CacheManager(applicationContext).checkCache() }
@@ -53,6 +64,7 @@ class MainActivity : ComponentActivity() {
             }
             setContent {
                 BvRoot(initialPrefs, initialShowFps = showFps) {
+                    WidgetAuthObserver()
                     UserLockGate {
                         val nav = rememberNavController()
                         AppShell(nav)
@@ -79,9 +91,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        // 回到桌面时让小组件拿到刚才在 App 里的改动（稍后再看、历史记录等）
+        WidgetRefresher.refreshNow(applicationContext)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         deepLinkIntent = intent
+    }
+
+    /** 播放进度 / 稍后再看变化：最多一分钟刷新一次继续观看。 */
+    private fun observeWidgetSignals() {
+        lifecycleScope.launch {
+            var last = 0L
+            WidgetSignals.changes.collect {
+                val now = SystemClock.elapsedRealtime()
+                if (now - last >= 60_000L) {
+                    last = now
+                    WidgetRefresher.requestUserDataChanged(applicationContext)
+                }
+            }
+        }
+    }
+
+    /** 主题 / 跟随内容的种子色变了，桌面组件重新取色。 */
+    private fun observeThemeChanges() {
+        lifecycleScope.launch {
+            Prefs.themePrefsFlow
+                .drop(1)
+                .distinctUntilChanged()
+                .debounce(500)
+                .collect { WidgetRefresher.updateWidgetsSoon(applicationContext) }
+        }
     }
 }

@@ -53,6 +53,62 @@
                     android:host="toview"
                     android:scheme="bugvideo" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="shorts"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="dynamic"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="search"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="login"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="timeline"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="player"
+                    android:scheme="bugvideo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="season"
+                    android:scheme="bugvideo" />
+            </intent-filter>
 
             <!-- TCL 灵控桌面「我的应用」全幅卡片：306×196 的整卡图，应用名已烧进图里。
                  缓存键是 <包名>_<activity名>，换图后需 pm clear 才会刷新。 -->
@@ -60,5 +116,73 @@
                 android:name="beidouui_icon"
                 android:value="tcl_launcher_card.png" />
         </activity>
+
+        <!-- 桌面小组件（Jetpack Glance） -->
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.ContinueWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_continue_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_continue_info" />
+        </receiver>
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.LaterWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_later_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_later_info" />
+        </receiver>
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.TimelineWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_timeline_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_timeline_info" />
+        </receiver>
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.DynamicWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_dynamic_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_dynamic_info" />
+        </receiver>
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.ShortsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_shorts_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shorts_info" />
+        </receiver>
+        <receiver
+            android:name="com.github.mytv.bv.ui.widget.SearchWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_search_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_search_info" />
+        </receiver>
     </application>
 </manifest>

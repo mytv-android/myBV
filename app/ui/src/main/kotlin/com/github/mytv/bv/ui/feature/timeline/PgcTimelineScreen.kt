@@ -67,11 +67,24 @@ internal class TimelinePageModel(private val repository: SeasonRepository) : Vie
         private set
     var selected by mutableIntStateOf(-1)
     private var started = false
+    private var initialDayOfWeek: Int? = null
 
-    fun ensureLoaded() {
+    fun ensureLoaded(initialDayOfWeek: Int? = null) {
         if (started) return
+        this.initialDayOfWeek = initialDayOfWeek
         started = true
         load()
+    }
+
+    /** 已加载过时，深链指定新的一天也能切过去。 */
+    fun selectDay(dayOfWeek: Int?) {
+        if (dayOfWeek == null) return
+        if (timelines.isEmpty()) {
+            initialDayOfWeek = dayOfWeek
+            return
+        }
+        val index = timelines.indexOfFirst { it.dayOfWeek == dayOfWeek }
+        if (index >= 0) selected = index
     }
 
     fun load() {
@@ -81,7 +94,17 @@ internal class TimelinePageModel(private val repository: SeasonRepository) : Vie
             val result = runCatching { fetchTimelines(repository, TimelineFilter.Anime) }
             result.onSuccess { list ->
                 timelines = list
-                if (selected !in list.indices) selected = list.indexOfFirst { it.isToday }.coerceAtLeast(0)
+                if (selected !in list.indices) {
+                    val preferred = initialDayOfWeek
+                        ?.let { day -> list.indexOfFirst { it.dayOfWeek == day } }
+                        ?: -1
+                    selected = if (preferred >= 0) {
+                        preferred
+                    } else {
+                        list.indexOfFirst { it.isToday }.coerceAtLeast(0)
+                    }
+                    initialDayOfWeek = null
+                }
             }.onFailure {
                 failed = true
             }
@@ -90,13 +113,16 @@ internal class TimelinePageModel(private val repository: SeasonRepository) : Vie
     }
 }
 
-/** 新番时间表（第 9.11 节）：日期标签（今天预选）+ 当天更新的剧集。点击进入番剧详情。 */
+/** 新番时间表（第 9.11 节）：日期标签（今天预选，深链可指定）+ 当天更新的剧集。点击进入番剧详情。 */
 @Composable
-fun PgcTimelineScreen(nav: NavController) {
+fun PgcTimelineScreen(nav: NavController, initialDayOfWeek: Int? = null) {
     val repository: SeasonRepository = koinInject()
     val model: TimelinePageModel = viewModel { TimelinePageModel(repository) }
     val follow = rememberSeasonFollow()
-    LaunchedEffect(model) { model.ensureLoaded() }
+    LaunchedEffect(model, initialDayOfWeek) {
+        model.ensureLoaded(initialDayOfWeek)
+        model.selectDay(initialDayOfWeek)
+    }
 
     val title = stringResource(R.string.timeline_title)
     val onOpen: (TimelineEp) -> Unit = { nav.navigate(SeasonRoute(seasonId = it.seasonId)) }

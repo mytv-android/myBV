@@ -22,6 +22,7 @@ import com.github.mytv.bv.entity.ShortsItem
 import com.github.mytv.bv.player.entity.Resolution
 import com.github.mytv.bv.repository.PlayUrlResolver
 import com.github.mytv.bv.util.Prefs
+import com.github.mytv.bv.util.WidgetSignals
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.swapList
@@ -497,6 +498,7 @@ class ShortsViewModel(
                 }.onSuccess {
                     actionStates[aid] = actionStateOf(aid).copy(inToView = !inToView)
                     _events.tryEmit(ShortsEvent.ActionSucceeded(action, aid))
+                    WidgetSignals.notifyChanged()
                 }.onFailure {
                     if (it is CancellationException) throw it
                     logger.fWarn { "${action.name} av$aid failed: ${it.stackTraceToString()}" }
@@ -535,6 +537,8 @@ class ShortsViewModel(
                         preferApiType = Prefs.apiType
                     )
                 }
+            }.onSuccess {
+                WidgetSignals.notifyChanged()
             }.onFailure {
                 if (it is CancellationException) throw it
                 logger.fWarn { "Send heartbeat failed: ${it.stackTraceToString()}" }

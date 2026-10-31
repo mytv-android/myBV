@@ -15,6 +15,7 @@ import dev.aaa1115910.biliapi.http.entity.AuthFailureException
 import dev.aaa1115910.biliapi.repositories.VideoActionRepository
 import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.util.Prefs
+import com.github.mytv.bv.util.WidgetSignals
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.swapList
@@ -423,6 +424,7 @@ class VideoActionsViewModel(
                 }.onSuccess {
                     if (this@VideoActionsViewModel.aid == aid) inToView = !remove
                     _events.tryEmit(VideoActionEvent.Succeeded(action))
+                    WidgetSignals.notifyChanged()
                     runCatching { tvPublisher.syncToView(force = true) }
                 }.onFailure {
                     if (it is CancellationException) throw it

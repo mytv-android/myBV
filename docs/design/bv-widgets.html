@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>myBV 桌面小组件</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: design sheet in the same style as docs/design/bv-expressive-redesign.html.
+   Hero (lockup + color controls) over a band with two phone home screens; then a two-column
+   catalog where every widget is drawn 1:1 in dp on the same wallpaper; then an implementation table.
+   Color: every token is a Material role generated from one seed with SchemeVibrant (the app's default
+   PaletteStyle). --l-* = light scheme, --d-* = dark scheme; script swaps the raw values per seed. */
+:root {
+  --font-display: "Roboto Flex", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-body: "Noto Sans SC", "Roboto Flex", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --spring: cubic-bezier(.34, 1.5, .64, 1);
+  --effects: cubic-bezier(.2, 0, 0, 1);
+  --l-primary: #006c50; --l-on-primary: #ffffff; --l-primary-container: #37ffc4; --l-on-primary-container: #00513b; --l-secondary: #39665f; --l-on-secondary: #ffffff; --l-secondary-container: #bcece2; --l-on-secondary-container: #204e47; --l-tertiary: #19686b; --l-on-tertiary: #ffffff; --l-tertiary-container: #a8eff1; --l-on-tertiary-container: #004f51; --l-surface: #effdf4; --l-on-surface: #121e19; --l-on-surface-variant: #3b4a43; --l-surface-container-lowest: #ffffff; --l-surface-container-low: #e9f7ee; --l-surface-container: #e4f1e8; --l-surface-container-high: #deebe3; --l-surface-container-highest: #d8e6dd; --l-outline: #6a7b72; --l-outline-variant: #b9cbc1; --l-inverse-surface: #27332d; --l-inverse-on-surface: #e6f4eb; --l-inverse-primary: #00e1aa;
+  --d-primary: #00e1aa; --d-on-primary: #003828; --d-primary-container: #00513b; --d-on-primary-container: #37ffc4; --d-secondary: #a1d0c6; --d-on-secondary: #023731; --d-secondary-container: #204e47; --d-on-secondary-container: #bcece2; --d-tertiary: #8cd2d5; --d-on-tertiary: #003738; --d-tertiary-container: #004f51; --d-on-tertiary-container: #a8eff1; --d-surface: #0a1611; --d-on-surface: #d8e6dd; --d-on-surface-variant: #b9cbc1; --d-surface-container-lowest: #06100c; --d-surface-container-low: #121e19; --d-surface-container: #16221d; --d-surface-container-high: #212c27; --d-surface-container-highest: #2b3732; --d-outline: #84958c; --d-outline-variant: #3b4a43; --d-inverse-surface: #d8e6dd; --d-inverse-on-surface: #27332d; --d-inverse-primary: #006c50;
+}
+
+/* role mapping. .rs = an element with its own seed (cover color) re-resolves the roles. */
+:root, .rs { --primary: var(--l-primary); --on-primary: var(--l-on-primary); --primary-container: var(--l-primary-container); --on-primary-container: var(--l-on-primary-container); --secondary: var(--l-secondary); --on-secondary: var(--l-on-secondary); --secondary-container: var(--l-secondary-container); --on-secondary-container: var(--l-on-secondary-container); --tertiary: var(--l-tertiary); --on-tertiary: var(--l-on-tertiary); --tertiary-container: var(--l-tertiary-container); --on-tertiary-container: var(--l-on-tertiary-container); --surface: var(--l-surface); --on-surface: var(--l-on-surface); --on-surface-variant: var(--l-on-surface-variant); --surface-container-lowest: var(--l-surface-container-lowest); --surface-container-low: var(--l-surface-container-low); --surface-container: var(--l-surface-container); --surface-container-high: var(--l-surface-container-high); --surface-container-highest: var(--l-surface-container-highest); --outline: var(--l-outline); --outline-variant: var(--l-outline-variant); --inverse-surface: var(--l-inverse-surface); --inverse-on-surface: var(--l-inverse-on-surface); --inverse-primary: var(--l-inverse-primary); --wall-dim: rgb(6 8 28 / 0); --dock-bg: rgb(255 255 255 / .88); --dock-fg: #28305a; color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]), :root:not([data-theme="light"]) .rs { --primary: var(--d-primary); --on-primary: var(--d-on-primary); --primary-container: var(--d-primary-container); --on-primary-container: var(--d-on-primary-container); --secondary: var(--d-secondary); --on-secondary: var(--d-on-secondary); --secondary-container: var(--d-secondary-container); --on-secondary-container: var(--d-on-secondary-container); --tertiary: var(--d-tertiary); --on-tertiary: var(--d-on-tertiary); --tertiary-container: var(--d-tertiary-container); --on-tertiary-container: var(--d-on-tertiary-container); --surface: var(--d-surface); --on-surface: var(--d-on-surface); --on-surface-variant: var(--d-on-surface-variant); --surface-container-lowest: var(--d-surface-container-lowest); --surface-container-low: var(--d-surface-container-low); --surface-container: var(--d-surface-container); --surface-container-high: var(--d-surface-container-high); --surface-container-highest: var(--d-surface-container-highest); --outline: var(--d-outline); --outline-variant: var(--d-outline-variant); --inverse-surface: var(--d-inverse-surface); --inverse-on-surface: var(--d-inverse-on-surface); --inverse-primary: var(--d-inverse-primary); --wall-dim: rgb(6 8 28 / .46); --dock-bg: rgb(30 33 56 / .9); --dock-fg: #dfe3ff; color-scheme: dark; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .rs { --primary: var(--d-primary); --on-primary: var(--d-on-primary); --primary-container: var(--d-primary-container); --on-primary-container: var(--d-on-primary-container); --secondary: var(--d-secondary); --on-secondary: var(--d-on-secondary); --secondary-container: var(--d-secondary-container); --on-secondary-container: var(--d-on-secondary-container); --tertiary: var(--d-tertiary); --on-tertiary: var(--d-on-tertiary); --tertiary-container: var(--d-tertiary-container); --on-tertiary-container: var(--d-on-tertiary-container); --surface: var(--d-surface); --on-surface: var(--d-on-surface); --on-surface-variant: var(--d-on-surface-variant); --surface-container-lowest: var(--d-surface-container-lowest); --surface-container-low: var(--d-surface-container-low); --surface-container: var(--d-surface-container); --surface-container-high: var(--d-surface-container-high); --surface-container-highest: var(--d-surface-container-highest); --outline: var(--d-outline); --outline-variant: var(--d-outline-variant); --inverse-surface: var(--d-inverse-surface); --inverse-on-surface: var(--d-inverse-on-surface); --inverse-primary: var(--d-inverse-primary); --wall-dim: rgb(6 8 28 / .46); --dock-bg: rgb(30 33 56 / .9); --dock-fg: #dfe3ff; color-scheme: dark; }
+/* preview toggle: force the phones and specimens light or dark */
+:root .mk-l, :root .mk-l .rs { --primary: var(--l-primary); --on-primary: var(--l-on-primary); --primary-container: var(--l-primary-container); --on-primary-container: var(--l-on-primary-container); --secondary: var(--l-secondary); --on-secondary: var(--l-on-secondary); --secondary-container: var(--l-secondary-container); --on-secondary-container: var(--l-on-secondary-container); --tertiary: var(--l-tertiary); --on-tertiary: var(--l-on-tertiary); --tertiary-container: var(--l-tertiary-container); --on-tertiary-container: var(--l-on-tertiary-container); --surface: var(--l-surface); --on-surface: var(--l-on-surface); --on-surface-variant: var(--l-on-surface-variant); --surface-container-lowest: var(--l-surface-container-lowest); --surface-container-low: var(--l-surface-container-low); --surface-container: var(--l-surface-container); --surface-container-high: var(--l-surface-container-high); --surface-container-highest: var(--l-surface-container-highest); --outline: var(--l-outline); --outline-variant: var(--l-outline-variant); --inverse-surface: var(--l-inverse-surface); --inverse-on-surface: var(--l-inverse-on-surface); --inverse-primary: var(--l-inverse-primary); --wall-dim: rgb(6 8 28 / 0); --dock-bg: rgb(255 255 255 / .88); --dock-fg: #28305a; color-scheme: light; }
+:root .mk-d, :root .mk-d .rs, :root .cinema, :root .cinema.rs, :root .cinema .rs { --primary: var(--d-primary); --on-primary: var(--d-on-primary); --primary-container: var(--d-primary-container); --on-primary-container: var(--d-on-primary-container); --secondary: var(--d-secondary); --on-secondary: var(--d-on-secondary); --secondary-container: var(--d-secondary-container); --on-secondary-container: var(--d-on-secondary-container); --tertiary: var(--d-tertiary); --on-tertiary: var(--d-on-tertiary); --tertiary-container: var(--d-tertiary-container); --on-tertiary-container: var(--d-on-tertiary-container); --surface: var(--d-surface); --on-surface: var(--d-on-surface); --on-surface-variant: var(--d-on-surface-variant); --surface-container-lowest: var(--d-surface-container-lowest); --surface-container-low: var(--d-surface-container-low); --surface-container: var(--d-surface-container); --surface-container-high: var(--d-surface-container-high); --surface-container-highest: var(--d-surface-container-highest); --outline: var(--d-outline); --outline-variant: var(--d-outline-variant); --inverse-surface: var(--d-inverse-surface); --inverse-on-surface: var(--d-inverse-on-surface); --inverse-primary: var(--d-inverse-primary); --wall-dim: rgb(6 8 28 / .46); --dock-bg: rgb(30 33 56 / .9); --dock-fg: #dfe3ff; color-scheme: dark; }
+
+/* ---------- page ---------- */
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--surface); color: var(--on-surface);
+  font: 400 15px/1.7 var(--font-body); -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  transition: background-color .6s var(--effects), color .6s var(--effects);
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.eyebrow { font: 600 12px/1.4 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--primary); font-variation-settings: "wdth" 120; }
+.lede { font-size: 17px; line-height: 1.8; color: var(--on-surface-variant); max-width: 62ch; }
+.mono { font-family: var(--font-mono); }
+
+/* hero */
+.hero { background: var(--surface-container-lowest); transition: background-color .6s var(--effects); }
+.hero-in { padding-block: clamp(36px, 6vw, 72px) clamp(28px, 4vw, 44px); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+@media (max-width: 920px) { .hero-in { grid-template-columns: minmax(0, 1fr); } }
+.hero-txt { display: grid; gap: 18px; min-width: 0; }
+h1 { display: flex; flex-wrap: wrap; align-items: center; column-gap: .24em; row-gap: .08em; font-size: clamp(40px, 6.4vw, 76px); line-height: 1.08; font-weight: 850; letter-spacing: -0.02em; font-variation-settings: "wdth" 118, "opsz" 96; }
+h1 .lock { display: inline-flex; align-items: center; gap: .14em; }
+h1 .cap { display: inline-block; font-size: .6em; font-weight: 700; line-height: 1; padding: .14em .42em .24em; border-radius: 999px; background: var(--primary-container); color: var(--on-primary-container); letter-spacing: 0; font-variation-settings: "wdth" 100; transition: background-color .6s var(--effects), color .6s var(--effects); }
+h1 .rest { font-weight: 700; color: var(--on-surface-variant); font-variation-settings: "wdth" 100; letter-spacing: 0; }
+
+/* controls */
+.ctrl { display: grid; gap: 14px; padding: 18px; border-radius: 28px; background: var(--surface-container); min-width: 0; transition: background-color .6s var(--effects); }
+.ctrl-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 40px; }
+.ctrl-label { font: 600 12px var(--font-display); letter-spacing: .1em; color: var(--on-surface-variant); min-width: 64px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+.seg button {
+  font: 500 13px var(--font-body); border: 0; cursor: pointer; padding: 8px 14px; color: var(--on-surface);
+  background: var(--surface-container-highest); border-radius: 6px;
+  transition: border-radius .45s var(--spring), background-color .3s, color .3s;
+}
+.seg button:first-child { border-radius: 999px 6px 6px 999px; }
+.seg button:last-child { border-radius: 6px 999px 999px 6px; }
+.seg button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-radius: 999px; }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--surface-container-high); }
+.seg.sm button { padding: 6px 12px; font-size: 12.5px; }
+.swatch { width: 36px; height: 36px; border: 0; padding: 0; cursor: pointer; background: var(--c); border-radius: 50%; flex: none; transition: border-radius .5s var(--spring), transform .4s var(--spring); }
+.swatch:hover { transform: scale(1.08); }
+.swatch[aria-pressed="true"] { border-radius: 30%; transform: rotate(45deg); box-shadow: 0 0 0 3px var(--surface-container), 0 0 0 5px var(--on-surface); }
+.swatch.still { cursor: default; border-radius: 30%; }
+.rec { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; padding: 4px 12px 4px 4px; border-radius: 14px; background: var(--surface-container-highest); color: var(--on-surface); font: 500 13px var(--font-body); transition: border-radius .45s var(--spring), background-color .3s, color .3s; }
+.rec img { width: 48px; height: 30px; object-fit: cover; border-radius: 10px; display: block; transition: border-radius .45s var(--spring); }
+.rec[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); border-radius: 999px; }
+.rec[aria-pressed="true"] img { border-radius: 999px; }
+.note { font-size: 13px; color: var(--on-surface-variant); }
+.status { font: 500 12px/1.65 var(--font-mono); color: var(--on-surface-variant); }
+
+/* stage */
+.stage-band { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); transition: background-color .6s var(--effects); }
+.stage { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); justify-content: center; gap: clamp(12px, 5vw, 72px); padding-block: clamp(28px, 4vw, 48px); }
+.dv { margin: 0; display: grid; gap: 12px; justify-items: center; min-width: 0; }
+.dv figcaption { font: 500 12px/1.5 var(--font-display); letter-spacing: .04em; color: var(--on-surface-variant); text-align: center; }
+.dv figcaption b { color: var(--on-surface); font-weight: 700; margin-right: 6px; }
+.fit { position: relative; width: 100%; height: 800px; }
+.frame { position: absolute; left: 0; top: 0; width: 380px; height: 800px; padding: 10px; box-sizing: border-box; border-radius: 44px; background: #0d0d0f; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .55), inset 0 0 0 2px #2a2a2e; transform-origin: 0 0; }
+
+/* phone screen + wallpaper (the wallpaper is an image: same colors in both themes, dimmed in dark) */
+.screen { position: relative; width: 360px; height: 780px; border-radius: 34px; overflow: hidden; isolation: isolate; font: 400 13px/1.35 var(--font-body); }
+.wall {
+  background:
+    radial-gradient(70% 40% at 12% 6%, #cfc3f7 0%, transparent 70%),
+    radial-gradient(60% 36% at 96% 34%, #f3c4d7 0%, transparent 72%),
+    radial-gradient(85% 45% at 18% 96%, #5866c8 0%, transparent 70%),
+    linear-gradient(165deg, #a9b2ef 0%, #7f8bda 46%, #4b55a8 100%);
+}
+.wall::before { content: ""; position: absolute; inset: 0; background: var(--wall-dim); z-index: 0; pointer-events: none; transition: background-color .6s var(--effects); }
+.wall > :not(.abs) { position: relative; z-index: 1; }
+.wall > .abs { position: absolute; z-index: 1; }
+.sbar { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font: 600 13px var(--font-display); color: #fff; font-variant-numeric: tabular-nums; }
+.sbar .ics { display: flex; gap: 5px; align-items: center; }
+.sbar svg { width: 15px; height: 15px; fill: #fff; display: block; }
+.glance { padding: 22px 20px 0; color: #fff; font: 500 23px/1.2 var(--font-display); text-shadow: 0 1px 10px rgb(20 24 70 / .3); }
+.glance small { display: block; font: 500 13px/1.4 var(--font-body); opacity: .92; margin-top: 4px; }
+.hs { display: grid; grid-template-columns: repeat(4, 76px); grid-auto-rows: 84px; gap: 8px; padding: 18px 16px 0; }
+.hs.top { padding-top: 26px; }
+.dock { left: 0; right: 0; bottom: 0; padding: 0 22px 30px; display: grid; gap: 18px; justify-items: center; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 6px; height: 6px; border-radius: 3px; background: rgb(255 255 255 / .5); }
+.dots i.on { width: 16px; background: #fff; }
+.apps { display: flex; justify-content: space-between; width: 100%; padding: 0 6px; box-sizing: border-box; }
+.app { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--dock-bg); color: var(--dock-fg); transition: background-color .6s var(--effects); }
+.app svg { width: 24px; height: 24px; fill: currentColor; display: block; }
+.app.bv { border-radius: 17px; background: linear-gradient(135deg, #f77ba1, #c4296a); color: #ffdbe4; }
+.app.bv svg { width: 30px; height: 30px; }
+.gbar { left: 50%; bottom: 9px; width: 108px; height: 4px; margin-left: -54px; border-radius: 2px; background: rgb(255 255 255 / .85); }
+
+/* ---------- widgets (all sizes are dp at 1:1) ---------- */
+.wg { box-sizing: border-box; position: relative; display: flex; flex-direction: column; padding: 12px; border-radius: 28px; overflow: hidden; background: var(--surface-container); color: var(--on-surface); font: 400 13px/1.35 var(--font-body); text-align: left; transition: background-color .6s var(--effects), color .6s var(--effects); }
+.wg * { box-sizing: border-box; }
+.wg p { margin: 0; }
+.wg svg.i { width: 20px; height: 20px; fill: currentColor; flex: none; display: block; }
+.wg.c2 { width: 160px; grid-column: span 2; }
+.wg.c4 { width: 328px; grid-column: span 4; }
+.wg.r1 { height: 84px; grid-row: span 1; }
+.wg.r2 { height: 176px; grid-row: span 2; }
+.wg.r3 { height: 268px; grid-row: span 3; }
+.sp { flex: 1; min-width: 0; min-height: 0; }
+.t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t2, .t3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.t2 { -webkit-line-clamp: 2; }
+.t3 { -webkit-line-clamp: 3; }
+.wg .eb { font: 600 11px/15px var(--font-display); letter-spacing: .14em; color: var(--primary); font-variation-settings: "wdth" 120; }
+.wg .tt { font-weight: 700; font-size: 14px; line-height: 19px; }
+.wg .meta { font-size: 11px; line-height: 15px; color: var(--on-surface-variant); }
+.cv { position: relative; border-radius: 16px; overflow: hidden; background: var(--surface-container-high); flex: none; }
+.cv img, .th img, .po img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dur { position: absolute; right: 6px; bottom: 10px; font: 600 10.5px/13px var(--font-display); padding: 2px 6px; border-radius: 8px; background: rgb(0 0 0 / .55); color: #fff; font-variant-numeric: tabular-nums; }
+.track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgb(255 255 255 / .32); }
+.track i { display: block; height: 100%; background: var(--primary); border-radius: 0 2px 2px 0; transition: background-color .6s var(--effects); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 999px; font: 600 13px var(--font-body); white-space: nowrap; flex: none; background: var(--primary); color: var(--on-primary); transition: background-color .6s var(--effects), color .6s var(--effects); }
+.wg .btn svg.i { width: 18px; height: 18px; }
+.fab { width: 44px; height: 44px; display: grid; place-items: center; background: var(--primary); color: var(--on-primary); flex: none; transition: background-color .6s var(--effects), color .6s var(--effects); }
+.ovchip { display: inline-flex; align-items: center; gap: 4px; font: 600 11px/1 var(--font-display); letter-spacing: .08em; color: #fff; background: rgb(0 0 0 / .45); padding: 6px 10px 6px 8px; border-radius: 999px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.wg .ovchip svg.i { width: 14px; height: 14px; }
+.cv .ovchip { position: absolute; left: 8px; top: 8px; }
+.sh-cookie { clip-path: var(--shape-cookie9, circle(50%)); }
+.sh-sunny { clip-path: var(--shape-sunny, circle(50%)); }
+.sh-clover { clip-path: var(--shape-clover, circle(50%)); }
+
+/* 继续观看 */
+.w-cont.c4.r2 { flex-direction: row; gap: 12px; }
+.w-cont .col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.w-cont .col .btn { width: 100%; }
+.w-cont.c2 { gap: 7px; }
+.w-cont.c2 .tt { font-size: 13px; line-height: 18px; }
+.w-cont.c2 .fab { position: absolute; right: 8px; bottom: 10px; width: 40px; height: 40px; }
+.w-cont.r3 { gap: 10px; }
+.w-cont .foot { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+.w-cont .foot .meta { flex: 1; min-width: 0; }
+
+/* 稍后再看 + shared header/list */
+.w-later { gap: 10px; }
+.hd { display: flex; align-items: center; gap: 8px; height: 32px; flex: none; }
+.hd b { font: 700 15px/20px var(--font-display); }
+.hico { width: 32px; height: 32px; display: grid; place-items: center; background: var(--tertiary-container); color: var(--on-tertiary-container); flex: none; transition: background-color .6s var(--effects), color .6s var(--effects); }
+.wg .hico svg.i { width: 18px; height: 18px; }
+.cnt { font: 600 11px/1 var(--font-display); padding: 4px 7px; border-radius: 999px; background: var(--secondary-container); color: var(--on-secondary-container); font-variant-numeric: tabular-nums; }
+.ib { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-container-high); color: var(--on-surface-variant); flex: none; }
+.lst { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.row { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.th { position: relative; width: 88px; height: 55px; border-radius: 12px; overflow: hidden; flex: none; background: var(--surface-container-high); }
+.th .dur { right: 4px; bottom: 4px; font-size: 10px; padding: 1px 5px; border-radius: 6px; }
+.row .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.w-later .tx .t2 { font-size: 13px; line-height: 18px; font-weight: 500; }
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; padding: 0 24px 6px; }
+.empty .blob { width: 56px; height: 56px; display: grid; place-items: center; background: var(--tertiary-container); color: var(--on-tertiary-container); margin-bottom: 4px; }
+.wg .empty .blob svg.i { width: 26px; height: 26px; }
+.empty b { font: 700 14px/20px var(--font-body); }
+.empty span:not(.blob):not(.btn) { font-size: 12px; line-height: 17px; color: var(--on-surface-variant); }
+.empty .btn { margin-top: 6px; }
+
+/* 番剧放送表 */
+.w-tl { gap: 8px; }
+.w-tl .hd { height: 26px; }
+.w-tl .hd b { font-size: 14px; }
+.wk { display: flex; gap: 2px; }
+.wk span { width: 22px; height: 22px; display: grid; place-items: center; font: 500 11px/1 var(--font-body); color: var(--on-surface-variant); position: relative; }
+.wk span.has::after { content: ""; position: absolute; bottom: -3px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--primary); }
+.wk span.on { background: var(--primary); color: var(--on-primary); font-weight: 700; clip-path: var(--shape-cookie9, circle(50%)); }
+.w-tl .lst { gap: 8px; }
+.po { width: 39px; height: 52px; border-radius: 10px; overflow: hidden; flex: none; background: var(--surface-container-high); }
+.w-tl .tx .t1:first-child { font-weight: 700; font-size: 13.5px; line-height: 19px; }
+.tag { display: inline-block; font: 600 10px/14px var(--font-body); padding: 0 5px; border-radius: 5px; background: var(--secondary-container); color: var(--on-secondary-container); margin-right: 5px; vertical-align: 1px; }
+.st { flex: none; font: 600 11.5px/1 var(--font-display); padding: 8px 11px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.st.done { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.st.wait { box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); }
+
+/* 动态 */
+.w-dyn { background: var(--secondary-container); color: var(--on-secondary-container); }
+.avs { display: flex; align-items: center; }
+.av { width: 38px; height: 38px; display: grid; place-items: center; background: var(--secondary-container); clip-path: var(--shape-cookie9, circle(50%)); flex: none; transition: background-color .6s var(--effects); }
+.av + .av { margin-left: -10px; }
+.av img { width: 32px; height: 32px; object-fit: cover; clip-path: var(--shape-cookie9, circle(50%)); display: block; }
+.avs .more { margin-left: 6px; font: 600 12px var(--font-display); opacity: .8; }
+.big { display: flex; align-items: baseline; gap: 6px; }
+.big b { font: 800 48px/1 var(--font-display); font-variation-settings: "wdth" 115, "opsz" 72; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.big span { font: 700 13px var(--font-body); }
+.w-dyn .last { font-size: 11.5px; line-height: 16px; margin-top: 6px; opacity: .86; }
+
+/* 刷刷 (always dark, like the app's 刷刷) */
+.wg.w-shorts { color: #fff; background: #000; }
+.w-shorts > img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.w-shorts > .scrim { position: absolute; inset: 0; background: linear-gradient(0deg, rgb(0 0 0 / .8), transparent 58%), linear-gradient(180deg, rgb(0 0 0 / .32), transparent 32%); }
+.w-shorts > :not(img):not(.scrim) { position: relative; }
+.w-shorts .top { display: flex; align-items: center; }
+.w-shorts .fab { width: 40px; height: 40px; }
+.w-shorts .tt { font-size: 13px; line-height: 18px; color: #fff; }
+.w-shorts .meta { color: rgb(255 255 255 / .82); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.wg.w-shorts .meta svg.i { width: 13px; height: 13px; }
+
+/* 搜索 */
+.wg.w-search { background: transparent; padding: 14px 0; justify-content: center; }
+.pill { height: 56px; border-radius: 28px; background: var(--surface-container-high); display: flex; align-items: center; gap: 10px; padding: 0 8px; transition: background-color .6s var(--effects); }
+.logo { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-container); color: var(--on-primary-container); flex: none; transition: background-color .6s var(--effects), color .6s var(--effects); }
+.logo svg { width: 24px; height: 24px; display: block; }
+.q { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.q small { font: 600 10.5px/14px var(--font-display); letter-spacing: .1em; color: var(--primary); }
+.q span { font-size: 15px; line-height: 20px; color: var(--on-surface); }
+.pill .glass { color: var(--on-surface-variant); }
+.ib2 { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--secondary-container); color: var(--on-secondary-container); flex: none; transition: background-color .6s var(--effects); }
+
+/* ---------- sections ---------- */
+section.sec { padding-block: clamp(48px, 7vw, 96px); }
+section.sec + section.sec { border-top: 1px solid var(--outline-variant); }
+.sec-head { display: grid; gap: 12px; margin-bottom: 36px; max-width: 760px; }
+h2 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.15; font-weight: 800; font-variation-settings: "wdth" 112, "opsz" 48; letter-spacing: -0.01em; }
+.cat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 860px) { .cat { grid-template-columns: minmax(0, 1fr); } }
+.item { background: var(--surface-container); border-radius: 28px; padding: 10px; display: grid; gap: 4px; align-content: start; min-width: 0; transition: background-color .6s var(--effects); }
+.specimen { position: relative; isolation: isolate; border-radius: 20px; min-height: 312px; display: grid; place-items: center; padding: 22px 8px; overflow: hidden; }
+@media (max-width: 370px) { .specimen > .wg { zoom: .88; } }
+.item-body { padding: 14px 12px 12px; display: grid; gap: 14px; min-width: 0; }
+.item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+h3 { font-size: 20px; line-height: 1.3; font-weight: 750; margin-right: 4px; }
+.sz { font: 500 12px/1 var(--font-mono); padding: 5px 8px; border-radius: 8px; background: var(--secondary-container); color: var(--on-secondary-container); white-space: nowrap; }
+.sz.o { background: transparent; box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.spec { display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 8px 14px; margin: 0; font-size: 14px; line-height: 1.7; }
+.spec dt { font: 600 12px/23.8px var(--font-display); letter-spacing: .08em; color: var(--on-surface-variant); }
+.spec dd { margin: 0; min-width: 0; }
+.tbl-wrap { overflow-x: auto; border-radius: 20px; background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 760px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; line-height: 1.65; }
+th { font: 600 12px var(--font-display); letter-spacing: .08em; color: var(--on-surface-variant); background: var(--surface-container); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+td code { font: 500 12.5px var(--font-mono); background: var(--surface-container-high); padding: .1em .4em; border-radius: 6px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+footer { border-top: 1px solid var(--outline-variant); }
+footer .wrap { padding-block: 24px 44px; font-size: 13px; line-height: 1.7; color: var(--on-surface-variant); display: grid; gap: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0s !important; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-txt">
+      <p class="eyebrow">myBV · Android 桌面小组件 · 设计稿</p>
+      <h1><span class="lock"><span class="cap">my</span><span>BV</span></span><span class="rest">桌面小组件</span></h1>
+      <p class="lede">六款桌面小组件，配色规则和 App 相同：一个种子色经 material-kolor 生成 Vibrant 配色方案。默认来源是「跟随内容」，种子取自最近播放的视频封面。换一个视频，桌面上的组件一起换色。</p>
+    </div>
+    <div class="ctrl" role="group" aria-label="预览设置">
+      <div class="ctrl-row">
+        <span class="ctrl-label">配色来源</span>
+        <div class="seg" data-k="source">
+          <button type="button" id="src-content" data-v="content" aria-pressed="true">跟随内容</button>
+          <button type="button" id="src-wall" data-v="wall" aria-pressed="false">系统壁纸</button>
+          <button type="button" id="src-custom" data-v="custom" aria-pressed="false">自选种子色</button>
+        </div>
+      </div>
+      <div class="ctrl-row" id="pickRow"></div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">预览明暗</span>
+        <div class="seg" data-k="mode">
+          <button type="button" id="mode-auto" data-v="auto" aria-pressed="true">跟随页面</button>
+          <button type="button" id="mode-l" data-v="l" aria-pressed="false">浅色</button>
+          <button type="button" id="mode-d" data-v="d" aria-pressed="false">深色</button>
+        </div>
+      </div>
+      <p class="status" id="status">种子 #2EC99A · Vibrant</p>
+    </div>
+  </div>
+  <div class="stage-band">
+    <div class="wrap">
+      <div class="stage">
+        <figure class="dv"><div class="fit"><div class="frame"><div class="screen wall" id="screen1"></div></div></div><figcaption><b>第 1 屏</b>搜索 · 继续观看 · 动态 · 刷刷</figcaption></figure>
+        <figure class="dv"><div class="fit"><div class="frame"><div class="screen wall" id="screen2"></div></div></div><figcaption><b>第 2 屏</b>番剧放送表 · 稍后再看</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="sec" id="catalog">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">组件清单</p>
+        <h2>六款组件</h2>
+        <p class="lede">每款都按 1:1 dp 画在同一张壁纸上。尺寸写成「列×行」，按 4 列桌面估算：一格 76×84dp，格间距 8dp。</p>
+      </div>
+      <div class="cat">
+        <article class="item" id="w-cont">
+          <div class="specimen wall" data-widget="cont"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>继续观看</h3><span class="sz">4×2</span><span class="sz o">可调 2×2 – 4×3</span></div>
+            <div class="ctl-row"><span class="ctrl-label">尺寸</span>
+              <div class="seg sm" data-k="contSize">
+                <button type="button" id="cs-22" data-v="22" aria-pressed="false">2×2</button>
+                <button type="button" id="cs-42" data-v="42" aria-pressed="true">4×2</button>
+                <button type="button" id="cs-43" data-v="43" aria-pressed="false">4×3</button>
+              </div>
+            </div>
+            <dl class="spec">
+              <dt>显示</dt><dd>历史记录里最近一条没看完的视频。封面底部是进度条，副信息写剩余时长。</dd>
+              <dt>点按</dt><dd>封面进视频详情；「从 12:31 继续」直接进播放器，从断点接着放。</dd>
+              <dt>配色</dt><dd>用这条视频的封面色，跟 App 里「详情页使用封面颜色」同一个开关；关掉后跟随全局主题。</dd>
+              <dt>尺寸</dt><dd>2×2 只留封面、标题和播放键；4×3 把封面放大到整宽。</dd>
+              <dt>刷新</dt><dd>播放器保存进度时推送更新，一分钟最多一次。看完后换成下一条没看完的。</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="item" id="w-later">
+          <div class="specimen wall" data-widget="later"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>稍后再看</h3><span class="sz">4×3</span><span class="sz o">可调 4×2 – 4×5</span></div>
+            <div class="ctl-row"><span class="ctrl-label">状态</span>
+              <div class="seg sm" data-k="laterState">
+                <button type="button" id="ls-list" data-v="list" aria-pressed="true">有内容</button>
+                <button type="button" id="ls-empty" data-v="empty" aria-pressed="false">列表为空</button>
+                <button type="button" id="ls-login" data-v="login" aria-pressed="false">未登录</button>
+              </div>
+            </div>
+            <dl class="spec">
+              <dt>显示</dt><dd>稍后再看列表的前几条，标题旁的数字是列表总数。条数随组件高度变化。</dd>
+              <dt>点按</dt><dd>点某一条直接播放；标题行的箭头进「稍后再看」页。</dd>
+              <dt>状态</dt><dd>没登录时显示登录入口；列表为空时说明怎么添加。</dd>
+              <dt>刷新</dt><dd>每 30 分钟拉一次；在 App 里添加或移除后立即更新。</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="item" id="w-tl">
+          <div class="specimen wall" data-widget="tl"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>番剧放送表</h3><span class="sz">4×2</span><span class="sz o">可调 4×2 – 4×4</span></div>
+            <dl class="spec">
+              <dt>显示</dt><dd>今天更新的番剧，已追的排在前面。右上角是本周七天，今天用九角饼干形标出，有已追番剧更新的日子下面带一个点。</dd>
+              <dt>状态</dt><dd>已经更新的写「已更新」，还没到点的写更新时间。</dd>
+              <dt>点按</dt><dd>点番剧进剧集信息页；点星期打开放送表并定位到那一天。</dd>
+              <dt>刷新</dt><dd>每天 0 点拉当天时间表，再按每部番的更新时间排单次任务，到点把「22:30」换成「已更新」。</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="item" id="w-dyn">
+          <div class="specimen wall" data-widget="dyn"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>动态</h3><span class="sz">2×2</span><span class="sz o">固定</span></div>
+            <dl class="spec">
+              <dt>显示</dt><dd>关注的 UP 主有几条新动态、最近三位的头像，以及最新一条的摘要。</dd>
+              <dt>点按</dt><dd>整张卡进「动态」页，看过之后计数清零。</dd>
+              <dt>配色</dt><dd>底色用 secondaryContainer，在一屏组件里做颜色上的区分。</dd>
+              <dt>刷新</dt><dd>每 30 分钟。没登录时显示「登录后查看关注动态」。</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="item" id="w-shorts">
+          <div class="specimen wall" data-widget="shorts"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>刷刷</h3><span class="sz">2×2</span><span class="sz o">可调 2×2 – 2×3</span></div>
+            <dl class="spec">
+              <dt>显示</dt><dd>一条竖屏短视频的封面、标题和点赞数。</dd>
+              <dt>配色</dt><dd>固定深色，和 App 里的刷刷一致；播放键用这条视频的封面色。</dd>
+              <dt>点按</dt><dd>从这一条开始刷。</dd>
+              <dt>刷新</dt><dd>每次从组件进入刷刷后，换成下一条没看过的。</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="item" id="w-search">
+          <div class="specimen wall" data-widget="search"></div>
+          <div class="item-body">
+            <div class="item-head"><h3>搜索</h3><span class="sz">4×1</span><span class="sz o">可调 2×1 – 5×1</span></div>
+            <dl class="spec">
+              <dt>显示</dt><dd>品牌图标、当前热搜词和刷刷入口。宽度只有 2 格时只留图标和放大镜。</dd>
+              <dt>点按</dt><dd>搜索框进搜索页并填好热搜词；右侧按钮进刷刷。</dd>
+              <dt>刷新</dt><dd>热搜词每 2 小时换一次。</dd>
+            </dl>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="impl">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">实现</p>
+        <h2>落地约定</h2>
+        <p class="lede">按 Jetpack Glance 实现时的约定。数值尽量对应到现有代码，组件和 App 共用同一套主题偏好。</p>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>项目</th><th>约定</th><th>对应代码</th></tr></thead>
+          <tbody>
+            <tr><td>框架</td><td>新增依赖 <code>androidx.glance:glance-appwidget</code>。点按用 <code>actionStartActivity</code> 打开 MainActivity 并带上路由参数，直达对应页面，不新增 Activity。</td><td><code>ui/MainActivity.kt</code></td></tr>
+            <tr><td>外框</td><td>圆角 28dp，不超过系统的 <code>system_app_widget_background_radius</code>；内边距 12dp。内部封面圆角 16dp，等于 28 − 12，内外同心。</td><td><code>BvDimens.PaneCorner</code> 28 · <code>CardCorner</code> 16</td></tr>
+            <tr><td>尺寸</td><td>按 76×84dp 一格、间距 8dp 估算。每款用 <code>SizeMode.Responsive</code> 准备 2–3 套布局，桌面调整大小时切换。</td><td>—</td></tr>
+            <tr><td>配色</td><td>读主题偏好，用 material-kolor 生成浅、深两套方案，转成 Glance 的 <code>ColorProviders(day, night)</code>。来源是「跟随内容」时，<code>contentSeed</code> 一变就调用 <code>updateAll</code>。</td><td><code>ThemePrefs.kt</code> · <code>BvTheme.kt</code></td></tr>
+            <tr><td>封面色</td><td>继续观看、刷刷用封面种子局部覆盖，取色复用 112px 小图量化的结果和缓存。</td><td><code>CoverTheme.kt</code> · <code>CoverSeedCache</code></td></tr>
+            <tr><td>形状</td><td>RemoteViews 不支持 clip-path。头像、播放键、今天标记的饼干形和太阳形预先画成 Bitmap，按尺寸和颜色缓存。</td><td>—</td></tr>
+            <tr><td>文字</td><td>组件只能用系统字体。字号沿用 BvType：组件标题 14sp Bold、卡片标题 13sp、副信息 11sp、Eyebrow 11sp 加 0.14em 字距。</td><td><code>BvType.kt</code></td></tr>
+            <tr><td>刷新</td><td>WorkManager 周期任务（30 分钟）拉稍后再看和动态；继续观看由播放器推送；放送表按更新时间排单次任务。</td><td>—</td></tr>
+            <tr><td>未登录</td><td>需要账号数据的组件（继续观看、稍后再看、动态）显示登录入口，点按进登录页。</td><td><code>feature/login</code></td></tr>
+            <tr><td>电视</td><td>Android TV 没有桌面小组件。电视桌面继续用已发布的推荐、稍后再看频道。</td><td>提交 <code>7ffb3375</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>示例数据：视频标题、UP 主、番剧名都是虚构的，封面由程序生成。</p>
+    <p>配色用 material-color-utilities 0.3.0 的 SchemeVibrant 预先算好，和 App 里 material-kolor（SPEC_2025）的结果会有细微差别。</p>
+  </div>
+</footer>
+
+<script>
+'use strict';
+/* ---------- precomputed schemes: seed -> SchemeVibrant roles (light / dark) ---------- */
+const SCHEMES = {"pink":{"l":"bb0057,ffffff,ffd9e0,8f0041,82524e,ffffff,ffdad7,663b38,8a4f37,ffffff,ffdbce,6e3822,fff8f7,26181b,564145,ffffff,fff0f2,ffe8ec,fce2e6,f6dce0,8a7175,ddbfc4,3c2c2f,ffecef,ffb1c2","d":"ffb1c2,66002c,8f0041,ffd9e0,f5b7b2,4c2523,663b38,ffdad7,ffb59a,52220e,6e3822,ffdbce,1d1013,f6dce0,ddbfc4,170b0e,26181b,2a1c1f,352629,413034,a58a8f,564145,f6dce0,3c2c2f,bb0057"},"sky":{"l":"00668a,ffffff,c3e7ff,004c69,49607b,ffffff,d0e4ff,314862,4c5d8b,ffffff,dae2ff,334671,f5faff,131d23,3c4851,ffffff,ebf5fd,e5eff7,dfe9f2,dae4ec,6c7982,bbc8d2,283238,e8f2fa,7ad0ff","d":"7ad0ff,003549,004c69,c3e7ff,b0c9e8,19324a,314862,d0e4ff,b4c6f9,1c2f59,334671,dae2ff,0b151a,dae4ec,bbc8d2,060f15,131d23,172127,222b31,2c363c,85929c,3c4851,dae4ec,283238,00668a"},"amber":{"l":"855300,ffffff,ffddb8,653e00,735a2e,ffffff,ffdeaa,5a4319,725c1a,ffffff,ffe090,584401,fff8f4,241a0e,544432,ffffff,fff1e5,ffead7,f9e5d1,f4dfcb,877460,d9c3ab,3a2e21,ffeede,ffb95f","d":"ffb95f,472a00,653e00,ffddb8,e3c28c,412d05,5a4319,ffdeaa,e1c477,3d2e00,584401,ffe090,1b1206,f4dfcb,d9c3ab,150c03,241a0e,281e11,33281b,3f3325,a18d78,544432,f4dfcb,3a2e21,855300"},"teal":{"l":"006b58,ffffff,04ffd4,005142,386663,ffffff,bcece7,1f4e4b,1a6870,ffffff,a9eef7,004f56,eefdf6,121e1a,3a4a45,ffffff,e9f7f0,e3f1eb,ddebe5,d8e6df,6a7b74,b8cbc3,26332f,e6f4ed,00e0ba","d":"00e0ba,00382d,005142,04ffd4,a0d0cb,003735,1f4e4b,bcece7,8dd2db,00363b,004f56,a9eef7,091612,d8e6df,b8cbc3,05100d,121e1a,16221e,202c28,2b3733,83958e,3a4a45,d8e6df,26332f,006b58"},"violet":{"l":"6524ff,ffffff,e7deff,4c00d3,695779,ffffff,f0dbff,514060,77517c,ffffff,fed6ff,5d3a63,fdf7ff,1c1a24,484553,ffffff,f7f1ff,f2ebfa,ece6f4,e6e0ef,797585,cac4d6,322f3a,f5eefd,ccbeff","d":"ccbeff,340097,4c00d3,e7deff,d5bee5,392a49,514060,f0dbff,e6b7e9,45234b,5d3a63,fed6ff,14121c,e6e0ef,cac4d6,0f0d17,1c1a24,211e29,2b2833,36333e,938e9f,484553,e6e0ef,322f3a,6524ff"},"vermilion":{"l":"bf0025,ffffff,ffdad8,93001a,815342,ffffff,ffdbcf,663c2d,865229,ffffff,ffdcc5,6a3b13,fff8f7,271817,584140,ffffff,fff0ef,ffe9e7,fee2e0,f8dcda,8b716f,dfbfbd,3d2c2b,ffedeb,ffb3b0","d":"ffb3b0,68000f,93001a,ffdad8,f5b9a4,4c2618,663c2d,ffdbcf,fdb886,4e2500,6a3b13,ffdcc5,1e100f,f8dcda,dfbfbd,180b0a,271817,2b1c1b,362625,423030,a78a88,584140,f8dcda,3d2c2b,bf0025"},"aurora":{"l":"006c50,ffffff,37ffc4,00513b,39665f,ffffff,bcece2,204e47,19686b,ffffff,a8eff1,004f51,effdf4,121e19,3b4a43,ffffff,e9f7ee,e4f1e8,deebe3,d8e6dd,6a7b72,b9cbc1,27332d,e6f4eb,00e1aa","d":"00e1aa,003828,00513b,37ffc4,a1d0c6,023731,204e47,bcece2,8cd2d5,003738,004f51,a8eff1,0a1611,d8e6dd,b9cbc1,06100c,121e19,16221d,212c27,2b3732,84958c,3b4a43,d8e6dd,27332d,006c50"},"sahara":{"l":"ae3200,ffffff,ffdbd0,852400,7e5538,ffffff,ffdcc6,633e23,7f561e,ffffff,ffddb8,643f07,fff8f6,271814,58423b,ffffff,fff1ed,ffe9e3,ffe2da,f9dcd5,8c7169,dfc0b7,3d2c27,ffede8,ffb59e","d":"ffb59e,5e1700,852400,ffdbd0,f1bb98,49280f,633e23,ffdcc6,f3bc7b,472a00,643f07,ffddb8,1e100c,f9dcd5,dfc0b7,180b07,271814,2b1c17,372621,42312c,a78a82,58423b,f9dcd5,3d2c27,ae3200"},"cyber":{"l":"af0093,ffffff,ffd8ee,860070,7c5263,ffffff,ffd8e5,623b4b,894c58,ffffff,ffd9de,6d3541,fff8f9,24181f,53424c,ffffff,fff0f6,fee8f2,f8e3ed,f2dde7,85727d,d8c0cc,3a2d34,ffecf4,ffade3","d":"ffade3,5f004f,860070,ffd8ee,edb8cc,492535,623b4b,ffd8e5,ffb2bf,52202b,6d3541,ffd9de,1b1017,f2dde7,d8c0cc,150b12,24181f,281c23,33262e,3e3139,a08b96,53424c,f2dde7,3a2d34,af0093"},"wall":{"l":"1342ff,ffffff,dee0ff,002ecb,605a7d,ffffff,e6deff,484264,6b5485,ffffff,efdbff,533d6c,fbf8ff,1a1b25,444654,ffffff,f4f2ff,eeecfb,e8e7f5,e2e1ef,757685,c5c5d6,2f303a,f0effe,bac3ff","d":"bac3ff,001e91,002ecb,dee0ff,c9c1ea,312c4c,484264,e6deff,d7bbf3,3c2654,533d6c,efdbff,11131c,e2e1ef,c5c5d6,0c0e17,1a1b25,1e1f29,282934,33343f,8f8f9f,444654,e2e1ef,2f303a,1342ff"},"sakura":{"l":"b90062,ffffff,ffd9e2,8e004a,815251,ffffff,ffdad9,663b3b,8b4e3b,ffffff,ffdbd0,6e3726,fff8f8,25181c,564147,ffffff,fff0f2,ffe8ed,fce2e7,f6dce2,897177,dcbfc6,3c2c30,ffecef,ffb1c8","d":"ffb1c8,650032,8e004a,ffd9e2,f5b7b6,4c2525,663b3b,ffdad9,ffb59f,532212,6e3726,ffdbd0,1d1013,f6dce2,dcbfc6,170b0e,25181c,2a1c20,35262a,403135,a48a90,564147,f6dce2,3c2c30,b90062"}};
+const ROLES = ['primary', 'on-primary', 'primary-container', 'on-primary-container', 'secondary', 'on-secondary', 'secondary-container', 'on-secondary-container', 'tertiary', 'on-tertiary', 'tertiary-container', 'on-tertiary-container', 'surface', 'on-surface', 'on-surface-variant', 'surface-container-lowest', 'surface-container-low', 'surface-container', 'surface-container-high', 'surface-container-highest', 'outline', 'outline-variant', 'inverse-surface', 'inverse-on-surface', 'inverse-primary'];
+const SEEDHEX = { pink: '#FB7299', sky: '#23ADE5', amber: '#F2A53A', teal: '#1FA88C', violet: '#8C6FF7', vermilion: '#E5484D', aurora: '#2EC99A', sahara: '#E2704C', cyber: '#B7329A', wall: '#7B88D8', sakura: '#E0608F' };
+const PRESETS = [['pink', 'B 站粉'], ['sky', '天蓝'], ['amber', '琥珀'], ['teal', '青绿'], ['violet', '紫罗兰'], ['vermilion', '朱红']];
+
+/* ---------- example content ---------- */
+const REC = [
+  { t: '【4K HDR】冰岛 14 天环岛自驾，追到了今年最强的一场极光', short: '冰岛极光', up: '旅行的阿树', d: '18:42', total: 1122, watched: 751, c: 0, seed: 'aurora' },
+  { t: '撒哈拉的一夜：躺在沙丘上看银河是什么体验', short: '撒哈拉', up: '沙漠里的鱼', d: '12:07', total: 727, watched: 478, c: 1, seed: 'sahara' },
+  { t: '赛博山城：凌晨三点的洪崖洞航拍', short: '赛博山城', up: '山城飞手', d: '06:31', total: 391, watched: 72, c: 2, seed: 'cyber' },
+];
+const LATER = [
+  { t: '深海 200 米｜自由潜水员眼中的蓝洞', up: '蓝调潜水日志', d: '21:15', c: 3 },
+  { t: '雨林延时摄影：一株兰花开放的 30 天', up: '植物观察所', d: '08:50', c: 4 },
+  { t: '夜访火山口：离熔岩湖只有 300 米', up: '地球表面观察员', d: '11:46', c: 6 },
+];
+const WEEK = [['一', 1], ['二', 0], ['三', 1], ['四', 1], ['五', 0], ['六', 1], ['日', 1]];
+const TODAY = 5; /* 2026-10-31 周六 */
+const TL = [
+  { t: '星海拾光 第二季', ep: '第 9 话', time: '18:00', done: true, fol: true, c: 8 },
+  { t: '山海食堂', ep: '第 4 话', time: '22:30', done: false, fol: false, c: 9 },
+];
+
+/* ---------- icons (Material Symbols paths, 24dp grid) ---------- */
+const ICONS = {
+  play: 'M8 5v14l11-7z',
+  later: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z',
+  chev: 'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+  heart: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+  shorts: 'M8 2h8a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H8zm2 4.5l5 3.5-5 3.5v-7z',
+  search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  person: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+  call: 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+  chat: 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z',
+  camera: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z',
+  wifi: 'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.24 4.24 0 0 0-6 0zm-4-4l2 2a7.07 7.07 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z',
+  signal: 'M2 22h20V2z',
+  battery: 'M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z',
+};
+const ic = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[n]}"/></svg>`;
+/* myBV mark: rounded screen with danmaku bars, same proportions as artwork/bv-tv-banner.png */
+const BRAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.6" y="4.1" width="18.8" height="15.8" rx="4.6" fill="none" stroke="currentColor" stroke-width="2"/><g fill="currentColor"><rect x="5.9" y="7.6" width="4.5" height="2.1" rx="1.05"/><rect x="12.4" y="7.6" width="5.8" height="2.1" rx="1.05"/><rect x="8.2" y="10.9" width="9.8" height="2.1" rx="1.05"/><rect x="5.9" y="14.3" width="8" height="2.1" rx="1.05"/></g></svg>';
+
+/* ---------- procedural cover art (same generator as the redesign prototype) ---------- */
+const PAL = [
+  { sky: ['#06142e', '#0d3b4f'], sun: '#bff7ff', aur: '#3cf2a6', layers: ['#0e2a3c', '#071521'], stars: 1 },
+  { sky: ['#2b1055', '#ff7e5f'], sun: '#ffd27f', layers: ['#c2563a', '#8a3324'], dune: 1 },
+  { sky: ['#12002e', '#6b1f86'], sun: '#ff3fa4', layers: ['#1d0f3b', '#0c0620'], city: 1, stars: 1 },
+  { sky: ['#01223f', '#1f8fe0'], sun: '#a9e4ff', layers: ['#0563a8', '#013a6b'], sea: 1, rays: 1 },
+  { sky: ['#0b3d2e', '#8fd694'], sun: '#f2ffd9', layers: ['#2b7a4b', '#145232'], fog: 1 },
+  { sky: ['#8fb8f0', '#eaf4ff'], sun: '#ffffff', layers: ['#d3e4f6', '#a9c4e0'] },
+  { sky: ['#1a0505', '#7a1c0b'], sun: '#ff6a00', layers: ['#3a0d06', '#140302'], lava: 1, stars: 1 },
+  { sky: ['#5aa7e0', '#f6d98b'], sun: '#fff3c4', layers: ['#e2b04a', '#b9822a'], dune: 1 },
+  { sky: ['#9fc4ee', '#efe6ff'], sun: '#fffdf2', layers: ['#7f9fd3', '#5b78b0'], fog: 1 },
+  { sky: ['#1f2a44', '#e05a6b'], sun: '#ffe1a8', layers: ['#2d3a5c', '#151c30'], city: 1 },
+  { sky: ['#06222a', '#11727a'], sun: '#ffb86b', layers: ['#0b3b44', '#03161b'], city: 1, stars: 1 },
+  { sky: ['#ffc2d4', '#fff1f5'], sun: '#ffffff', layers: ['#f59ab8', '#d9668f'], petals: 1 },
+];
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function drawCover(ctx, w, h, idx) {
+  const p = PAL[idx % PAL.length], r = rng(idx * 97 + 13);
+  let g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, p.sky[0]); g.addColorStop(1, p.sky[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  if (p.stars) { ctx.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 70; i++) { const s = r() * 1.4 + .3; ctx.globalAlpha = r() * .8 + .2; ctx.fillRect(r() * w, r() * h * .55, s, s); } ctx.globalAlpha = 1; }
+  if (p.aur) { for (let k = 0; k < 3; k++) { ctx.beginPath(); const y0 = h * (.18 + k * .09); ctx.moveTo(0, y0); for (let x = 0; x <= w; x += 8) ctx.lineTo(x, y0 + Math.sin(x / w * 5 + k) * h * .06); ctx.lineWidth = h * (.08 - k * .015); ctx.strokeStyle = p.aur; ctx.globalAlpha = .38 - k * .08; ctx.filter = 'blur(6px)'; ctx.stroke(); } ctx.filter = 'none'; ctx.globalAlpha = 1; }
+  const sx = w * (.25 + r() * .5), sy = h * (.3 + r() * .15), sr = Math.min(w, h) * (.09 + r() * .06);
+  g = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 4); g.addColorStop(0, p.sun); g.addColorStop(.25, p.sun + '88'); g.addColorStop(1, p.sun + '00');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = p.sun; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, 7); ctx.fill();
+  if (p.rays) { ctx.globalAlpha = .18; ctx.fillStyle = p.sun; for (let i = 0; i < 5; i++) { ctx.beginPath(); const x = w * (.1 + i * .2); ctx.moveTo(x, 0); ctx.lineTo(x + w * .05, 0); ctx.lineTo(x + w * .2, h); ctx.lineTo(x + w * .1, h); ctx.fill(); } ctx.globalAlpha = 1; }
+  p.layers.forEach((col, li) => {
+    const base = h * (.55 + li * .17);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, h);
+    if (p.city) { let x = 0; while (x < w) { const bw = w * (.04 + r() * .07), bh = h * (.12 + r() * .3) * (li ? .8 : 1.2); ctx.lineTo(x, base - bh); ctx.lineTo(x + bw, base - bh); x += bw; } ctx.lineTo(w, h); ctx.fill();
+      ctx.fillStyle = li ? '#ffd166' : '#4cc9f0'; for (let i = 0; i < 60; i++) { ctx.globalAlpha = .5 + r() * .5; ctx.fillRect(r() * w, base - r() * h * .3, 2, 3); } ctx.globalAlpha = 1; return; }
+    const f1 = 2 + r() * 3, f2 = 5 + r() * 6, ph = r() * 6, amp = h * (p.dune || p.sea ? .05 : .12);
+    for (let x = 0; x <= w; x += 4) ctx.lineTo(x, base - amp * (Math.sin(x / w * f1 + ph) * .7 + Math.sin(x / w * f2 + ph * 2) * .3) - (p.sea ? 0 : amp * .6));
+    ctx.lineTo(w, h); ctx.fill();
+  });
+  if (p.lava) { g = ctx.createRadialGradient(w * .5, h, 0, w * .5, h, h * .7); g.addColorStop(0, 'rgba(255,120,0,.85)'); g.addColorStop(1, 'rgba(255,60,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
+  if (p.fog) { g = ctx.createLinearGradient(0, h * .45, 0, h * .8); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
+  if (p.petals) { for (let i = 0; i < 40; i++) { ctx.fillStyle = r() > .5 ? '#ff8fb1' : '#ffe0ea'; ctx.globalAlpha = .7; ctx.beginPath(); ctx.ellipse(r() * w, r() * h, 3 + r() * 3, 2 + r() * 2, r() * 3, 0, 7); ctx.fill(); } ctx.globalAlpha = 1; }
+  g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .35, w / 2, h / 2, Math.max(w, h) * .75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.35)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+}
+const SIZES = { L: [320, 200], P: [216, 384], S: [240, 320] };
+const coverCache = new Map();
+function cover(idx, kind) {
+  const key = idx + kind;
+  if (coverCache.has(key)) return coverCache.get(key);
+  const [w, h] = SIZES[kind], cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  drawCover(cv.getContext('2d'), w, h, idx);
+  const url = cv.toDataURL('image/jpeg', .86); coverCache.set(key, url); return url;
+}
+const img = (idx, kind, cls = '') => `<img${cls ? ` class="${cls}"` : ''} src="${cover(idx, kind)}" alt="">`;
+
+/* ---------- MaterialShapes approximations as clip-path polygons ---------- */
+(function installShapes() {
+  const N = 144, F = {
+    cookie9: t => .9 + .1 * Math.cos(9 * t),
+    sunny: t => .86 + .14 * Math.cos(8 * t),
+    clover: t => .58 + .42 * Math.pow(Math.abs(Math.cos(2 * t)), .5),
+  };
+  const rs = document.documentElement.style;
+  for (const [name, f] of Object.entries(F)) {
+    const rad = []; let max = 0;
+    for (let i = 0; i < N; i++) { const v = f(i / N * 2 * Math.PI); rad.push(v); max = Math.max(max, v); }
+    const pts = rad.map((v, i) => { const t = i / N * 2 * Math.PI - Math.PI / 2, k = v / max; return (50 + Math.cos(t) * k * 50).toFixed(2) + '% ' + (50 + Math.sin(t) * k * 50).toFixed(2) + '%'; });
+    rs.setProperty('--shape-' + name, 'polygon(' + pts.join(',') + ')');
+  }
+})();
+
+/* ---------- widgets ---------- */
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const remain = v => '剩 ' + Math.round((v.total - v.watched) / 60) + ' 分钟';
+
+function wCont(size) {
+  const v = REC[state.recent], pct = (v.watched / v.total * 100).toFixed(1);
+  const track = `<span class="track"><i style="width:${pct}%"></i></span>`;
+  const resume = `<span class="btn">${ic('play')}从 ${mmss(v.watched)} 继续</span>`;
+  if (size === '22') return `<div class="wg rs w-cont c2 r2" data-seed="${v.seed}">
+      <div class="cv" style="height:85px">${img(v.c, 'L')}${track}<span class="fab sh-sunny">${ic('play')}</span></div>
+      <p class="tt t2">${v.t}</p><p class="meta t1">${v.up} · ${remain(v)}</p></div>`;
+  if (size === '43') return `<div class="wg rs w-cont c4 r3" data-seed="${v.seed}">
+      <div class="cv" style="height:140px">${img(v.c, 'L')}<span class="ovchip">继续观看</span><span class="dur">${v.d}</span>${track}</div>
+      <p class="tt t2">${v.t}</p>
+      <div class="foot"><p class="meta">${v.up}<br>${remain(v)}</p>${resume}</div></div>`;
+  return `<div class="wg rs w-cont c4 r2" data-seed="${v.seed}">
+      <div class="cv" style="width:132px">${img(v.c, 'L')}${track}</div>
+      <div class="col"><p class="eb">继续观看</p><p class="tt t3">${v.t}</p><p class="meta t1">${v.up} · ${remain(v)}</p><span class="sp"></span>${resume}</div></div>`;
+}
+function wLater(st) {
+  const head = n => `<div class="hd"><span class="hico sh-clover">${ic('later')}</span><b>稍后再看</b>${n == null ? '' : `<span class="cnt">${n}</span>`}<span class="sp"></span><span class="ib">${ic('chev')}</span></div>`;
+  if (st === 'empty') return `<div class="wg w-later c4 r3">${head(0)}<div class="empty"><span class="blob sh-cookie">${ic('later')}</span><b>稍后再看是空的</b><span>在视频详情页点「稍后再看」，视频会出现在这里</span></div></div>`;
+  if (st === 'login') return `<div class="wg w-later c4 r3">${head(null)}<div class="empty"><span class="blob sh-cookie">${ic('person')}</span><b>登录后显示稍后再看</b><span class="btn">${ic('person')}登录</span></div></div>`;
+  return `<div class="wg w-later c4 r3">${head(12)}<div class="lst">${LATER.map(x => `<div class="row"><div class="th">${img(x.c, 'L')}<span class="dur">${x.d}</span></div><div class="tx"><p class="t2">${x.t}</p><p class="meta t1">${x.up}</p></div></div>`).join('')}</div></div>`;
+}
+function wTl() {
+  const wk = WEEK.map(([d, has], i) => `<span class="${i === TODAY ? 'on' : has ? 'has' : ''}">${d}</span>`).join('');
+  const rows = TL.map(x => `<div class="row"><div class="po">${img(x.c, 'S')}</div><div class="tx"><p class="t1">${x.t}</p><p class="meta t1">${x.fol ? '<span class="tag">已追</span>' : ''}${x.ep}${x.done ? ' · ' + x.time : ''}</p></div><span class="st ${x.done ? 'done' : 'wait'}">${x.done ? '已更新' : x.time}</span></div>`).join('');
+  return `<div class="wg w-tl c4 r2"><div class="hd"><b>番剧放送表</b><span class="sp"></span><div class="wk" aria-label="本周，今天周六">${wk}</div></div><div class="lst">${rows}</div></div>`;
+}
+function wDyn() {
+  return `<div class="wg w-dyn c2 r2"><div class="avs">${[0, 5, 4].map(c => `<span class="av">${img(c, 'S')}</span>`).join('')}<span class="more">+4</span></div><span class="sp"></span><div class="big"><b>7</b><span>条新动态</span></div><p class="last t2"><b>旅行的阿树</b> 投稿了视频 · 3 分钟前</p></div>`;
+}
+function wShorts() {
+  return `<div class="wg rs cinema w-shorts c2 r2" data-seed="sakura">${img(11, 'P', 'bg')}<span class="scrim"></span><div class="top"><span class="ovchip">${ic('shorts')}刷刷</span><span class="sp"></span><span class="fab sh-sunny">${ic('play')}</span></div><span class="sp"></span><p class="tt t2">樱花雨里的一分钟，手机竖着拍才对</p><p class="meta">${ic('heart')}8.7万 · 春天收集者</p></div>`;
+}
+function wSearch() {
+  return `<div class="wg w-search c4 r1"><div class="pill"><span class="logo">${BRAND}</span><div class="q"><small>热搜</small><span class="t1">万圣节仿妆合集</span></div><span class="glass">${ic('search')}</span><span class="ib2">${ic('shorts')}</span></div></div>`;
+}
+
+const sbar = () => `<div class="sbar"><span>20:16</span><span class="ics">${ic('signal', '')}${ic('wifi', '')}${ic('battery', '')}</span></div>`;
+const dock = p => `<div class="dock abs"><div class="dots"><i class="${p === 0 ? 'on' : ''}"></i><i class="${p === 1 ? 'on' : ''}"></i></div><div class="apps"><span class="app">${ic('call', '')}</span><span class="app">${ic('chat', '')}</span><span class="app bv">${BRAND}</span><span class="app">${ic('camera', '')}</span></div></div><span class="gbar abs"></span>`;
+
+/* ---------- state + render ---------- */
+const state = { source: 'content', recent: 0, preset: 'sky', mode: 'auto', contSize: '42', laterState: 'list' };
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+
+function setRaw(el, key) {
+  const s = SCHEMES[key];
+  for (const m of ['l', 'd']) s[m].split(',').forEach((v, i) => el.style.setProperty(`--${m}-${ROLES[i]}`, '#' + v));
+}
+const globalSeed = () => state.source === 'content' ? REC[state.recent].seed : state.source === 'wall' ? 'wall' : state.preset;
+
+function renderPicker() {
+  const row = $('#pickRow');
+  if (state.source === 'content') {
+    row.innerHTML = `<span class="ctrl-label">最近播放</span>` + REC.map((v, i) => `<button type="button" class="rec" id="rec-${i}" data-recent="${i}" aria-pressed="${i === state.recent}">${img(v.c, 'L')}${v.short}</button>`).join('');
+  } else if (state.source === 'wall') {
+    row.innerHTML = `<span class="ctrl-label">壁纸主色</span><span class="swatch still" style="--c:${SEEDHEX.wall}" aria-hidden="true"></span><span class="note">Android 12 起可从壁纸取色，这里取的是示意壁纸的主色。</span>`;
+  } else {
+    row.innerHTML = `<span class="ctrl-label">种子色</span>` + PRESETS.map(([k, n]) => `<button type="button" class="swatch" id="seed-${k}" data-preset="${k}" style="--c:${SEEDHEX[k]}" aria-pressed="${k === state.preset}" aria-label="${n}" title="${n}"></button>`).join('');
+  }
+}
+function renderStatus() {
+  const g = globalSeed(), v = REC[state.recent];
+  const from = state.source === 'content' ? `取自《${v.short}》封面` : state.source === 'wall' ? '取自壁纸' : PRESETS.find(p => p[0] === g)[1];
+  const extra = state.source === 'content' ? '' : `；继续观看、刷刷仍用各自封面色`;
+  $('#status').textContent = `种子 ${SEEDHEX[g]} · ${from} · Vibrant${extra}`;
+}
+function renderWidgets() {
+  $('#screen1').innerHTML = sbar() + `<div class="glance">10月31日 周六<small>多云 14°</small></div><div class="hs">${wSearch()}${wCont('42')}${wDyn()}${wShorts()}</div>` + dock(0);
+  $('#screen2').innerHTML = sbar() + `<div class="hs top">${wTl()}${wLater('list')}</div>` + dock(1);
+  const SPEC = { cont: () => wCont(state.contSize), later: () => wLater(state.laterState), tl: wTl, dyn: wDyn, shorts: wShorts, search: wSearch };
+  $$('[data-widget]').forEach(el => { el.innerHTML = SPEC[el.dataset.widget](); });
+  $$('[data-seed]').forEach(el => setRaw(el, el.dataset.seed));
+}
+function renderMode() {
+  $$('.screen, .specimen').forEach(el => { el.classList.toggle('mk-l', state.mode === 'l'); el.classList.toggle('mk-d', state.mode === 'd'); });
+}
+function renderSegs() {
+  $$('.seg[data-k]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(state[seg.dataset.k] === b.dataset.v))));
+}
+function applyGlobal() { setRaw(document.documentElement, globalSeed()); renderStatus(); }
+
+document.addEventListener('click', e => {
+  const segBtn = e.target.closest('.seg[data-k] button');
+  if (segBtn) {
+    const k = segBtn.closest('.seg').dataset.k, v = segBtn.dataset.v;
+    if (state[k] === v) return;
+    state[k] = v; renderSegs();
+    if (k === 'source') { renderPicker(); applyGlobal(); }
+    else if (k === 'mode') renderMode();
+    else renderWidgets();
+    return;
+  }
+  const rec = e.target.closest('[data-recent]');
+  if (rec) { state.recent = +rec.dataset.recent; renderPicker(); renderWidgets(); applyGlobal(); return; }
+  const pre = e.target.closest('[data-preset]');
+  if (pre) { state.preset = pre.dataset.preset; renderPicker(); applyGlobal(); }
+});
+
+/* scale the 380x800 phone frames to their column */
+function fitAll() {
+  $$('.fit').forEach(f => { const s = Math.min(1, f.clientWidth / 380); f.firstElementChild.style.transform = `scale(${s})`; f.style.height = (800 * s) + 'px'; });
+}
+if (window.ResizeObserver) new ResizeObserver(fitAll).observe($('.stage')); else window.addEventListener('resize', fitAll);
+
+renderSegs(); renderPicker(); renderWidgets(); renderMode(); applyGlobal(); fitAll();
+</script>
+
+</body>
+</html>

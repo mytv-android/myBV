@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 桌面小组件（docs/design/bv-widgets.html） -->
+    <string name="widget_continue_label">继续观看</string>
+    <string name="widget_continue_desc">最近没看完的视频，接着看</string>
+    <string name="widget_later_label">稍后再看</string>
+    <string name="widget_later_desc">稍后再看列表的前几条</string>
+    <string name="widget_timeline_label">番剧放送表</string>
+    <string name="widget_timeline_desc">今天更新的番剧</string>
+    <string name="widget_dynamic_label">动态</string>
+    <string name="widget_dynamic_desc">关注的 UP 主的新动态</string>
+    <string name="widget_shorts_label">刷刷</string>
+    <string name="widget_shorts_desc">从一条竖屏短视频开始刷</string>
+    <string name="widget_search_label">搜索</string>
+    <string name="widget_search_desc">热搜词与刷刷入口</string>
+
+    <string name="widget_loading">正在加载…</string>
+    <string name="widget_login">登录</string>
+    <string name="widget_login_continue_title">登录后显示继续观看</string>
+    <string name="widget_login_later_title">登录后显示稍后再看</string>
+    <string name="widget_login_dynamic_title">登录后查看关注动态</string>
+    <string name="widget_login_hint">登录后可同步你的观看记录</string>
+
+    <string name="widget_continue_eyebrow">继续观看</string>
+    <string name="widget_continue_resume">从 %1$s 继续</string>
+    <string name="widget_continue_remaining">剩 %1$d 分钟</string>
+    <string name="widget_continue_meta">%1$s · 剩 %2$d 分钟</string>
+    <string name="widget_continue_empty_title">还没有观看记录</string>
+    <string name="widget_continue_empty_hint">看过的视频会出现在这里</string>
+
+    <string name="widget_later_empty_title">稍后再看是空的</string>
+    <string name="widget_later_empty_hint">在视频详情页点「稍后再看」，视频会出现在这里</string>
+
+    <string name="widget_timeline_empty">今天没有更新的番剧</string>
+    <string name="widget_timeline_updated">已更新</string>
+    <string name="widget_timeline_followed">已追</string>
+
+    <string name="widget_dynamic_unit">条新动态</string>
+    <string name="widget_dynamic_zero">暂无新动态</string>
+    <string name="widget_dynamic_action_video">投稿了视频</string>
+    <string name="widget_dynamic_action_pgc">追番更新</string>
+    <string name="widget_dynamic_action_article">发布了专栏</string>
+    <string name="widget_dynamic_action_live">开播了</string>
+    <string name="widget_dynamic_action_forward">转发了动态</string>
+    <string name="widget_dynamic_action_default">发布了动态</string>
+
+    <string name="widget_shorts_chip">刷刷</string>
+    <string name="widget_shorts_empty">打开刷刷</string>
+    <string name="widget_search_hot">热搜</string>
+    <string name="widget_search_placeholder">搜索视频</string>
+</resources>

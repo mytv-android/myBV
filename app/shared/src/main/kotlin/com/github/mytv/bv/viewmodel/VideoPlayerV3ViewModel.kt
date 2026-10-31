@@ -52,6 +52,7 @@ import com.github.mytv.bv.util.GeetestSession
 import com.github.mytv.bv.util.GeetestSubmitResult
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.util.VVoucherAlreadyAttemptedException
+import com.github.mytv.bv.util.WidgetSignals
 import com.github.mytv.bv.util.fException
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
@@ -837,6 +838,7 @@ class VideoPlayerV3ViewModel(
             }
         }.onSuccess {
             logger.info { "Send heartbeat success" }
+            WidgetSignals.notifyChanged()
         }.onFailure {
             logger.warn { "Send heartbeat failed: ${it.stackTraceToString()}" }
         }

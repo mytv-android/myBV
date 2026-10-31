@@ -72,5 +72,14 @@ sealed class BvScheme(open val host: String) {
             return Uri.Builder().scheme(SCHEME).authority(host).build().toString()
         }
     }
+
+    /** 桌面小组件用的深链入口，参数由 [Uri] 的 query 携带。 */
+    data object Shorts : BvScheme("shorts")
+    data object Dynamic : BvScheme("dynamic")
+    data object Search : BvScheme("search")
+    data object Login : BvScheme("login")
+    data object Timeline : BvScheme("timeline")
+    data object Player : BvScheme("player")
+    data object Season : BvScheme("season")
 }
 

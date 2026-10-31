@@ -187,7 +187,7 @@ internal fun PgcPhone(nav: NavController, state: PgcUiState) {
                                 title = stringResource(R.string.pgc_timeline),
                                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
                                 action = stringResource(R.string.pgc_timeline_full),
-                                onAction = { nav.navigate(PgcTimelineRoute) },
+                                onAction = { nav.navigate(PgcTimelineRoute()) },
                             )
                         }
                         item(key = "days", contentType = "days") {

@@ -37,7 +37,8 @@ data class PlayerRoute(
 @Serializable data class TagRoute(val tagId: Int)
 @Serializable data class DynamicDetailRoute(val id: String)
 @Serializable data class PgcIndexRoute(val type: Int)
-@Serializable data object PgcTimelineRoute
+/** [dayOfWeek] 为 1..7（周一..周日），null 表示默认定位到今天。 */
+@Serializable data class PgcTimelineRoute(val dayOfWeek: Int? = null)
 @Serializable data object HistoryRoute
 @Serializable data object FavoriteRoute
 @Serializable data object ToViewRoute

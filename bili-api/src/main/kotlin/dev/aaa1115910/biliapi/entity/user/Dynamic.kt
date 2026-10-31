@@ -29,7 +29,9 @@ data class DynamicData(
     val dynamics: List<DynamicItem>,
     val hasMore: Boolean,
     val historyOffset: String,
-    val updateBaseline: String
+    val updateBaseline: String,
+    /** 服务端给出的未读动态数（仅 Web 接口），0 表示没有或未知 */
+    val newCount: Int = 0
 ) {
     companion object {
         private val logger = KotlinLogging.logger { }
@@ -80,7 +82,8 @@ data class DynamicData(
                     },
                 hasMore = data.hasMore,
                 historyOffset = data.offset,
-                updateBaseline = data.updateBaseline
+                updateBaseline = data.updateBaseline,
+                newCount = data.updateNum
             ).also {
                 logger.info { "updateBaseline: ${data.updateBaseline}" }
                 logger.info { "offset: ${data.offset}" }

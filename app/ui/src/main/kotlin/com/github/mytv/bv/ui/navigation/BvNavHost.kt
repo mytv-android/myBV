@@ -141,7 +141,10 @@ fun BvNavHost(nav: NavHostController, modifier: Modifier = Modifier) {
         composable<TagRoute> { Screen { TagScreen(nav, it.toRoute()) } }
         composable<DynamicDetailRoute> { Screen { DynamicDetailScreen(nav, it.toRoute()) } }
         composable<PgcIndexRoute> { Screen { PgcIndexScreen(nav, it.toRoute()) } }
-        composable<PgcTimelineRoute> { Screen { PgcTimelineScreen(nav) } }
+        composable<PgcTimelineRoute> { entry ->
+            val route = entry.toRoute<PgcTimelineRoute>()
+            Screen { PgcTimelineScreen(nav, initialDayOfWeek = route.dayOfWeek) }
+        }
         composable<HistoryRoute> { Screen { HistoryScreen(nav) } }
         composable<FavoriteRoute> { Screen { FavoriteScreen(nav) } }
         composable<ToViewRoute> { Screen { ToViewScreen(nav) } }

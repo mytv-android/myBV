@@ -321,7 +321,7 @@ private fun TabletTodayCard(
         SectionHeader(
             title = stringResource(R.string.pgc_today_update),
             action = weekdays.getOrElse(today - 1) { "" },
-            onAction = { nav.navigate(PgcTimelineRoute) },
+            onAction = { nav.navigate(PgcTimelineRoute()) },
         )
         when {
             episodes.isEmpty() && state.model.isTimelineLoading(filter) -> Box(

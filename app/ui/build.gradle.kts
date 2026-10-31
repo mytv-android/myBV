@@ -75,6 +75,8 @@ dependencies {
     implementation(androidx.lifecycle.runtime.compose)
     implementation(androidx.media3.common)
     implementation(androidx.media3.exoplayer)
+    implementation(androidx.glance.appwidget)
+    implementation(androidx.work.runtime.ktx)
     implementation(libs.logging)
     testImplementation(libs.kotlin.test)
     debugImplementation(androidx.compose.ui.tooling)

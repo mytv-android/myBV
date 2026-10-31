@@ -374,7 +374,7 @@ private fun TvInfoBlock(
                 BvChip(
                     text = stringResource(R.string.pgc_timeline_chip),
                     selected = false,
-                    onClick = { nav.navigate(PgcTimelineRoute) },
+                    onClick = { nav.navigate(PgcTimelineRoute()) },
                 )
             }
             BvChip(
