@@ -21,6 +21,7 @@ import com.github.mytv.bv.util.toast
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
 import com.github.mytv.bv.repository.UserRepository as BvUserRepository
@@ -32,6 +33,12 @@ class DynamicViewModel(
 ) : ViewModel() {
     companion object {
         private val logger = KotlinLogging.logger {}
+
+        /** 动态分页接口失败后的总尝试次数（含首次）。 */
+        private const val DYNAMIC_PAGE_MAX_ATTEMPTS = 2
+
+        /** 两次动态分页请求之间的间隔：-352 多半是突发限流，缓一下再试就有了。 */
+        private const val DYNAMIC_PAGE_RETRY_DELAY_MS = 1000L
     }
 
     val dynamicVideoList = mutableStateListOf<DynamicVideo>()
@@ -91,21 +98,31 @@ class DynamicViewModel(
         val nextPage = currentSpacePage + 1
         try {
             runCatching {
-                val dynamicData = userRepository.getSpaceDynamics(
-                    hostMid = hostMid,
-                    page = nextPage,
-                    offset = spaceHistoryOffset ?: ""
-                )
+                val dynamicData = withDynamicPageRetry(hostMid) {
+                    userRepository.getSpaceDynamics(
+                        hostMid = hostMid,
+                        page = nextPage,
+                        offset = spaceHistoryOffset ?: ""
+                    )
+                }
+                // 请求期间换了 UP：这份数据是上一个 UP 的，别混进新 UP 的列表里
+                if (spaceHostMid != hostMid) return
                 currentSpacePage = nextPage
-                dynamicSpaceList.addAll(dynamicData.dynamics)
+                dynamicSpaceList.addDistinct(dynamicData.dynamics)
                 spaceHistoryOffset = dynamicData.historyOffset
                 spaceHasMore = dynamicData.hasMore
                 spaceError = null
                 logger.fInfo { "Load space dynamics page: $nextPage, size: ${dynamicData.dynamics.size}" }
             }.onFailure {
                 if (it is CancellationException) throw it
+                // 请求期间换了 UP：这一页的成败已经无所谓，别拿上一个 UP 的错误打扰用户
+                if (spaceHostMid != hostMid) return@onFailure
                 logger.fWarn { "Load space dynamics failed: ${it.stackTraceToString()}" }
-                val message = "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+                val message = when (it) {
+                    is AuthFailureException -> BVApp.context.getString(R.string.exception_auth_failure)
+                    is RiskControlException -> "动态被风控拦截，请稍后重试"
+                    else -> "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
+                }
                 spaceError = message
                 withContext(Dispatchers.Main) {
                     message.toast(BVApp.context)
@@ -114,6 +131,37 @@ class DynamicViewModel(
         } finally {
             loadingSpace = false
         }
+    }
+
+    /**
+     * 执行一次动态分页请求，失败后重试一次，仍失败才抛出最后一次的异常。
+     *
+     * 动态接口（feed/all、feed/space）偶发 -352 风控或超时，而页面上的自动加载
+     * （DynamicPageState.autoFill）失败后往往又会立刻重试，第二次常常就成功了。
+     * 第一次失败就弹提示的话，用户看到的就是「动态已经在眼前，却提示加载动态失败」。
+     *
+     * @param hostMid 按 UP 拉空间动态时的 UP；重试前换了 UP 就不再拉这一页
+     */
+    private suspend fun <T> withDynamicPageRetry(hostMid: Long? = null, request: suspend () -> T): T {
+        var lastError: Throwable? = null
+        for (attempt in 1..DYNAMIC_PAGE_MAX_ATTEMPTS) {
+            try {
+                return request()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                lastError = e
+                logger.fInfo {
+                    "Dynamic page request failed [attempt=$attempt/$DYNAMIC_PAGE_MAX_ATTEMPTS]: ${e.message}"
+                }
+                // 登录态问题重试没有意义，直接失败
+                if (e is AuthFailureException) break
+                // 重试前换了 UP：这一页属于上一个 UP
+                if (hostMid != null && spaceHostMid != hostMid) break
+            }
+            if (attempt < DYNAMIC_PAGE_MAX_ATTEMPTS) delay(DYNAMIC_PAGE_RETRY_DELAY_MS)
+        }
+        throw lastError ?: IllegalStateException("dynamic page request failed")
     }
 
     private suspend fun loadVideoData() {
@@ -181,14 +229,16 @@ class DynamicViewModel(
         val nextPage = currentAllPage + 1
         try {
             runCatching {
-                val dynamicData = userRepository.getDynamics(
-                    page = nextPage,
-                    offset = allHistoryOffset ?: "",
-                    updateBaseline = allUpdateBaseline ?: "",
-                    preferApiType = Prefs.apiType
-                )
+                val dynamicData = withDynamicPageRetry {
+                    userRepository.getDynamics(
+                        page = nextPage,
+                        offset = allHistoryOffset ?: "",
+                        updateBaseline = allUpdateBaseline ?: "",
+                        preferApiType = Prefs.apiType
+                    )
+                }
                 currentAllPage = nextPage
-                dynamicAllList.addAll(dynamicData.dynamics)
+                dynamicAllList.addDistinct(dynamicData.dynamics)
                 allHistoryOffset = dynamicData.historyOffset
                 allUpdateBaseline = dynamicData.updateBaseline
                 allHasMore = dynamicData.hasMore
@@ -240,4 +290,16 @@ class DynamicViewModel(
         spaceHistoryOffset = null
         spaceHostMid = null
     }
+}
+
+/**
+ * 把一页动态并进列表，按动态 id 去重。
+ *
+ * 重试时服务端可能已经收下上一次请求，同一页会再来一遍；列表里出现重复 key 会让
+ * LazyColumn 直接崩（「Key was already used」）。没有 id 的动态去不了重，照原样收下。
+ */
+private fun MutableList<DynamicItem>.addDistinct(items: List<DynamicItem>) {
+    if (items.isEmpty()) return
+    val existing = mapNotNullTo(HashSet<String>()) { it.id }
+    addAll(items.filter { it.id == null || it.id !in existing })
 }

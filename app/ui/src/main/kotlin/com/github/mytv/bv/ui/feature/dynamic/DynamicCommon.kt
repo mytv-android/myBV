@@ -235,7 +235,7 @@ internal class DynamicPageState(
     val follow: FollowViewModel,
     val commentVm: CommentViewModel,
 ) {
-    /** 只看某个 UP 主（null = 全部）。接口不支持按 UP 主取动态，在已加载的动态里筛选。 */
+    /** 只看某个 UP 主（null = 全部）。选了 UP 走空间动态接口，否则看关注动态流。 */
     var upFilter by mutableStateOf<Long?>(null)
         private set
 
@@ -280,8 +280,10 @@ internal class DynamicPageState(
         if (upFilter == mid) return
         upFilter = mid
         autoLoads = 0
-        // 第一次选这个 UP 就拉一页，别让用户盯着空页面等 autoFill
-        if (mid != null && vm.dynamicSpaceList.isEmpty() && !vm.loadingSpace) loadMore()
+        // 点了头像就立刻拉第一页，别让用户盯着空页面等 autoFill。
+        // 不看列表空不空：上一个 UP 拉完后 spaceHasMore 停在 false，只在列表为空时
+        // 触发的话 loadMore 会把它当成「没有更多」，新 UP 一页都加载不出来。
+        if (mid != null && !vm.loadingSpace) loadMore()
     }
 
     fun isSelected(item: DynamicItem): Boolean {
@@ -303,7 +305,9 @@ internal class DynamicPageState(
     fun loadMore() {
         val up = upFilter
         if (up != null) {
-            if (vm.loadingSpace || !vm.spaceHasMore || !vm.isLogin) return
+            // spaceHasMore 交给 ViewModel 判断：它会在换 UP 时先清掉上一份的分页状态，
+            // 在这里提前返回会让新 UP 一页都拉不到
+            if (vm.loadingSpace || !vm.isLogin) return
             vm.viewModelScope.launch { vm.loadMoreSpace(up) }
         } else {
             if (vm.loadingAll || !vm.allHasMore || !vm.isLogin) return
@@ -329,10 +333,15 @@ internal class DynamicPageState(
         }
     }
 
-    /** 筛选（UP 主 / 类型）后结果太少时自动再加载几页（最多 5 页）。 */
+    /**
+     * 筛选（UP 主 / 类型）后结果太少时自动再加载几页（最多 5 页）。
+     *
+     * 加载失败就不再自动加载：失败后紧接着重试往往还是同一个错，只会把同一条
+     * 「加载动态失败」弹好几遍；要重试有列表上的重试按钮和下拉刷新。
+     */
     fun autoFill() {
         if (upFilter == null && kind == DynamicKind.All) return
-        if (items.size >= 6 || autoLoads >= 5 || loading || !hasMore) return
+        if (items.size >= 6 || autoLoads >= 5 || loading || !hasMore || loadError != null) return
         autoLoads++
         loadMore()
     }
