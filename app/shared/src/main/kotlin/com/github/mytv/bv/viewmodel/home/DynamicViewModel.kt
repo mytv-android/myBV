@@ -151,7 +151,8 @@ class DynamicViewModel(
                     userRepository.getSpaceDynamics(
                         hostMid = hostMid,
                         page = nextPage,
-                        offset = spaceHistoryOffset ?: ""
+                        offset = spaceHistoryOffset ?: "",
+                        preferApiType = Prefs.apiType
                     )
                 }
                 // 请求期间换了 UP：这份数据是上一个 UP 的，别混进新 UP 的列表里

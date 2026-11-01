@@ -116,6 +116,34 @@ data class DynamicData(
             logger.info { "updateBaseline: ${data.dynamicList.updateBaseline}" }
             logger.info { "historyOffset: ${data.dynamicList.historyOffset}" }
         }
+
+        fun fromDynamicData(data: bilibili.app.dynamic.v2.DynSpaceRsp) = DynamicData(
+            dynamics = data.listList
+                .mapNotNull {
+                    if (!availableAppDynamicTypes.contains(it.cardType)) {
+                        logger.warn { "unknown dynamic type ${it.cardType.name}, up: ${it.getAuthorModule()?.author?.name}, date: ${it.getAuthorModule()?.ptimeLabelText}" }
+                        return@mapNotNull null
+                    }
+
+                    if (it.cardType == bilibili.app.dynamic.v2.DynamicType.forward) {
+                        // source not exist
+                        if (it.getItemNullModule() != null) {
+                            return@mapNotNull DynamicItem.fromDynamicItem(it)
+                        } else if (!availableAppDynamicTypes.contains(it.getDynamicModule()?.dynForward?.item?.cardType)) {
+                            logger.warn { "unknown dynamic forward type ${it.getDynamicModule()?.dynForward?.item?.cardType}, up: ${it.getAuthorModule()?.author?.name}, date: ${it.getAuthorModule()?.ptimeLabelText}" }
+                            return@mapNotNull null
+                        }
+                    }
+
+                    DynamicItem.fromDynamicItem(it)
+                },
+            hasMore = data.hasMore,
+            historyOffset = data.historyOffset,
+            // 空间动态没有「未读动态数」那一套，不下发 update_baseline
+            updateBaseline = ""
+        ).also {
+            logger.info { "space historyOffset: ${data.historyOffset}" }
+        }
     }
 }
 

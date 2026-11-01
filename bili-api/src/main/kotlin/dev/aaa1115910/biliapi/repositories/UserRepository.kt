@@ -4,6 +4,7 @@ import bilibili.app.dynamic.v2.DynamicGrpcKt
 import bilibili.app.dynamic.v2.Refresh
 import bilibili.app.dynamic.v2.dynAllReq
 import bilibili.app.dynamic.v2.dynDetailReq
+import bilibili.app.dynamic.v2.dynSpaceReq
 import bilibili.app.dynamic.v2.dynVideoReq
 import dev.aaa1115910.biliapi.entity.ApiType
 import dev.aaa1115910.biliapi.entity.user.DynamicData
@@ -283,22 +284,51 @@ class UserRepository(
     /**
      * 获取用户[hostMid]的动态列表（UP 主空间动态）。
      *
-     * 只有 Web 端有这个接口（App 的 gRPC 没有对应的 space 动态方法），
-     * 所以这里不走 [ApiType] 分支，统一用 HTTP + SESSDATA。
+     * Web 走 /x/polymer/web-dynamic/v1/feed/space，App 走 gRPC 的 DynSpace
+     * （空间页动态：host_uid + history_offset 分页，from=space）。
+     * 关注动态流是分页的，不活跃的 UP 动态可能远在几十页之后，只在前端已加载的
+     * 页面里筛永远筛不出来；这个接口直接按 UP 取，返回结构与 [getDynamics] 一致。
+     *
+     * @param hostMid 用户 uid
+     * @param offset 请求第2页及其之后时填写，填写上一次请求获得的offset
      */
     suspend fun getSpaceDynamics(
         hostMid: Long,
         page: Int,
         offset: String,
+        preferApiType: ApiType = ApiType.Web,
         sessData: String? = null
     ): DynamicData {
-        val responseData = BiliHttpApi.getDynamicSpaceList(
-            hostMid = hostMid,
-            page = page,
-            offset = offset,
-            sessData = sessData ?: authRepository.sessionData ?: ""
-        ).getResponseData()
-        return DynamicData.fromDynamicData(responseData)
+        return when (preferApiType) {
+            ApiType.Web -> {
+                val responseData = BiliHttpApi.getDynamicSpaceList(
+                    hostMid = hostMid,
+                    page = page,
+                    offset = offset,
+                    sessData = sessData ?: authRepository.sessionData ?: ""
+                ).getResponseData()
+                DynamicData.fromDynamicData(responseData)
+            }
+
+            ApiType.App -> {
+                var result: DynamicData? = null
+                runCatching {
+                    val dynSpaceReply = dynamicStub?.dynSpace(dynSpaceReq {
+                        this.hostUid = hostMid
+                        this.historyOffset = offset
+                        this.page = page.toLong()
+                        localTime = 8
+                        from = "space"
+                    })
+                    result = DynamicData.fromDynamicData(
+                        dynSpaceReply ?: error("空间动态 gRPC 接口无响应")
+                    )
+                }.onFailure {
+                    handleGrpcException(it)
+                }
+                result ?: error("空间动态 gRPC 接口无响应")
+            }
+        }
     }
 
     suspend fun getDynamicDetail(        dynamicId: String,
