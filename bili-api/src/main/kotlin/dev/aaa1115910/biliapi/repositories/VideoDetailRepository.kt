@@ -289,7 +289,8 @@ class VideoDetailRepository(
                     type = 1,
                     root = commentId,
                     pageSize = 20,
-                    pageNumber = page.nextWebPage,
+                    // pn 从 1 开始，夹一下避免 0 页拿到空列表
+                    pageNumber = page.nextWebPage.coerceAtLeast(1),
                 ).getResponseData()
                 return CommentRepliesData.fromCommentReplyData(webReplies)
             }

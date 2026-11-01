@@ -141,6 +141,13 @@ class CommentViewModel(
             replies.addAll(commentRepliesData.replies)
         }.onFailure {
             logger.fException(it) { "Load more replies failed" }
+            // 首屏就失败时提示：楼中楼此时只有根评论，不提示的话表现为「回复看不到」。
+            // 分页失败不提示，静默留给滑动到底部时重试
+            if (replies.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    "加载回复失败：${it.localizedMessage}".toast(BVApp.context)
+                }
+            }
         }
         updatingReplies = false
         delay(300)
