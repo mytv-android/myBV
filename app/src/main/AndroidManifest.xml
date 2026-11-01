@@ -1,3 +1,27 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+        WorkManager 由 androidx.glance:glance-appwidget 传递引入，注册在
+        androidx.startup.InitializationProvider 上，每个进程创建时都会执行。
+        它在构造时检查 context.isDeviceProtectedStorage()，设备加密（DE）存储上下文
+        下直接抛 IllegalStateException，而该异常发生在 Application.onCreate 之前，
+        业务代码接不住。开机自启 / 桌面小部件 / 一次 Activity 启动请求都会先创建进程，
+        于是解锁前被拉起就必崩。
+        这里去掉 WorkManagerInitializer 的自动初始化，改由 BVApp 实现
+        Configuration.Provider 按需初始化；DE 上下文下的进程在 BVApp.onCreate 直接结束。
+    -->
+    <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+    </application>
 </manifest>

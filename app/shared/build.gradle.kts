@@ -116,6 +116,8 @@ dependencies {
     api(androidx.room.runtime)
     api(androidx.tvprovider)
     api(androidx.webkit)
+    // BVApp 实现 Configuration.Provider，桌面小组件的周期刷新也用 Worker，故放在 shared 层
+    api(androidx.work.runtime.ktx)
     api(libs.accompanist.systemuicontroller)
     api(libs.coil.compose)
     api(libs.coil.gif)

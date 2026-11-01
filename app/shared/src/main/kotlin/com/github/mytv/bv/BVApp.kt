@@ -4,11 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.os.Process
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.webkit.WebViewCompat
+import androidx.work.Configuration
 import coil.Coil
 import coil.ImageLoader
 import de.schnettler.datastore.manager.DataStoreManager
@@ -50,7 +52,7 @@ import org.koin.ksp.generated.module
 import org.slf4j.impl.HandroidLoggerAdapter
 import java.io.File
 
-class BVApp : Application() {
+class BVApp : Application(), Configuration.Provider {
     companion object {
         @SuppressLint("StaticFieldLeak")
         lateinit var context: Context
@@ -61,8 +63,23 @@ class BVApp : Application() {
         fun getAppDatabase(context: Context = this.context) = AppDatabase.getDatabase(context)
     }
 
+    /**
+     * WorkManager 的自动初始化已在清单里关掉，改由这里按需提供配置；
+     * 首次 `WorkManager.getInstance()` 时用默认配置初始化。
+     */
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().build()
+
     override fun onCreate() {
         super.onCreate()
+        // 解锁前被拉起（开机自启、桌面小部件、一次 Activity 启动请求等）时进程跑在设备加密
+        // （DE）存储上下文里：凭据加密存储读不到，应用自身也没有 directBootAware 组件，
+        // 没有任何有用工作可做。而 DE 上下文解锁后也不会切成 CE，若不结束，Glance 首次刷新
+        // 小部件调用 WorkManager.getInstance() 仍会抛同一异常，所以直接结束进程。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage) {
+            Process.killProcess(Process.myPid())
+            return
+        }
         context = this.applicationContext
         // 迁移 Provider 跑在独立进程，只需要读写本应用数据文件，不能执行整套启动流程
         if (isMigrationProcess()) return
