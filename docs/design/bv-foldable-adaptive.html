@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BV Expressive · 折叠屏与双屏适配</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Visual baseline is unchanged: BV Expressive roles, Vibrant, sky fallback #23ADE5. */
+:root {
+  --font-display: "Roboto Flex", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-body: "Noto Sans SC", "Roboto Flex", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --spring-fast: cubic-bezier(.34, 1.5, .64, 1);
+  --spring-default: cubic-bezier(.3, 1.25, .5, 1);
+  --effects: cubic-bezier(.2, 0, 0, 1);
+
+  --l-primary:#00668a; --l-on-primary:#fff; --l-primary-container:#c3e7ff; --l-on-primary-container:#004c69;
+  --l-secondary:#49607b; --l-on-secondary:#fff; --l-secondary-container:#d0e4ff; --l-on-secondary-container:#314862;
+  --l-tertiary:#4c5d8b; --l-on-tertiary:#fff; --l-tertiary-container:#dae2ff; --l-on-tertiary-container:#334671;
+  --l-surface:#f5faff; --l-on-surface:#131d23; --l-on-surface-variant:#3c4851;
+  --l-surface-container-lowest:#fff; --l-surface-container-low:#ebf5fd; --l-surface-container:#e5eff7;
+  --l-surface-container-high:#dfe9f2; --l-surface-container-highest:#dae4ec;
+  --l-outline:#6c7982; --l-outline-variant:#bbc8d2;
+  --l-inverse-surface:#283238; --l-inverse-on-surface:#e8f2fa; --l-inverse-primary:#7ad0ff;
+
+  --d-primary:#7ad0ff; --d-on-primary:#003549; --d-primary-container:#004c69; --d-on-primary-container:#c3e7ff;
+  --d-secondary:#b0c9e8; --d-on-secondary:#19324a; --d-secondary-container:#314862; --d-on-secondary-container:#d0e4ff;
+  --d-tertiary:#b4c6f9; --d-on-tertiary:#1c2f59; --d-tertiary-container:#334671; --d-on-tertiary-container:#dae2ff;
+  --d-surface:#0b151a; --d-on-surface:#dae4ec; --d-on-surface-variant:#bbc8d2;
+  --d-surface-container-lowest:#060f15; --d-surface-container-low:#131d23; --d-surface-container:#172127;
+  --d-surface-container-high:#222b31; --d-surface-container-highest:#2c363c;
+  --d-outline:#85929c; --d-outline-variant:#3c4851;
+  --d-inverse-surface:#dae4ec; --d-inverse-on-surface:#283238; --d-inverse-primary:#00668a;
+}
+:root, .scope {
+  --primary:var(--l-primary); --on-primary:var(--l-on-primary); --primary-container:var(--l-primary-container); --on-primary-container:var(--l-on-primary-container);
+  --secondary:var(--l-secondary); --on-secondary:var(--l-on-secondary); --secondary-container:var(--l-secondary-container); --on-secondary-container:var(--l-on-secondary-container);
+  --tertiary:var(--l-tertiary); --on-tertiary:var(--l-on-tertiary); --tertiary-container:var(--l-tertiary-container); --on-tertiary-container:var(--l-on-tertiary-container);
+  --surface:var(--l-surface); --on-surface:var(--l-on-surface); --on-surface-variant:var(--l-on-surface-variant);
+  --surface-container-lowest:var(--l-surface-container-lowest); --surface-container-low:var(--l-surface-container-low); --surface-container:var(--l-surface-container);
+  --surface-container-high:var(--l-surface-container-high); --surface-container-highest:var(--l-surface-container-highest);
+  --outline:var(--l-outline); --outline-variant:var(--l-outline-variant);
+  --inverse-surface:var(--l-inverse-surface); --inverse-on-surface:var(--l-inverse-on-surface); --inverse-primary:var(--l-inverse-primary);
+}
+@media (prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]), :root:not([data-theme="light"]) .scope {
+    --primary:var(--d-primary); --on-primary:var(--d-on-primary); --primary-container:var(--d-primary-container); --on-primary-container:var(--d-on-primary-container);
+    --secondary:var(--d-secondary); --on-secondary:var(--d-on-secondary); --secondary-container:var(--d-secondary-container); --on-secondary-container:var(--d-on-secondary-container);
+    --tertiary:var(--d-tertiary); --on-tertiary:var(--d-on-tertiary); --tertiary-container:var(--d-tertiary-container); --on-tertiary-container:var(--d-on-tertiary-container);
+    --surface:var(--d-surface); --on-surface:var(--d-on-surface); --on-surface-variant:var(--d-on-surface-variant);
+    --surface-container-lowest:var(--d-surface-container-lowest); --surface-container-low:var(--d-surface-container-low); --surface-container:var(--d-surface-container);
+    --surface-container-high:var(--d-surface-container-high); --surface-container-highest:var(--d-surface-container-highest);
+    --outline:var(--d-outline); --outline-variant:var(--d-outline-variant);
+    --inverse-surface:var(--d-inverse-surface); --inverse-on-surface:var(--d-inverse-on-surface); --inverse-primary:var(--d-inverse-primary);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .scope, .cinema {
+  --primary:var(--d-primary); --on-primary:var(--d-on-primary); --primary-container:var(--d-primary-container); --on-primary-container:var(--d-on-primary-container);
+  --secondary:var(--d-secondary); --on-secondary:var(--d-on-secondary); --secondary-container:var(--d-secondary-container); --on-secondary-container:var(--d-on-secondary-container);
+  --tertiary:var(--d-tertiary); --on-tertiary:var(--d-on-tertiary); --tertiary-container:var(--d-tertiary-container); --on-tertiary-container:var(--d-on-tertiary-container);
+  --surface:var(--d-surface); --on-surface:var(--d-on-surface); --on-surface-variant:var(--d-on-surface-variant);
+  --surface-container-lowest:var(--d-surface-container-lowest); --surface-container-low:var(--d-surface-container-low); --surface-container:var(--d-surface-container);
+  --surface-container-high:var(--d-surface-container-high); --surface-container-highest:var(--d-surface-container-highest);
+  --outline:var(--d-outline); --outline-variant:var(--d-outline-variant);
+  --inverse-surface:var(--d-inverse-surface); --inverse-on-surface:var(--d-inverse-on-surface); --inverse-primary:var(--d-inverse-primary);
+  color-scheme:dark;
+}
+html { scroll-behavior:smooth; scroll-padding-top:72px; }
+body { margin:0; background:var(--surface); color:var(--on-surface); font:400 16px/1.75 var(--font-body); -webkit-font-smoothing:antialiased; overflow-x:hidden; transition:background-color .4s var(--effects),color .4s var(--effects); }
+.wrap { max-width:1240px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+h1,h2,h3,h4 { font-family:var(--font-display); text-wrap:balance; margin:0; letter-spacing:-.01em; }
+h2 { font-size:clamp(28px,3.6vw,44px); line-height:1.15; font-weight:800; font-variation-settings:"wdth" 112,"opsz" 48; }
+h3 { font-size:20px; line-height:1.35; font-weight:700; }
+h4 { font-size:15px; font-weight:700; }
+p { margin:0; }
+a { color:var(--primary); text-underline-offset:3px; }
+code,.mono { font-family:var(--font-mono); font-size:.86em; }
+:not(pre)>code { background:var(--surface-container-high); padding:.1em .38em; border-radius:6px; overflow-wrap:anywhere; }
+:focus-visible { outline:3px solid var(--primary); outline-offset:3px; border-radius:8px; }
+.eyebrow { font:600 12px/1.4 var(--font-display); letter-spacing:.14em; text-transform:uppercase; color:var(--primary); font-variation-settings:"wdth" 120; }
+.lede { font-size:18px; line-height:1.75; color:var(--on-surface-variant); max-width:68ch; }
+.muted { color:var(--on-surface-variant); }
+.num { font-family:var(--font-display); font-variant-numeric:tabular-nums; }
+.toc { position:sticky; top:0; z-index:30; background:color-mix(in srgb,var(--surface) 86%,transparent); backdrop-filter:blur(14px) saturate(1.3); border-bottom:1px solid var(--outline-variant); }
+.toc .wrap { display:flex; align-items:center; gap:16px; padding-block:10px; }
+.toc .brand { font:800 15px var(--font-display); white-space:nowrap; display:flex; align-items:center; gap:8px; }
+.toc .brand i { width:22px; height:22px; background:var(--primary); clip-path:var(--shape-cookie9,circle(50%)); display:inline-block; }
+.toc nav { display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; min-width:0; }
+.toc nav::-webkit-scrollbar { display:none; }
+.toc nav a { white-space:nowrap; text-decoration:none; color:var(--on-surface-variant); font-size:14px; font-weight:500; padding:6px 12px; border-radius:999px; }
+.toc nav a:hover { background:var(--surface-container-high); color:var(--on-surface); }
+section.sec { padding-block:clamp(56px,8vw,104px); }
+section.sec+section.sec { border-top:1px solid var(--outline-variant); }
+.sec-head { display:grid; gap:14px; margin-bottom:36px; max-width:880px; }
+.band { background:var(--surface-container-low); }
+.hero { position:relative; overflow:hidden; background:var(--surface-container-lowest); color:var(--on-surface); isolation:isolate; }
+.hero .glow { position:absolute; inset:-20% -10% auto -10%; height:140%; z-index:-1; pointer-events:none; background:radial-gradient(40% 50% at 70% 40%,color-mix(in srgb,var(--primary) 34%,transparent),transparent 70%),radial-gradient(35% 45% at 20% 70%,color-mix(in srgb,var(--tertiary) 26%,transparent),transparent 70%),radial-gradient(30% 40% at 90% 85%,color-mix(in srgb,var(--secondary) 22%,transparent),transparent 70%); filter:blur(10px); }
+.hero .wrap { padding-block:clamp(40px,6vw,72px) clamp(32px,5vw,56px); display:grid; gap:34px; }
+.hero h1 { font-size:clamp(42px,7vw,88px); line-height:1.02; font-weight:850; font-variation-settings:"wdth" 125,"opsz" 96; letter-spacing:-.02em; }
+.hero h1 em { font-style:normal; color:var(--primary); }
+.hero .sub { font-size:clamp(16px,1.6vw,19px); color:var(--on-surface-variant); max-width:62ch; line-height:1.8; }
+.hero-top { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr); gap:32px; align-items:end; }
+.hero-title { display:grid; gap:20px; }
+.ctrl { display:grid; gap:14px; padding:18px; border-radius:28px; background:var(--surface-container); min-width:0; }
+.ctrl-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.ctrl-label { font:600 12px var(--font-display); color:var(--on-surface-variant); min-width:64px; }
+.seg { display:inline-flex; flex-wrap:wrap; gap:2px; }
+.seg button { font:500 13px var(--font-body); border:0; cursor:pointer; padding:8px 14px; color:var(--on-surface); background:var(--surface-container-highest); border-radius:6px; transition:border-radius .35s var(--spring-default),background .25s,color .25s; }
+.seg button:first-child { border-radius:999px 6px 6px 999px; }
+.seg button:last-child { border-radius:6px 999px 999px 6px; }
+.seg button[aria-pressed="true"] { background:var(--primary); color:var(--on-primary); border-radius:999px; }
+.seg button:hover:not([aria-pressed="true"]) { background:var(--surface-container-high); }
+.pill { display:inline-block; font:600 11px/1.6 var(--font-display); padding:2px 9px; border-radius:999px; background:var(--secondary-container); color:var(--on-secondary-container); white-space:nowrap; }
+.pill.t { background:var(--tertiary-container); color:var(--on-tertiary-container); }
+.pill.p { background:var(--primary); color:var(--on-primary); }
+.pill.o { background:transparent; box-shadow:inset 0 0 0 1px var(--outline); color:var(--on-surface-variant); }
+.grid-2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+.card { background:var(--surface-container); border-radius:24px; padding:22px; display:grid; gap:10px; align-content:start; min-width:0; }
+.card p,.card li { font-size:15px; line-height:1.7; color:var(--on-surface-variant); }
+.card h3 { display:flex; gap:10px; align-items:center; }
+ul.clean { margin:0; padding-left:1.1em; display:grid; gap:6px; }
+.split { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:28px; align-items:start; }
+.tbl-wrap { overflow-x:auto; border-radius:20px; background:var(--surface-container-lowest); border:1px solid var(--outline-variant); }
+table { border-collapse:collapse; width:100%; font-size:14px; min-width:760px; }
+th,td { text-align:left; padding:12px 14px; border-bottom:1px solid var(--outline-variant); vertical-align:top; line-height:1.6; }
+th { font:600 12px var(--font-display); color:var(--on-surface-variant); background:var(--surface-container); }
+tr:last-child td { border-bottom:0; }
+td code { white-space:nowrap; }
+.callout { padding:18px 20px; border-radius:20px; background:var(--secondary-container); color:var(--on-secondary-container); font-size:15px; line-height:1.7; }
+.prototype-bar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.prototype-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:24px; align-items:start; }
+.prototype-stage { min-width:0; margin:0; padding:22px; border-radius:28px; background:var(--surface-container-low); }
+.prototype-stage figcaption { margin-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--on-surface-variant); }
+.prototype-stage figcaption b { color:var(--on-surface); font-weight:600; }
+.prototype-notes { display:grid; gap:12px; }
+.note { padding:16px 18px; border-radius:20px; background:var(--surface-container); display:grid; gap:6px; }
+.note b { font-size:14px; }
+.note p { font-size:13px; line-height:1.65; color:var(--on-surface-variant); }
+.fit { width:100%; position:relative; margin:0 auto; }
+.frame { position:absolute; left:0; top:0; transform-origin:0 0; background:#0d0d0f; box-shadow:0 30px 60px -30px rgb(0 0 0/.6),inset 0 0 0 2px #2a2a2e; }
+.frame.phone { border-radius:44px; padding:10px; }
+.frame.fold { border-radius:30px; padding:14px; }
+.frame.dual { border-radius:24px; padding:12px; box-shadow:0 30px 60px -30px rgb(0 0 0/.65),inset 0 0 0 2px #343438; }
+.frame.tabletop { border-radius:28px; padding:14px; }
+.frame.flat { border-radius:30px; padding:16px; }
+.frame .viewport { position:relative; overflow:hidden; }
+.frame.phone .viewport { border-radius:34px; }
+.frame.fold .viewport,.frame.flat .viewport,.frame.tabletop .viewport { border-radius:17px; }
+.frame.dual .viewport { border-radius:13px; }
+.stage { display:grid; grid-template-columns:1.45fr 1.35fr .58fr; gap:clamp(12px,2vw,24px); align-items:end; }
+.stage .dv { min-width:0; margin:0; display:grid; gap:10px; }
+.stage .dv figcaption { text-align:center; font-size:12px; color:var(--on-surface-variant); }
+.stage .dv figcaption b { display:block; color:var(--on-surface); font-weight:600; }
+.flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.flow .state { position:relative; min-height:160px; padding:20px; border-radius:24px; background:var(--surface-container); display:grid; gap:8px; align-content:start; }
+.flow .state:not(:last-child)::after { content:""; position:absolute; right:-10px; top:32px; width:8px; height:8px; border-top:2px solid var(--outline); border-right:2px solid var(--outline); transform:rotate(45deg); z-index:2; }
+.flow .state b { font-size:15px; }
+.flow .state p { font-size:13px; line-height:1.65; color:var(--on-surface-variant); }
+.ref-list { display:grid; gap:10px; }
+.ref-list a { display:flex; justify-content:space-between; gap:16px; padding:14px 16px; border-radius:16px; background:var(--surface-container); text-decoration:none; }
+.ref-list a span { color:var(--on-surface-variant); font-size:13px; }
+.footer { padding:28px 0 48px; color:var(--on-surface-variant); font-size:13px; }
+
+/* Mockups: px values in this section map 1:1 to Android dp in the design source. */
+.scr { position:relative; overflow:hidden; background:var(--surface); color:var(--on-surface); font:400 14px/1.35 var(--font-body); -webkit-font-smoothing:antialiased; }
+.scr *,.scr *::before,.scr *::after { box-sizing:border-box; }
+.scr svg.i { width:24px; height:24px; fill:currentColor; flex:none; display:block; }
+.scr img { display:block; width:100%; height:100%; object-fit:cover; max-width:none; }
+.m-col { display:flex; flex-direction:column; min-width:0; }
+.m-row { display:flex; gap:12px; min-width:0; }
+.m-fill { flex:1; min-width:0; }
+.m-abs { position:absolute; }
+.m-sb { height:28px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font:600 13px var(--font-display); }
+.m-sb i { display:inline-block; width:22px; height:11px; border-radius:3px; box-shadow:inset 0 0 0 1.5px currentColor; position:relative; }
+.m-sb i::after { content:""; position:absolute; inset:2.5px 6px 2.5px 2.5px; background:currentColor; border-radius:1px; }
+.m-h { font:700 15px var(--font-display); display:flex; align-items:center; justify-content:space-between; }
+.m-h small { font:500 12px var(--font-body); color:var(--primary); }
+.m-t2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.m-t1 { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-meta { font-size:11px; color:var(--on-surface-variant); display:flex; gap:8px; align-items:center; white-space:nowrap; overflow:hidden; }
+.m-av { width:32px; height:32px; flex:none; display:grid; place-items:center; font:700 13px var(--font-body); background:var(--tertiary-container); color:var(--on-tertiary-container); border-radius:50%; clip-path:var(--shape-cookie9,circle(50%)); }
+.m-av.p { background:var(--primary-container); color:var(--on-primary-container); }
+.m-av.s { background:var(--secondary-container); color:var(--on-secondary-container); }
+.m-vc { display:flex; flex-direction:column; gap:7px; min-width:0; }
+.m-cv { position:relative; aspect-ratio:16/10; border-radius:16px; overflow:hidden; background:var(--surface-container-high); }
+.m-cv .dur { position:absolute; right:6px; bottom:6px; font:600 10.5px var(--font-display); padding:2px 6px; border-radius:8px; background:rgb(0 0 0/.55); color:#fff; font-variant-numeric:tabular-nums; }
+.m-cv .prog { position:absolute; left:0; bottom:0; height:3px; background:var(--primary); }
+.m-vc .tt { font-size:13px; font-weight:500; line-height:1.4; }
+.m-chips { display:flex; gap:8px; overflow:hidden; }
+.m-chip { flex:none; font:500 13px var(--font-body); padding:6px 14px; border-radius:10px; box-shadow:inset 0 0 0 1px var(--outline-variant); color:var(--on-surface-variant); white-space:nowrap; }
+.m-chip.on { background:var(--secondary-container); color:var(--on-secondary-container); box-shadow:none; border-radius:999px; }
+.m-tabs { display:flex; gap:22px; padding:0 16px; border-bottom:1px solid var(--outline-variant); }
+.m-tab { font:500 14px var(--font-body); padding:10px 0 9px; color:var(--on-surface-variant); position:relative; white-space:nowrap; }
+.m-tab.on { color:var(--primary); font-weight:700; }
+.m-tab.on::after { content:""; position:absolute; left:20%; right:20%; bottom:-1px; height:3px; border-radius:3px 3px 0 0; background:var(--primary); }
+.m-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:40px; padding:0 20px; border-radius:999px; font:600 14px var(--font-body); white-space:nowrap; flex:none; }
+.m-btn .i { width:20px; height:20px; }
+.m-btn.fill { background:var(--primary); color:var(--on-primary); }
+.m-btn.t { background:var(--secondary-container); color:var(--on-secondary-container); }
+.m-ib { width:40px; height:40px; display:grid; place-items:center; border-radius:50%; flex:none; color:var(--on-surface-variant); }
+.m-ib.t { background:var(--surface-container-highest); color:var(--on-surface); }
+.m-bg { display:flex; gap:2px; }
+.m-bg>div { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px 8px; background:var(--surface-container-high); border-radius:8px; font:500 11px var(--font-display); color:var(--on-surface-variant); }
+.m-bg>div:first-child { border-radius:20px 8px 8px 20px; }
+.m-bg>div:last-child { border-radius:8px 20px 20px 8px; }
+.m-bg>div.on { background:var(--primary); color:var(--on-primary); border-radius:20px; }
+.m-bg .i { width:20px; height:20px; }
+.m-search { display:flex; align-items:center; gap:10px; height:48px; padding:0 6px 0 16px; border-radius:999px; background:var(--surface-container-high); color:var(--on-surface-variant); min-width:0; }
+.m-search span { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px; }
+.m-nbar { position:absolute; left:0; right:0; bottom:0; height:80px; display:flex; padding:8px 4px 20px; background:var(--surface-container); }
+.m-nbar>div { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font:500 10.5px var(--font-body); color:var(--on-surface-variant); }
+.m-nbar .pi { width:46px; height:32px; border-radius:999px; display:grid; place-items:center; }
+.m-nbar .on { color:var(--on-surface); font-weight:700; }
+.m-nbar .on .pi { background:var(--secondary-container); color:var(--on-secondary-container); }
+.m-rail { flex:none; width:96px; display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px 0; background:var(--surface); }
+.m-rail .fab { width:56px; height:56px; border-radius:16px; display:grid; place-items:center; background:var(--primary-container); color:var(--on-primary-container); margin:6px 0 12px; }
+.m-rail .it { display:flex; flex-direction:column; align-items:center; gap:3px; font:500 11.5px var(--font-body); color:var(--on-surface-variant); padding:2px 0 6px; }
+.m-rail .it .pi { width:56px; height:30px; border-radius:999px; display:grid; place-items:center; }
+.m-rail .it.on { color:var(--on-surface); font-weight:700; }
+.m-rail .it.on .pi { background:var(--secondary-container); color:var(--on-secondary-container); }
+.m-rail .sp { flex:1; }
+.m-rail.wide { width:220px; align-items:stretch; padding:16px 12px; }
+.m-rail.wide .fab { width:auto; height:56px; display:flex; gap:10px; padding:0 18px; justify-content:flex-start; font:600 15px var(--font-body); }
+.m-rail.wide .it { flex-direction:row; gap:12px; height:50px; padding:0 16px; border-radius:999px; font-size:15px; }
+.m-rail.wide .it .pi { width:auto; height:auto; background:none!important; }
+.m-rail.wide .it.on { background:var(--secondary-container); color:var(--on-secondary-container); }
+.m-video { position:relative; background:#000; overflow:hidden; }
+.m-wavy { display:block; height:12px; overflow:visible; }
+.m-wavy path { fill:none; stroke-linecap:round; }
+.m-scrim-b { position:absolute; inset:0; background:linear-gradient(0deg,rgb(0 0 0/.78),transparent 48%),linear-gradient(180deg,rgb(0 0 0/.4),transparent 24%); }
+.m-eyebrow { font:600 11px var(--font-display); letter-spacing:.14em; color:var(--primary); }
+.m-dm { position:absolute; white-space:nowrap; font:600 14px var(--font-body); color:#fff; text-shadow:0 1px 2px rgb(0 0 0/.8); }
+.seam-v { position:absolute; top:0; bottom:0; z-index:8; pointer-events:none; }
+.seam-h { position:absolute; left:0; right:0; z-index:8; pointer-events:none; }
+.seam-v.fold,.seam-h.fold { background:linear-gradient(90deg,rgb(0 0 0/.08),rgb(255 255 255/.18),rgb(0 0 0/.12)); box-shadow:0 0 12px rgb(0 0 0/.16); }
+.seam-h.fold { background:linear-gradient(0deg,rgb(0 0 0/.1),rgb(255 255 255/.16),rgb(0 0 0/.14)); }
+.seam-v.hinge,.seam-h.hinge { background:#050608; box-shadow:inset 1px 0 #2a2a2e,inset -1px 0 #2a2a2e; }
+.pane-label { position:absolute; z-index:9; font:600 9px var(--font-display); letter-spacing:.06em; color:var(--on-surface-variant); background:var(--surface-container-high); border-radius:999px; padding:2px 7px; pointer-events:none; }
+@media (max-width:1000px) {
+  .hero-top,.split { grid-template-columns:minmax(0,1fr); }
+  .prototype-grid { grid-template-columns:minmax(0,1fr); }
+  .prototype-notes { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .grid-3 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .flow { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .flow .state::after { display:none; }
+}
+@media (max-width:720px) {
+  .stage { grid-template-columns:1fr 1fr; }
+  .stage .dv:last-child { grid-column:1/-1; max-width:230px; justify-self:center; }
+  .prototype-stage { padding:12px; }
+  .prototype-notes,.grid-2,.grid-3 { grid-template-columns:minmax(0,1fr); }
+}
+@media (max-width:480px) {
+  .stage { grid-template-columns:minmax(0,1fr); }
+  .stage .dv:last-child { grid-column:auto; }
+  .flow { grid-template-columns:minmax(0,1fr); }
+  .hero h1 { font-size:42px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  *,*::before,*::after { transition-duration:.01ms!important; animation-duration:.01ms!important; }
+}
+</style>
+</head>
+<body>
+<header class="toc">
+  <div class="wrap">
+    <div class="brand"><i aria-hidden="true"></i>BV Expressive <span class="pill o">折叠与双屏</span></div>
+    <nav aria-label="章节">
+      <a href="#model">形态规则</a><a href="#home">首页</a><a href="#video">详情与播放</a><a href="#dynamic">动态</a><a href="#continuity">连续性</a><a href="#acceptance">验收</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero cinema">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="hero-top">
+      <div class="hero-title">
+        <div class="eyebrow">BV EXPRESSIVE · FOLD-AWARE SUPPLEMENT · 2026.11</div>
+        <h1>顺着屏幕，<br><em>自然展开。</em></h1>
+        <p class="sub">在现有手机、平板和电视设计上补齐折叠姿态与双屏分区。窗口变宽时重排，铰链出现时分区；颜色、字体、圆角、组件与动效全部沿用，不另造一套视觉。</p>
+        <div class="ctrl-row"><span class="pill p">主题不变</span><span class="pill">状态连续</span><span class="pill t">铰链零遮挡</span></div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-row"><span class="ctrl-label">页面明暗</span><div class="seg" id="modeSeg" role="group" aria-label="页面明暗"><button type="button" data-mode="auto" aria-pressed="true">跟随系统</button><button type="button" data-mode="light" aria-pressed="false">浅色</button><button type="button" data-mode="dark" aria-pressed="false">深色</button></div></div>
+        <div class="ctrl-row"><span class="ctrl-label">视觉基线</span><span class="pill">跟随内容</span><span class="pill o">天蓝 #23ADE5 兜底</span><span class="pill o">Vibrant</span></div>
+        <p class="muted" style="font-size:13px">点击下方各节的原型按钮，切换同一页面的不同物理形态。</p>
+      </div>
+    </div>
+    <div class="stage" aria-label="三种代表形态预览">
+      <figure class="dv"><div class="fit" id="heroBook"></div><figcaption>书本半开<b>主内容 ‖ 推荐</b></figcaption></figure>
+      <figure class="dv"><div class="fit" id="heroTabletop"></div><figcaption>桌面半开<b>上画面 / 下控制</b></figcaption></figure>
+      <figure class="dv"><div class="fit" id="heroPhone"></div><figcaption>外屏<b>现有手机布局</b></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="model">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">01 · 形态规则</div><h2>先看窗口，再看折叠</h2><p class="lede">现有 <code>DeviceProfile</code> 继续决定宽度、输入方式与观看距离。折叠信息只增加分区约束，不把“折叠屏”变成第四种界面，也不按具体机型写分支。</p></div>
+    <div class="split" style="margin-bottom:24px">
+      <div class="card">
+        <h3>窗口宽度：沿用当前四级</h3>
+        <ul class="clean">
+          <li><b>Compact &lt; 600dp</b>：底部六项导航，首页两列。</li>
+          <li><b>Medium 600–839dp</b>：收起导航轨，Phone 内容，首页三列。</li>
+          <li><b>Expanded 840–1199dp</b>：收起导航轨，Tablet 双栏详情。</li>
+          <li><b>Large ≥ 1200dp</b>：220dp 展开导航轨，更多内容列。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>物理形态：新增两条约束</h3>
+        <ul class="clean">
+          <li><b>是否分区</b>：<code>isSeparating</code> 决定能否把折叠边当成内容边界。</li>
+          <li><b>边界在哪里</b>：<code>bounds</code> 决定每块内容的真实宽高，比例不写死。</li>
+          <li><b>是否遮挡</b>：<code>occlusionType = FULL</code> 时，铰链区域完全留空。</li>
+          <li><b>横还是竖</b>：竖向分区左右排，横向分区上下排。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>物理形态</th><th>判定信号</th><th>布局响应</th><th>明确不做</th></tr></thead>
+        <tbody>
+          <tr><td><b>外屏 / 普通手机</b></td><td>无分区 Feature，Compact</td><td>现有 Phone 单栏与底部导航</td><td>不因为设备可折叠就改样式</td></tr>
+          <tr><td><b>完全展开</b></td><td><code>FLAT</code>，无分隔铰链</td><td>按当前窗口宽度切换 Medium / Expanded / Large</td><td>不把内屏简单拉成等比放大的手机</td></tr>
+          <tr><td><b>书本半开</b></td><td><code>HALF_OPENED</code> + 竖向折叠边</td><td>左右逻辑页；首页主区＋推荐，视频画面＋评论</td><td>文字、卡片和按钮不跨折叠边</td></tr>
+          <tr><td><b>桌面半开</b></td><td><code>HALF_OPENED</code> + 横向折叠边</td><td>上半屏画面，下半屏进度、控制与评论</td><td>不把播放控制留在弯折区域</td></tr>
+          <tr><td><b>双屏跨屏</b></td><td><code>FULL</code> + <code>isSeparating</code>；即使 <code>FLAT</code></td><td>按物理铰链分左右屏；动态列表＋详情</td><td>不把 <code>FLAT</code> 当成可以跨铰链</td></tr>
+          <tr><td><b>横向展开 / 三折</b></td><td>读当前窗口与实际 Feature</td><td>完全展开时走 Expanded / Large；有多余 Feature 时逐区避让</td><td>不假设支持半开，不锁定自然方向</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="callout" style="margin-top:20px"><b>优先级：</b>真实分区边界优先于全局宽度级别。窗口即使是 Large，只要中间存在完全遮挡的物理铰链，也必须先分区，再在各自区域内选择现有组件。</p>
+  </div>
+</section>
+
+<section class="sec band" id="home">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">02 · 首页</div><h2>从底部导航，到双页浏览</h2><p class="lede">外屏和平面展开完全沿用现有首页。只有真实分隔出现时，精选与继续观看留在主区，推荐流进入相邻区域；导航轨完整留在主区一侧。</p></div>
+    <div class="prototype-bar"><div class="seg" id="homeModes" role="group" aria-label="首页形态"></div><span class="pill o">同一精选 · 同一推荐顺序</span></div>
+    <div class="prototype-grid">
+      <figure class="prototype-stage"><div class="fit" id="homeStage"></div><figcaption id="homeCaption" aria-live="polite"></figcaption></figure>
+      <aside class="prototype-notes" id="homeNotes"></aside>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="video">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">03 · 视频详情与播放</div><h2>让铰链成为画面的边界</h2><p class="lede">平面大屏沿用播放器＋简介／评论双栏。书本和双屏把两块区域分别收进物理分区；桌面半开把画面放在上半屏，把操作放回下半屏。视频始终是 P2 黑沙滩，进度始终是 08:30。</p></div>
+    <div class="prototype-bar"><div class="seg" id="videoModes" role="group" aria-label="视频形态"></div><span class="pill o">P2 · 08:30 / 18:42 · 弹幕开</span></div>
+    <div class="prototype-grid">
+      <figure class="prototype-stage"><div class="fit" id="videoStage"></div><figcaption id="videoCaption" aria-live="polite"></figcaption></figure>
+      <aside class="prototype-notes" id="videoNotes"></aside>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="dynamic">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">04 · 动态</div><h2>列表与详情，各守一块屏</h2><p class="lede">动态天然适合列表—详情模式。选中项、左右滚动位置与评论状态彼此独立；从双屏收回单屏时，当前详情变成普通路由，返回后仍停在原列表项。</p></div>
+    <div class="prototype-bar"><div class="seg" id="dynamicModes" role="group" aria-label="动态形态"></div><span class="pill o">选中：旅行的阿树 · 2 小时前</span></div>
+    <div class="prototype-grid">
+      <figure class="prototype-stage"><div class="fit" id="dynamicStage"></div><figcaption id="dynamicCaption" aria-live="polite"></figcaption></figure>
+      <aside class="prototype-notes" id="dynamicNotes"></aside>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="continuity">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">05 · 连续性与覆盖层</div><h2>折叠只是重排，不是重新进入</h2><p class="lede">沿用当前单 Activity 与稳定 NavHost 结构。姿态变化不创建新页面、不重置播放器，也不额外压入返回栈。</p></div>
+    <div class="flow" style="margin-bottom:28px">
+      <div class="state"><span class="pill">外屏</span><b>记录内容身份</b><p>当前路由、bvid / cid、选中的动态与标签页。</p></div>
+      <div class="state"><span class="pill">展开</span><b>保留浏览位置</b><p>首页与动态列表滚动位置、搜索文字、评论游标。</p></div>
+      <div class="state"><span class="pill">半开</span><b>只移动布局边界</b><p>播放进度、画质、弹幕与播放器实例保持不动。</p></div>
+      <div class="state"><span class="pill">收回</span><b>还原等价路径</b><p>双栏详情回到独立页面，焦点回到同一内容项。</p></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><h3>弹窗与菜单</h3><p>从哪块区域触发，就约束在哪块区域内。双屏上的评论抽屉、画质菜单和分享面板不跨物理铰链；紧凑单屏仍用现有底部抽屉。</p></div>
+      <div class="card"><h3>触摸与方向键</h3><p>焦点样式仍由输入方式决定。重排后把焦点映射到同一内容，不让焦点落入禁入区；每个逻辑区域记住自己的最后焦点。</p></div>
+      <div class="card"><h3>滚动与手势</h3><p>主区与辅助区独立滚动，不用一条长滚动容器跨两块屏。边缘返回手势跟随当前内容区，多窗口时只读取应用窗口。</p></div>
+    </div>
+    <div class="split" style="margin-top:24px">
+      <div class="callout"><b>内容间距：</b>每个逻辑区域保留现有 16dp 页面边距。铰链宽度不是卡片间距，也不计入内容可用宽度；任何文本和可交互控件都不能落入 <code>bounds</code>。</div>
+      <div class="callout"><b>不等宽分区：</b>主区与辅助区跟随真实边界，可以是 60:40，也可以因多窗口而改变。不要为“书本”“双屏”写固定像素或固定 50:50 比例。</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="acceptance">
+  <div class="wrap">
+    <div class="sec-head"><div class="eyebrow">06 · 设计验收</div><h2>不改变风格，只验证布局</h2><p class="lede">下面每条都可以直接用窗口尺寸和模拟 <code>FoldingFeature</code> 验证，无需先按机型命名。</p></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>验收项</th><th>通过标准</th><th>重点回归</th></tr></thead>
+        <tbody>
+          <tr><td><b>Compact / Medium 基线</b></td><td>首页仍为 2 / 3 列；Medium 使用导航轨，现有样式不变</td><td>外屏、普通手机、平面展开</td></tr>
+          <tr><td><b>竖向分区</b></td><td>卡片、标题、按钮、弹幕设置均完全位于某一侧，没有内容穿过折叠边</td><td>书本半开、双屏 <code>FLAT</code></td></tr>
+          <tr><td><b>横向分区</b></td><td>视频完整位于上半区，进度与控制完整位于下半区</td><td>桌面半开、横向物理铰链</td></tr>
+          <tr><td><b>完全遮挡</b></td><td><code>occlusionType = FULL</code> 的范围内不绘制业务内容，不放点击目标</td><td>双屏跨屏、弹出菜单</td></tr>
+          <tr><td><b>状态连续</b></td><td>折叠、旋转、拖窗后视频从原位置继续；选中项与滚动位置不丢</td><td>首页、动态、搜索、播放器</td></tr>
+          <tr><td><b>返回与焦点</b></td><td>双栏切单栏不多一层返回；方向键焦点落在同一内容而非默认首项</td><td>动态详情、外接键盘</td></tr>
+          <tr><td><b>三折与横折</b></td><td>不依赖 <code>HALF_OPENED</code>，不锁定自然方向，密度变化后重新测量窗口</td><td>完全展开、内外屏切换</td></tr>
+          <tr><td><b>视觉一致性</b></td><td>不新增主题 token；16 / 22 / 24 / 28dp 圆角与既有字号保持不变</td><td>浅色、深色、跟随内容</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="split" style="margin-top:32px">
+      <div>
+        <h3 style="margin-bottom:14px">设计依据</h3>
+        <div class="ref-list">
+          <a href="https://developer.android.com/develop/adaptive-apps/guides/foldables/learn-about-foldables?hl=zh-cn" target="_blank" rel="noreferrer">了解可折叠设备<span>姿态 · 连续性 · 备用布局</span></a>
+          <a href="https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware?hl=zh-cn" target="_blank" rel="noreferrer">让应用具备折叠感知能力<span>FoldingFeature · 铰链避让</span></a>
+          <a href="https://developer.android.com/develop/adaptive-apps/guides/foldables/trifolds-and-landscape-foldables?hl=zh-cn" target="_blank" rel="noreferrer">三折屏与横向折叠屏<span>窗口变化 · 不假设半开</span></a>
+          <a href="https://developer.android.com/codelabs/android-window-manager-dual-screen-foldables?hl=zh-cn" target="_blank" rel="noreferrer">Jetpack WindowManager Codelab<span>WindowLayoutInfo · 双屏边界</span></a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>本稿的范围</h3>
+        <p>这是现有 <a href="bv-expressive-redesign.html">BV Expressive 主设计稿</a> 的折叠与双屏补充，不替换主稿，也不包含工程改造。</p>
+        <ul class="clean"><li>保留六个一级入口与现有导航结构。</li><li>保留内容取色、天蓝兜底和深色播放器。</li><li>保留 Phone / Tablet / TV 三种内容布局。</li><li>只补充姿态、分区、覆盖层和连续性规则。</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="footer"><div class="wrap">BV Expressive · Fold-aware design supplement · 画布数值以 dp 为设计语义，设备外框仅用于原型展示。</div></footer>
+
+<script>
+'use strict';
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const ICONS = {
+  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  search:'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  person:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+  play:'M8 5v14l11-7z', pause:'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+  like:'M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z',
+  star:'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  comment:'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z',
+  settings:'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z',
+  dynamic:'M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4l-6-3.27v6.53L16 16z',
+  movie:'M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z',
+  shorts:'M8 2h8a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H8zm2 4.5l5 3.5-5 3.5v-7z',
+  menu:'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z',
+  back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  more:'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+  next:'M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z',
+  full:'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z',
+  cc:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z',
+  later:'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z',
+  mic:'M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',
+  tv:'M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  coin:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-1 3v1.1A3 3 0 0 0 8.5 11c0 1.7 1.4 2.3 2.8 2.7 1.2.3 1.7.6 1.7 1.2 0 .6-.6 1-1.5 1-1 0-1.6-.5-1.7-1.2H8.2c.1 1.4 1.1 2.4 2.8 2.7V18h2v-.6c1.6-.3 2.6-1.3 2.6-2.6 0-1.8-1.5-2.4-2.9-2.8-1.1-.3-1.6-.5-1.6-1.1 0-.5.5-.9 1.3-.9.8 0 1.3.4 1.4 1h1.7c-.1-1.3-1-2.3-2.5-2.6V7h-2z',
+  share:'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5c0-1.66-1.34-3-3-3s-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81A2.99 2.99 0 0 0 3 12a2.99 2.99 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 1 0 2.92-2.92z',
+  tune:'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z'
+};
+const ic=(n,cls='i')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[n]}"/></svg>`;
+const NAV=[['home','首页'],['shorts','刷刷'],['movie','影视'],['tv','直播'],['dynamic','动态'],['person','我的']];
+const VIDS=[
+  {t:'【4K HDR】冰岛 14 天环岛自驾，追到了今年最强的一场极光',up:'旅行的阿树',v:'186.4万',d:'18:42'},
+  {t:'撒哈拉的一夜：躺在沙丘上看银河是什么体验',up:'沙漠里的鱼',v:'52.1万',d:'12:07'},
+  {t:'赛博山城：凌晨三点的洪崖洞航拍',up:'山城飞手',v:'98.7万',d:'06:31'},
+  {t:'深海 200 米｜自由潜水员眼中的蓝洞',up:'蓝调潜水日志',v:'33.9万',d:'21:15'},
+  {t:'雨林延时摄影：一株兰花开放的 30 天',up:'植物观察所',v:'21.3万',d:'08:50'},
+  {t:'零下 30 度的雪原上，我们搭了一座冰屋',up:'北境日记',v:'64.0万',d:'15:28'},
+  {t:'夜访火山口：离熔岩湖只有 300 米',up:'地球表面观察员',v:'120.5万',d:'11:46'},
+  {t:'麦浪翻滚的七月，跟着收割机跑完一整天',up:'种地的小王',v:'17.6万',d:'09:12'}
+];
+const COMMENTS=[['鹿','鹿鸣呦呦','22:47 那一段极光直接炸开，耳机里风声都起鸡皮疙瘩了','3.1万'],['青','青山不改','请问 UP 用的什么相机？夜景噪点控制得太好了','8721'],['橘','橘子汽水','去年九月去的，一次都没看到，今年再冲','4402'],['K','Kp指数观察员','那天 Kp 到了 7，冰岛全境可见，运气真的好','1980']];
+const EPS=['P1 雷克雅未克','P2 黑沙滩','P3 冰河湖','P4 蓝冰洞'];
+
+/* The same procedural cover art used by the existing BV Expressive HTML proposal. */
+const PAL=[
+  {sky:['#06142e','#0d3b4f'],sun:'#bff7ff',aur:'#3cf2a6',layers:['#0e2a3c','#071521'],stars:1},
+  {sky:['#2b1055','#ff7e5f'],sun:'#ffd27f',layers:['#c2563a','#8a3324'],dune:1},
+  {sky:['#12002e','#6b1f86'],sun:'#ff3fa4',layers:['#1d0f3b','#0c0620'],city:1,stars:1},
+  {sky:['#01223f','#1f8fe0'],sun:'#a9e4ff',layers:['#0563a8','#013a6b'],sea:1,rays:1},
+  {sky:['#0b3d2e','#8fd694'],sun:'#f2ffd9',layers:['#2b7a4b','#145232'],fog:1},
+  {sky:['#8fb8f0','#eaf4ff'],sun:'#ffffff',layers:['#d3e4f6','#a9c4e0']},
+  {sky:['#1a0505','#7a1c0b'],sun:'#ff6a00',layers:['#3a0d06','#140302'],lava:1,stars:1},
+  {sky:['#5aa7e0','#f6d98b'],sun:'#fff3c4',layers:['#e2b04a','#b9822a'],dune:1}
+];
+function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+const coverCache=new Map();
+function drawCover(ctx,w,h,idx){
+  const p=PAL[idx%PAL.length],r=rng(idx*97+13);let g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,p.sky[0]);g.addColorStop(1,p.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  if(p.stars){ctx.fillStyle='rgba(255,255,255,.8)';for(let i=0;i<70;i++){const s=r()*1.4+.3;ctx.globalAlpha=r()*.8+.2;ctx.fillRect(r()*w,r()*h*.55,s,s);}ctx.globalAlpha=1;}
+  if(p.aur){for(let k=0;k<3;k++){ctx.beginPath();const y0=h*(.18+k*.09);ctx.moveTo(0,y0);for(let x=0;x<=w;x+=8)ctx.lineTo(x,y0+Math.sin(x/w*5+k)*h*.06);ctx.lineWidth=h*(.08-k*.015);ctx.strokeStyle=p.aur;ctx.globalAlpha=.38-k*.08;ctx.filter='blur(6px)';ctx.stroke();}ctx.filter='none';ctx.globalAlpha=1;}
+  const sx=w*(.25+r()*.5),sy=h*(.3+r()*.15),sr=Math.min(w,h)*(.09+r()*.06);g=ctx.createRadialGradient(sx,sy,0,sx,sy,sr*4);g.addColorStop(0,p.sun);g.addColorStop(.25,p.sun+'88');g.addColorStop(1,p.sun+'00');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(sx,sy,sr,0,7);ctx.fill();
+  if(p.rays){ctx.globalAlpha=.18;ctx.fillStyle=p.sun;for(let i=0;i<5;i++){ctx.beginPath();const x=w*(.1+i*.2);ctx.moveTo(x,0);ctx.lineTo(x+w*.05,0);ctx.lineTo(x+w*.2,h);ctx.lineTo(x+w*.1,h);ctx.fill();}ctx.globalAlpha=1;}
+  p.layers.forEach((col,li)=>{const base=h*(.55+li*.17);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0,h);if(p.city){let x=0;while(x<w){const bw=w*(.04+r()*.07),bh=h*(.12+r()*.3)*(li?.8:1.2);ctx.lineTo(x,base-bh);ctx.lineTo(x+bw,base-bh);x+=bw;}ctx.lineTo(w,h);ctx.fill();ctx.fillStyle=li?'#ffd166':'#4cc9f0';for(let i=0;i<60;i++){ctx.globalAlpha=.5+r()*.5;ctx.fillRect(r()*w,base-r()*h*.3,2,3);}ctx.globalAlpha=1;return;}const f1=2+r()*3,f2=5+r()*6,ph=r()*6,amp=h*(p.dune||p.sea?.05:.12);for(let x=0;x<=w;x+=4)ctx.lineTo(x,base-amp*(Math.sin(x/w*f1+ph)*.7+Math.sin(x/w*f2+ph)*.3)-(p.sea?0:amp*.6));ctx.lineTo(w,h);ctx.fill();});
+  if(p.lava){g=ctx.createRadialGradient(w*.5,h,0,w*.5,h,h*.7);g.addColorStop(0,'rgba(255,120,0,.85)');g.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
+  if(p.fog){g=ctx.createLinearGradient(0,h*.45,0,h*.8);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.35)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
+  g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.35)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+}
+const SIZES={L:[320,200],P:[216,384],W:[640,360]};
+function cover(idx,kind='L'){const key=idx+kind;if(coverCache.has(key))return coverCache.get(key);const [w,h]=SIZES[kind],cv=document.createElement('canvas');cv.width=w;cv.height=h;drawCover(cv.getContext('2d'),w,h,idx);const url=cv.toDataURL('image/jpeg',.86);coverCache.set(key,url);return url;}
+const img=(idx,kind='L')=>`<img src="${cover(idx,kind)}" alt="">`;
+
+const sb=(light=false)=>`<div class="m-sb" style="${light?'color:#fff':''}"><span class="num">9:41</span><span style="display:flex;gap:6px;align-items:center;font-size:11px">5G <i></i></span></div>`;
+const nbar=active=>`<div class="m-nbar">${NAV.map(([i,l])=>`<div class="${l===active?'on':''}"><span class="pi">${ic(i)}</span>${l}</div>`).join('')}</div>`;
+const rail=(active,wide=false)=>`<div class="m-rail${wide?' wide':''}">${wide?'':`<div class="it"><span class="pi">${ic('menu')}</span></div>`}<div class="fab">${ic('search')}${wide?'搜索':''}</div>${NAV.map(([i,l])=>`<div class="it${l===active?' on':''}"><span class="pi">${ic(i)}</span>${l}</div>`).join('')}<div class="sp"></div><div class="it"><span class="pi">${ic('settings')}</span>设置</div></div>`;
+function vcard(v,o={}){return `<div class="m-vc" style="${o.w?`width:${o.w}px;flex:none;`:''}"><div class="m-cv">${img(v===0?0:VIDS.indexOf(v))}<span class="dur">${v.d}</span>${o.prog?`<span class="prog" style="width:${o.prog}%"></span>`:''}</div><div class="tt m-t2">${v.t}</div>${o.noMeta?'':`<div class="m-meta"><span class="m-t1">${v.up}</span><span>${v.v}播放</span></div>`}</div>`;}
+const comment=([n,name,txt,like])=>`<div style="display:flex;gap:10px;min-width:0"><div class="m-av s" style="width:30px;height:30px;font-size:12px">${n}</div><div class="m-col" style="gap:3px;min-width:0"><b style="font-size:12px;color:var(--on-surface-variant)">${name}</b><div style="font-size:13px;line-height:1.5">${txt}</div><div class="m-meta">${ic('like')} ${like}　回复</div></div></div>`;
+function wavy(frac,w,col='var(--primary)',rest='rgb(255 255 255/.35)'){const x1=frac*w;let d='M0 6';for(let x=2;x<=x1;x+=2)d+=`L${x} ${(6+Math.sin(x/18*2*Math.PI)*2.6).toFixed(2)}`;return `<svg class="m-wavy" viewBox="0 0 ${w} 12" style="width:100%"><path d="${d}" stroke="${col}" stroke-width="3.5"/><path d="M${(x1+8).toFixed(0)} 6H${w-4}" stroke="${rest}" stroke-width="3.5"/><circle cx="${w-2}" cy="6" r="2" fill="${col}"/></svg>`;}
+const btnGroup=()=>`<div class="m-bg">${[['like','3.2万',1],['coin','8961'],['star','1.4万'],['later','稍后'],['share','分享']].map(([i,l,on])=>`<div class="${on?'on':''}">${ic(i)}${l}</div>`).join('')}</div>`;
+const hero=(w,h,titleSize=24)=>`<div style="position:relative;width:${w}px;height:${h}px;border-radius:28px;overflow:hidden;flex:none">${img(0,'W')}<div class="m-scrim-b"></div><div class="m-abs" style="left:20px;right:20px;bottom:18px;color:#fff"><div class="m-eyebrow" style="color:#fff;opacity:.85">今日精选 · 纪录</div><div class="m-t2" style="font:800 ${titleSize}px/1.16 var(--font-display);margin-top:5px">冰岛 14 天环岛，追到今年最强极光</div><div style="font-size:11px;opacity:.85;margin-top:5px">旅行的阿树 · 186.4万播放 · 4K HDR</div></div></div>`;
+
+function homeCompact(){return sb()+`<div style="display:flex;gap:10px;align-items:center;padding:6px 16px 10px"><div class="m-av p" style="width:40px;height:40px">阿</div><div class="m-search m-fill">${ic('search')}<span>冰岛极光 4K</span><span class="m-ib" style="width:36px;height:36px">${ic('mic')}</span></div></div><div class="m-tabs"><div class="m-tab on">推荐</div><div class="m-tab">热门</div><div class="m-tab">分区</div></div><div style="padding:14px 16px 0;display:flex;gap:8px">${hero(268,196,18)}<div style="width:52px;height:196px;border-radius:20px;overflow:hidden;flex:none">${img(6,'P')}</div></div><div class="m-h" style="padding:16px 16px 0">继续观看 <small>全部</small></div><div class="m-row" style="padding:10px 16px 0;gap:10px;overflow:hidden">${vcard(VIDS[2],{w:150,prog:62,noMeta:true})}${vcard(VIDS[3],{w:150,prog:30,noMeta:true})}</div><div class="m-h" style="padding:14px 16px 0">为你推荐</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 16px">${[4,6,1,7].map(i=>vcard(VIDS[i])).join('')}</div>`+nbar('首页');}
+function homeMedium(){return `<div style="display:flex;height:100%">${rail('首页')}<div class="m-fill m-col" style="overflow:hidden"><div style="display:flex;gap:10px;align-items:center;padding:12px 16px 8px"><div class="m-av p" style="width:40px;height:40px">阿</div><div class="m-search m-fill">${ic('search')}<span>冰岛极光 4K</span>${ic('mic')}</div></div><div class="m-tabs"><div class="m-tab on">推荐</div><div class="m-tab">热门</div><div class="m-tab">分区</div></div><div style="padding:14px 16px 0">${hero(560,230,26)}</div><div class="m-h" style="padding:16px 16px 0">继续观看 <small>全部</small></div><div class="m-row" style="padding:10px 16px 0;gap:12px;overflow:hidden">${[2,3,5].map((i,k)=>vcard(VIDS[i],{w:170,prog:[62,30,80][k],noMeta:true})).join('')}</div><div class="m-h" style="padding:14px 16px 0">为你推荐</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:10px 16px">${[4,6,1,7,2,3].map(i=>vcard(VIDS[i])).join('')}</div></div></div>`;}
+function homeBook(){const left=408,seam=24,right=408;return `<div style="display:flex;height:100%"><div style="width:${left}px;flex:none;display:flex;overflow:hidden">${rail('首页')}<div class="m-fill m-col" style="overflow:hidden"><div style="display:flex;gap:8px;align-items:center;padding:12px 12px 8px"><div class="m-av p" style="width:36px;height:36px">阿</div><div class="m-search m-fill" style="height:44px;padding-left:12px">${ic('search')}<span>冰岛极光</span></div></div><div class="m-tabs" style="gap:18px;padding:0 12px"><div class="m-tab on">推荐</div><div class="m-tab">热门</div><div class="m-tab">分区</div></div><div style="padding:12px">${hero(280,176,18)}</div><div class="m-h" style="padding:4px 12px 0">继续观看 <small>全部</small></div><div class="m-row" style="padding:10px 12px;gap:10px;overflow:hidden">${vcard(VIDS[2],{w:130,prog:62,noMeta:true})}${vcard(VIDS[3],{w:130,prog:30,noMeta:true})}</div><div class="m-h" style="padding:8px 12px 0">热门分区</div><div class="m-chips" style="padding:10px 12px;flex-wrap:wrap"><span class="m-chip on">纪录</span><span class="m-chip">旅行</span><span class="m-chip">知识</span><span class="m-chip">户外</span></div></div></div><div class="seam-v fold" style="position:relative;width:${seam}px;flex:none"></div><div style="width:${right}px;flex:none;padding:20px 16px;overflow:hidden"><div class="m-h" style="font-size:20px">为你推荐 <small>换一批</small></div><div class="m-meta" style="margin:6px 0 14px">推荐流在相邻逻辑页继续</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px">${[4,6,1,7,2,3].map(i=>vcard(VIDS[i])).join('')}</div></div></div>`;}
+function homeLarge(){return `<div style="display:flex;height:100%">${rail('首页',true)}<div class="m-fill m-col" style="padding:20px 28px 0 8px;gap:18px;overflow:hidden"><div style="display:flex;align-items:center;gap:16px"><div class="m-search" style="width:400px;flex:none">${ic('search')}<span>搜索视频、番剧、UP 主</span>${ic('mic')}</div><div class="m-chips m-fill"><span class="m-chip on">推荐</span><span class="m-chip">热门</span><span class="m-chip">分区</span><span class="m-chip">动画</span><span class="m-chip">知识</span></div><div class="m-av p" style="width:40px;height:40px">阿</div></div><div style="display:flex;gap:12px;height:290px;flex:none"><div style="width:100px;border-radius:28px;overflow:hidden;flex:none">${img(6,'P')}</div><div class="m-fill">${hero(720,290,34)}</div><div style="width:100px;border-radius:28px;overflow:hidden;flex:none">${img(1,'P')}</div></div><div class="m-h">继续观看 <small>全部</small></div><div class="m-row" style="gap:16px;overflow:hidden;flex:none">${[2,3,5,4,7].map((i,k)=>vcard(VIDS[i],{w:176,prog:[62,30,80,45,15][k],noMeta:true})).join('')}</div><div class="m-h">为你推荐</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">${[4,6,1,7,3].map(i=>vcard(VIDS[i])).join('')}</div></div></div>`;}
+
+const detailComments=(w,compact=false)=>`<div class="m-col" style="width:${w}px;flex:none;background:var(--surface-container-low);padding:${compact?16:20}px;gap:14px;overflow:hidden"><div class="m-tabs" style="padding:0"><div class="m-tab on">评论 2341</div><div class="m-tab">相关推荐</div></div><div class="m-chips"><span class="m-chip on">最热</span><span class="m-chip">最新</span></div>${COMMENTS.map(c=>comment(c)).join('')}</div>`;
+function detailFlat(){return `<div style="height:100%;display:flex;gap:24px;padding:20px 24px;background:var(--surface)"><div class="m-col" style="width:720px;flex:none;gap:14px"><div style="display:flex;align-items:center;gap:8px"><span class="m-ib">${ic('back')}</span><b style="font-size:15px">视频详情</b></div><div class="m-video" style="height:405px;border-radius:28px">${img(0,'W')}<div class="m-scrim-b"></div><div class="m-abs" style="left:20px;right:20px;bottom:14px;display:flex;align-items:center;gap:12px;color:#fff"><span>${ic('pause')}</span><div class="m-fill">${wavy(.45,560,'var(--inverse-primary)')}</div><span class="num" style="font-size:12px">08:30 / 18:42</span><span>${ic('full')}</span></div></div><div style="font:800 22px/1.3 var(--font-display)">${VIDS[0].t}</div><div style="display:flex;gap:12px;align-items:center"><div class="m-av p" style="width:44px;height:44px">阿</div><div class="m-col"><b>旅行的阿树</b><span class="m-meta">粉丝 58.2万 · 186.4万播放</span></div><span class="m-btn fill" style="height:36px;margin-left:8px">${ic('add')}关注</span><div class="m-fill"></div><div style="width:330px">${btnGroup()}</div></div><div class="m-chips">${EPS.map((e,i)=>`<span class="m-chip${i===1?' on':''}">${e}</span>`).join('')}</div></div>${detailComments(408)}</div>`;}
+function detailSplit(leftW,rightW,seam,hinge=false){const videoW=leftW-32,videoH=Math.round(videoW*9/16);return `<div style="display:flex;height:100%;background:var(--surface)"><div class="m-col" style="width:${leftW}px;flex:none;padding:12px 16px;gap:12px;overflow:hidden"><div style="display:flex;align-items:center;gap:6px"><span class="m-ib">${ic('back')}</span><b>视频详情</b></div><div class="m-video" style="height:${videoH}px;border-radius:24px">${img(0,'W')}<div class="m-scrim-b"></div><div class="m-abs" style="left:14px;right:14px;bottom:10px;display:flex;align-items:center;gap:10px;color:#fff">${ic('pause')}<div class="m-fill">${wavy(.45,Math.max(160,videoW-120),'var(--inverse-primary)')}</div><span class="num" style="font-size:11px">08:30</span>${ic('full')}</div></div><div class="m-t2" style="font:700 ${leftW<450?16:19}px/1.4 var(--font-display)">${VIDS[0].t}</div><div style="display:flex;gap:9px;align-items:center"><div class="m-av p" style="width:38px;height:38px">阿</div><div class="m-col m-fill"><b style="font-size:13px">旅行的阿树</b><span class="m-meta">粉丝 58.2万</span></div><span class="m-btn fill" style="height:34px;padding:0 14px">${ic('add')}关注</span></div>${btnGroup()}<div class="m-chips">${EPS.map((e,i)=>`<span class="m-chip${i===1?' on':''}" style="padding:5px 10px;font-size:11px">${e}</span>`).join('')}</div></div><div class="seam-v ${hinge?'hinge':'fold'}" style="position:relative;width:${seam}px;flex:none"></div>${detailComments(rightW,true)}</div>`;}
+function videoTabletop(){return `<div class="scope cinema" style="position:absolute;inset:0;background:var(--surface)"><div style="position:absolute;left:0;right:0;top:0;height:360px;background:#000;display:flex;justify-content:center;overflow:hidden"><div class="m-video" style="width:640px;height:360px;flex:none">${img(0,'W')}<div class="m-scrim-b" style="background:linear-gradient(180deg,rgb(0 0 0/.55),transparent 30%)"></div><span class="m-dm" style="top:88px;left:120px">那一段极光直接炸开</span><span class="m-dm" style="top:148px;left:340px">这是 Kp7 吗</span><div class="m-abs" style="left:20px;right:20px;top:16px;display:flex;align-items:center;gap:12px;color:#fff">${ic('back')}<b class="m-fill m-t1">P2 黑沙滩 · 冰岛 14 天环岛自驾</b>${ic('cc')}<span class="m-chip on" style="padding:3px 10px;font-size:12px">弹 开</span>${ic('more')}</div></div></div><div class="seam-h fold" style="top:360px;height:24px"></div><div style="position:absolute;left:0;right:0;top:384px;bottom:0;padding:18px 24px;display:flex;flex-direction:column;gap:13px;overflow:hidden"><div>${wavy(.45,792)}<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--on-surface-variant)"><span class="num">08:30</span><span class="num">18:42</span></div></div><div style="display:flex;align-items:center;gap:10px"><span class="m-btn fill">${ic('pause')}暂停</span><span class="m-ib t">${ic('next')}</span><span class="m-btn t">${ic('tune')}1080P 高码率</span><span class="m-btn t">1.0×</span><div class="m-fill"></div><span class="m-ib t">${ic('full')}</span></div><div class="m-tabs" style="padding:0"><div class="m-tab on">评论 2341</div><div class="m-tab">简介</div><div class="m-tab">选集</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${COMMENTS.slice(0,2).map(c=>comment(c)).join('')}</div></div></div>`;}
+
+const upRow=()=>`<div class="m-row" style="gap:12px;overflow:hidden;padding:2px 4px">${[['阿',1],['鱼',0],['飞',0],['蓝',0],['植',0]].map(([n,on])=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px"><div class="m-av ${on?'p':'s'}" style="width:40px;height:40px">${n}</div><span>${on?'阿树':'UP 主'}</span></div>`).join('')}</div>`;
+const dynCard=(i,on=false,compact=false)=>`<div style="padding:${compact?10:12}px;border-radius:20px;background:${on?'var(--secondary-container)':'var(--surface-container-low)'};color:${on?'var(--on-secondary-container)':'inherit'};display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:8px;align-items:center"><div class="m-av p" style="width:30px;height:30px">${i===0?'阿':'蓝'}</div><div class="m-col m-fill"><b style="font-size:12px">${i===0?'旅行的阿树':'蓝调潜水日志'}</b><span class="m-meta" style="color:inherit;opacity:.75">${i===0?'2 小时前':'昨天'} · 投稿了视频</span></div>${ic('more')}</div><div class="m-t2" style="font-size:12px;line-height:1.45">${VIDS[i===0?0:3].t}</div><div class="m-cv" style="border-radius:14px">${img(i===0?0:3)}<span class="dur">${VIDS[i===0?0:3].d}</span></div></div>`;
+function dynamicFlat(){return `<div style="display:flex;height:100%">${rail('动态')}<div class="m-col" style="width:470px;flex:none;padding:20px 8px 0;gap:14px;overflow:hidden"><b style="font:800 28px var(--font-display);padding-left:8px">动态</b>${upRow()}${dynCard(0,true)}${dynCard(1)}</div><div class="m-fill" style="margin:16px 20px 16px 12px;border-radius:28px;background:var(--surface-container-low);padding:22px;display:flex;flex-direction:column;gap:14px;overflow:hidden"><div style="display:flex;gap:10px;align-items:center"><div class="m-av p" style="width:44px;height:44px">阿</div><div class="m-col"><b>旅行的阿树</b><span class="m-meta">2 小时前 · 投稿了视频</span></div></div><div class="m-video" style="height:300px;border-radius:24px">${img(0,'W')}<div class="m-abs" style="left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:22px;background:var(--primary);color:var(--on-primary);display:grid;place-items:center">${ic('play')}</div></div><b style="font-size:16px">${VIDS[0].t}</b><div class="m-tabs" style="padding:0"><div class="m-tab on">评论 312</div><div class="m-tab">转发</div></div>${COMMENTS.slice(0,3).map(c=>comment(c)).join('')}</div></div>`;}
+function dynamicSplit(leftW,rightW,seam,hinge=false){const detailW=rightW-32;return `<div style="display:flex;height:100%"><div style="width:${leftW}px;flex:none;display:flex;overflow:hidden">${rail('动态')}<div class="m-col m-fill" style="padding:16px 10px 0 0;gap:10px;overflow:hidden"><b style="font:800 ${leftW<450?22:26}px var(--font-display);padding-left:4px">动态</b>${leftW<450?'':upRow()}${dynCard(0,true,true)}${dynCard(1,false,true)}</div></div><div class="seam-v ${hinge?'hinge':'fold'}" style="position:relative;width:${seam}px;flex:none"></div><div class="m-col" style="width:${rightW}px;flex:none;background:var(--surface-container-low);padding:18px 16px;gap:12px;overflow:hidden"><div style="display:flex;gap:9px;align-items:center"><div class="m-av p" style="width:40px;height:40px">阿</div><div class="m-col m-fill"><b style="font-size:13px">旅行的阿树</b><span class="m-meta">2 小时前 · 投稿了视频</span></div>${ic('more')}</div><div class="m-video" style="height:${Math.round(detailW*9/16)}px;border-radius:22px;flex:none">${img(0,'W')}<div class="m-abs" style="left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:20px;background:var(--primary);color:var(--on-primary);display:grid;place-items:center">${ic('play')}</div></div><b class="m-t2" style="font-size:14px;line-height:1.45">${VIDS[0].t}</b><div class="m-tabs" style="padding:0"><div class="m-tab on">评论 312</div><div class="m-tab">转发</div></div>${COMMENTS.slice(0,3).map(c=>comment(c)).join('')}</div></div>`;}
+
+const SECTIONS={
+  home:{current:'compact',order:['compact','medium','book','large'],labels:{compact:'外屏 Compact',medium:'展开 Medium',book:'书本半开',large:'横向展开 Large'},modes:{
+    compact:{w:360,h:780,type:'phone',render:homeCompact,caption:'<b>360 × 780dp</b><span>无分区 Feature · 现有 Phone</span>',notes:[['布局','底部六项导航、2 列推荐，现有外屏体验不变。'],['状态','展开后保留推荐标签、精选序号和列表位置。'],['边界','没有 FoldingFeature 时，不引入任何铰链留白。']]},
+    medium:{w:720,h:800,type:'flat',render:homeMedium,caption:'<b>720 × 800dp · FLAT</b><span>Medium · Phone 内容 + Rail</span>',notes:[['布局','收起导航轨，Phone 首页变为 3 列，符合当前断点。'],['重排','搜索、标签与精选不挪位置，只利用新增宽度。'],['连续性','从外屏展开时，不重建首页 Pager 或推荐流。']]},
+    book:{w:840,h:800,type:'fold',render:homeBook,caption:'<b>408 + 24 + 408dp · 书本半开</b><span>HALF_OPENED · VERTICAL</span>',notes:[['主区','导航、精选与继续观看完整留在左逻辑页。'],['辅助区','推荐流进入右逻辑页，卡片不跨 24dp 折叠边。'],['滚动','两侧独立滚动；折叠边只作边界，不作点击目标。']]},
+    large:{w:1200,h:800,type:'flat',render:homeLarge,caption:'<b>1200 × 800dp · 横向展开</b><span>Large · 无分隔铰链</span>',notes:[['布局','220dp 展开导航轨、居中大图与 5 列内容。'],['适用','大折叠屏、横向折叠屏与三折完全展开共用此规则。'],['限制','不根据“三折”名称强制三栏，只看窗口与 Feature。']]}
+  }},
+  video:{current:'flat',order:['flat','book','tabletop','dual'],labels:{flat:'平面 Expanded',book:'书本半开',tabletop:'桌面半开',dual:'双屏跨屏'},modes:{
+    flat:{w:1200,h:800,type:'flat',render:detailFlat,caption:'<b>1200 × 800dp · FLAT</b><span>现有 Tablet 双栏</span>',notes:[['布局','720dp 播放器＋自适应评论栏，沿用现有详情稿。'],['主题','详情封面局部取色与播放器深色规则不变。'],['播放','切换到其他形态时，P2 与 08:30 进度保持不变。']]},
+    book:{w:840,h:760,type:'fold',render:()=>detailSplit(408,408,24),caption:'<b>408 + 24 + 408dp · 书本半开</b><span>画面与评论各自成区</span>',notes:[['主区','播放器、标题、UP 主与操作组完整位于左侧。'],['辅助区','评论独立滚动，不让文字或回复按钮跨折叠边。'],['覆盖层','画质、分享等菜单约束在触发它的那一侧。']]},
+    tabletop:{w:840,h:760,type:'tabletop',render:videoTabletop,caption:'<b>360 + 24 + 376dp · 桌面半开</b><span>HALF_OPENED · HORIZONTAL</span>',notes:[['上半区','16:9 视频完整居中，画面和弹幕不进入弯折带。'],['下半区','进度、播放控制与评论放在平整易触达的一侧。'],['免手持','控制层不再依赖覆盖在画面上的底部按钮。']]},
+    dual:{w:1100,h:720,type:'dual',render:()=>detailSplit(532,532,36,true),caption:'<b>532 + 36 + 532dp · 双屏 FLAT</b><span>FULL occlusion · 物理铰链</span>',notes:[['物理边界','即使状态为 FLAT，也按 36dp 完全遮挡区分区。'],['主辅关系','左屏消费画面，右屏阅读评论，无业务像素进入铰链。'],['比例','532:532 只是示例；实现必须读取真实 bounds。']]}
+  }},
+  dynamic:{current:'flat',order:['flat','book','dual'],labels:{flat:'平面 Expanded',book:'书本半开',dual:'双屏跨屏'},modes:{
+    flat:{w:1200,h:800,type:'flat',render:dynamicFlat,caption:'<b>1200 × 800dp · FLAT</b><span>现有动态列表—详情</span>',notes:[['布局','收起导航轨、470dp 动态列表与右侧详情。'],['状态','选中旅行的阿树，右侧评论与左侧筛选互不干扰。'],['基线','平面大屏继续使用当前 Tablet 布局。']]},
+    book:{w:840,h:760,type:'fold',render:()=>dynamicSplit(408,408,24),caption:'<b>408 + 24 + 408dp · 书本半开</b><span>列表 ‖ 详情</span>',notes:[['列表','导航轨与动态列表完整收进左逻辑页。'],['详情','视频、标题与评论完整收进右逻辑页。'],['返回','收回外屏时展示当前详情，返回恢复原列表位置。']]},
+    dual:{w:1100,h:720,type:'dual',render:()=>dynamicSplit(532,532,36,true),caption:'<b>532 + 36 + 532dp · 双屏跨屏</b><span>物理铰链完全留空</span>',notes:[['分屏','左右内容均以物理铰链为边界，不跨屏铺卡片。'],['滚动','列表和详情各自保存滚动位置与焦点。'],['选中','切换双屏／单屏不会改变当前动态或新增返回层级。']]}
+  }}
+};
+
+const PADS={phone:10,fold:14,dual:12,tabletop:14,flat:16};
+function fitOne(fit){const frame=$('.frame',fit);if(!frame)return;const w=+fit.dataset.w,h=+fit.dataset.h,p=+fit.dataset.p;const scale=fit.clientWidth/(w+p*2);frame.style.transform=`scale(${scale})`;const height=Math.round((h+p*2)*scale);if(fit.style.height!==height+'px')fit.style.height=height+'px';}
+function mount(id,cfg,maxWidth){const fit=$('#'+id);const p=PADS[cfg.type];fit.dataset.w=cfg.w;fit.dataset.h=cfg.h;fit.dataset.p=p;fit.style.maxWidth=maxWidth?maxWidth+'px':'';fit.innerHTML=`<div class="frame ${cfg.type}"><div class="viewport" style="width:${cfg.w}px;height:${cfg.h}px"><div class="scr" style="width:${cfg.w}px;height:${cfg.h}px" role="img" aria-label="${cfg.caption.replace(/<[^>]*>/g,' ')}">${cfg.render()}</div></div></div>`;requestAnimationFrame(()=>fitOne(fit));}
+function setupSection(id){const def=SECTIONS[id],seg=$('#'+id+'Modes');seg.innerHTML=def.order.map(k=>`<button type="button" data-mode="${k}" aria-pressed="${k===def.current}">${def.labels[k]}</button>`).join('');const render=()=>{const cfg=def.modes[def.current];$$('button',seg).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===def.current)));mount(id+'Stage',cfg,def.current==='compact'?420:null);$('#'+id+'Caption').innerHTML=cfg.caption;$('#'+id+'Notes').innerHTML=cfg.notes.map(([t,p])=>`<div class="note"><b>${t}</b><p>${p}</p></div>`).join('');};seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;def.current=b.dataset.mode;render();});render();}
+setupSection('home');setupSection('video');setupSection('dynamic');
+mount('heroBook',SECTIONS.home.modes.book);mount('heroTabletop',SECTIONS.video.modes.tabletop);mount('heroPhone',SECTIONS.home.modes.compact,360);
+const fitObserver=new ResizeObserver(entries=>entries.forEach(e=>fitOne(e.target)));$$('.fit').forEach(f=>fitObserver.observe(f));
+$('#modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('button',$('#modeSeg')).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.mode==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=b.dataset.mode;});
+</script>
+</body>
+</html>

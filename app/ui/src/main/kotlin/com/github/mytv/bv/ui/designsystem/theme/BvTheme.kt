@@ -29,7 +29,9 @@ import com.github.mytv.bv.entity.ThemePrefs
 import com.github.mytv.bv.entity.ThemeSource
 import com.github.mytv.bv.player.design.LocalBvMotionScheme
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.LocalWindowFold
 import com.github.mytv.bv.ui.designsystem.adaptive.rememberDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberWindowFold
 import com.github.mytv.bv.ui.designsystem.focus.LocalFocusColor
 import com.github.mytv.bv.util.Prefs
 
@@ -41,6 +43,8 @@ val LocalBvDark = staticCompositionLocalOf { false }
 fun BvRoot(initialPrefs: ThemePrefs, initialShowFps: Boolean, content: @Composable () -> Unit) {
     val prefs by Prefs.themePrefsFlow.collectAsStateWithLifecycle(initialValue = initialPrefs)
     val profile = rememberDeviceProfile()
+    // 折叠边 / 铰链：非折叠设备为 null，布局完全不受影响
+    val windowFold = rememberWindowFold()
     val context = LocalContext.current
     val base = LocalDensity.current
     val tvDensity by Prefs.densityFlow.collectAsStateWithLifecycle(initialValue = context.resources.displayMetrics.widthPixels / 960f)
@@ -50,6 +54,7 @@ fun BvRoot(initialPrefs: ThemePrefs, initialShowFps: Boolean, content: @Composab
         LocalDeviceProfile provides profile,
         LocalThemePrefs provides prefs,
         LocalDensity provides density,
+        LocalWindowFold provides windowFold,
     ) {
         BvTheme {
             // 设置「关于」里的「显示 FPS」（沿用旧 BVTheme 的做法，启动时读一次）

@@ -12,6 +12,7 @@ import dev.aaa1115910.biliapi.entity.Picture
 import dev.aaa1115910.biliapi.entity.user.DynamicItem
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
 import com.github.mytv.bv.ui.feature.video.show
@@ -47,6 +48,8 @@ fun DynamicScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
     val pictures = rememberCommentPictures()
     val layout = LocalDeviceProfile.current.layout
+    // 竖向分隔（书本半开 / 双屏跨屏）：列表与详情各占一块逻辑屏
+    val foldPanes = rememberFoldPanes()?.takeIf { it.vertical && it.isUsable(300.dp) }
 
     LaunchedEffect(state.isLogin) { state.ensureLoaded() }
     LaunchedEffect(state.upFilter, state.kind, state.items.size, state.loading) { state.autoFill() }
@@ -61,10 +64,13 @@ fun DynamicScreen(nav: NavController) {
     }
 
     CommentPicturePreviewerHost(state = pictures, modifier = Modifier.fillMaxSize()) {
-        when (layout) {
-            DeviceLayout.Phone -> DynamicPhone(state, actions)
-            DeviceLayout.Tablet -> DynamicTablet(state, actions)
-            DeviceLayout.Tv -> DynamicTv(state, actions)
+        when {
+            foldPanes != null && layout != DeviceLayout.Tv ->
+                DynamicTablet(state, actions, foldPanes = foldPanes)
+
+            layout == DeviceLayout.Phone -> DynamicPhone(state, actions)
+            layout == DeviceLayout.Tablet -> DynamicTablet(state, actions)
+            else -> DynamicTv(state, actions)
         }
     }
 }

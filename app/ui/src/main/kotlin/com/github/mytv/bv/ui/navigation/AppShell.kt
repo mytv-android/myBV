@@ -33,6 +33,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import dev.aaa1115910.biliapi.repositories.ToViewRepository
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.adaptive.LocalContentStartInset
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.adaptive.NavKind
 import com.github.mytv.bv.ui.designsystem.component.LocalVideoCardActions
@@ -96,6 +97,12 @@ fun AppShell(nav: NavHostController) {
     // 刷刷全屏播放时导航轨自动隐藏；← 或左缘手势通过 LocalTvRailReveal 把它唤回
     val hideTvRail = isTv && current == TopLevel.Shorts
     val barPadding = 64.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // 折叠边在窗口坐标里定位，内容区从导航轨右侧开始，分区时要扣掉这段偏移
+    val contentStartInset = if (showTabletRail) {
+        if (profile.navKind == NavKind.RailExpanded) 220.dp else 96.dp
+    } else {
+        0.dp
+    }
 
     val userViewModel: UserViewModel = koinViewModel()
     val railRequester = remember { FocusRequester() }
@@ -134,7 +141,10 @@ fun AppShell(nav: NavHostController) {
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    CompositionLocalProvider(LocalBottomBarPadding provides if (showBar) barPadding else 0.dp) {
+                    CompositionLocalProvider(
+                        LocalBottomBarPadding provides if (showBar) barPadding else 0.dp,
+                        LocalContentStartInset provides contentStartInset,
+                    ) {
                         BvNavHost(nav, Modifier.fillMaxSize())
                     }
                 }

@@ -30,6 +30,7 @@ import com.github.mytv.bv.player.danmaku.DanmakuView
 import com.github.mytv.bv.player.entity.VideoListItemData
 import com.github.mytv.bv.player.entity.VideoListInteractiveNode
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
+import com.github.mytv.bv.ui.designsystem.adaptive.FoldPanes
 import com.github.mytv.bv.ui.feature.player.BvPlayerHost
 import com.github.mytv.bv.ui.feature.player.PlayRequest
 import com.github.mytv.bv.ui.feature.player.createVideoPlayer
@@ -64,8 +65,10 @@ internal fun TouchDetailHost(
     onPlayerLoadNewVideo: (VideoListItemData) -> Unit,
     onExit: () -> Unit,
     onEmbeddedMore: () -> Unit,
+    tabletopPanes: FoldPanes?,
     phone: @Composable (playerSlot: @Composable (Modifier) -> Unit) -> Unit,
     tablet: @Composable (playerSlot: @Composable (Modifier) -> Unit) -> Unit,
+    tabletop: @Composable (playerSlot: @Composable (Modifier) -> Unit, onEnterFullScreen: () -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -77,6 +80,8 @@ internal fun TouchDetailHost(
         activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     }
     var lockedPortrait by remember { mutableStateOf(false) }
+    // 桌面半开：画面与内容已经分区，不再按手机横屏自动进入全屏
+    val inTabletop = tabletopPanes != null
 
     val isLandscapeNow: () -> Boolean = {
         context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -104,9 +109,9 @@ internal fun TouchDetailHost(
         }
     }
 
-    // 手机横过来自动全屏，竖回去退出
-    LaunchedEffect(landscape, isPhoneDevice) {
-        if (!isPhoneDevice) return@LaunchedEffect
+    // 手机横过来自动全屏，竖回去退出；桌面半开时保持分区布局
+    LaunchedEffect(landscape, isPhoneDevice, inTabletop) {
+        if (!isPhoneDevice || inTabletop) return@LaunchedEffect
         if (landscape) {
             if (!holder.fullscreen && !lockedPortrait) holder.fullscreen = true
         } else if (holder.fullscreen &&
@@ -156,8 +161,8 @@ internal fun TouchDetailHost(
         }
     }
 
-    // 手机布局：视频上方是黑色状态栏区域，状态栏图标用浅色
-    val phoneLayout = layout != DeviceLayout.Tablet
+    // 手机布局：视频上方是黑色状态栏区域，状态栏图标用浅色；桌面半开与平板沿用深色图标
+    val phoneLayout = !inTabletop && layout != DeviceLayout.Tablet
     DisposableEffect(phoneLayout, activity) {
         val controller = activity?.window?.let { WindowCompat.getInsetsController(it, view) }
         val before = controller?.isAppearanceLightStatusBars
@@ -213,7 +218,11 @@ internal fun TouchDetailHost(
                 player(slotModifier, false)
             }
         }
-        if (layout == DeviceLayout.Tablet) tablet(slot) else phone(slot)
+        when {
+            inTabletop -> tabletop(slot, enterFullscreen)
+            layout == DeviceLayout.Tablet -> tablet(slot)
+            else -> phone(slot)
+        }
         if (holder.fullscreen) {
             player(Modifier.fillMaxSize(), true)
         }

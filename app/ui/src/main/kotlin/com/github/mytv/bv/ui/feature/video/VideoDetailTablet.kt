@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.adaptive.FoldPanes
 import com.github.mytv.bv.ui.designsystem.component.ActionButtonGroup
 import com.github.mytv.bv.ui.designsystem.component.ActionItem
 import com.github.mytv.bv.ui.designsystem.component.BvAvatar
@@ -62,11 +64,17 @@ internal fun VideoDetailTablet(
     currentCid: Long,
     commentVm: CommentViewModel,
     callbacks: DetailCallbacks,
+    foldPanes: FoldPanes? = null,
     playerSlot: @Composable (Modifier) -> Unit,
 ) {
     val context = LocalContext.current
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val leftWidth = (screenWidth - 24.dp * 3 - 320.dp).coerceIn(480.dp, 720.dp)
+    val split = foldPanes?.takeIf { it.vertical }
+    val leftWidth = if (split != null) {
+        (split.first - 32.dp).coerceAtLeast(320.dp)
+    } else {
+        (screenWidth - 24.dp * 3 - 320.dp).coerceIn(480.dp, 720.dp)
+    }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val commentsLabel = if (ui.commentCount > 0) {
         stringResource(R.string.video_detail_tab_comments, context.formatCount(ui.commentCount))
@@ -81,12 +89,21 @@ internal fun VideoDetailTablet(
             .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(vertical = 20.dp, horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
+            .padding(
+                vertical = 20.dp,
+                horizontal = if (split != null) 0.dp else 24.dp,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(if (split != null) 0.dp else 24.dp),
     ) {
         Column(
             Modifier
-                .width(leftWidth)
+                .then(
+                    if (split != null) {
+                        Modifier.width(split.first).padding(horizontal = 16.dp)
+                    } else {
+                        Modifier.width(leftWidth)
+                    }
+                )
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -183,9 +200,19 @@ internal fun VideoDetailTablet(
                 )
             }
         }
+        if (split != null) {
+            // 折叠边 / 物理铰链：一律留空
+            Spacer(Modifier.width(split.hinge))
+        }
         Column(
             Modifier
-                .weight(1f)
+                .then(
+                    if (split != null) {
+                        Modifier.width(split.second).padding(horizontal = 16.dp)
+                    } else {
+                        Modifier.weight(1f)
+                    }
+                )
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)

@@ -19,11 +19,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import dev.aaa1115910.biliapi.repositories.VideoDetailRepository
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.player.entity.VideoListItemData
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
 import com.github.mytv.bv.ui.designsystem.icon.BvIcons
@@ -72,6 +74,10 @@ internal fun DetailPage(
     val profile = LocalDeviceProfile.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // 折叠分区：竖向分隔把画面与评论分成左右逻辑页；横向分隔把画面放上半屏、控制放下半屏
+    val foldPanes = rememberFoldPanes()
+    val verticalPanes = foldPanes?.takeIf { it.vertical && it.isUsable(360.dp) }
+    val tabletopPanes = foldPanes?.takeIf { !it.vertical && it.isUsable(240.dp) }
     val dialogs = remember { DetailDialogs() }
     val pictures = rememberCommentPictures()
     var showReplies by remember { mutableStateOf(false) }
@@ -162,20 +168,22 @@ internal fun DetailPage(
                         dialogs = dialogs,
                         onShare = onShare,
                     )
+                    val touchLayout = if (verticalPanes != null) DeviceLayout.Tablet else profile.layout
                     TouchDetailHost(
-                        layout = profile.layout,
+                        layout = touchLayout,
                         holder = holder,
                         playerVm = playerVm,
                         args = EmbeddedPlayerArgs(
                             cover = ui.cover,
                             ownerName = ownerName,
-                            isTablet = profile.layout == DeviceLayout.Tablet,
+                            isTablet = touchLayout == DeviceLayout.Tablet,
                         ),
                         videoDetailRepository = videoDetailRepository,
                         onBeforePlay = onBeforePlay,
                         onPlayerLoadNewVideo = onPlayerLoadNewVideo,
                         onExit = handlers.onBack,
                         onEmbeddedMore = { dialogs.more = true },
+                        tabletopPanes = tabletopPanes,
                         phone = { slot ->
                             VideoDetailPhone(
                                 ui = ui,
@@ -195,8 +203,26 @@ internal fun DetailPage(
                                 currentCid = touchCurrentCid,
                                 commentVm = commentVm,
                                 callbacks = callbacks,
+                                foldPanes = verticalPanes,
                                 playerSlot = slot,
                             )
+                        },
+                        tabletop = { slot, onEnterFullScreen ->
+                            val panes = tabletopPanes
+                            if (panes != null) {
+                                VideoDetailTabletop(
+                                    ui = ui,
+                                    follow = follow,
+                                    actionItems = actionItems,
+                                    currentCid = touchCurrentCid,
+                                    commentVm = commentVm,
+                                    callbacks = callbacks,
+                                    panes = panes,
+                                    playerVm = playerVm,
+                                    onEnterFullScreen = onEnterFullScreen,
+                                    playerSlot = slot,
+                                )
+                            }
                         },
                     )
                 }

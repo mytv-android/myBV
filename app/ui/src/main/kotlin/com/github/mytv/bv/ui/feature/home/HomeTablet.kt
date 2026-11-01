@@ -24,8 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -81,18 +81,22 @@ import kotlinx.coroutines.launch
 private val TabletGridGap = 16.dp
 private val TabletSectionExtra = 18.dp - TabletGridGap
 
-private const val PageRecommend = 0
-private const val PagePopular = 1
-private const val PageRegion = 2
-
 /**
  * 平板首页（原型 homeTablet）：导航轨由外壳提供；右侧 Column(padding start 8 / end 28 / top 20, spacedBy 18)：
  * 搜索框(440) + 标签（推荐 热门 分区 + 4 个快捷分区）+ 头像，下面是 Adaptive(180) 网格。
+ * 标签页、分区与网格状态由 [HomeScreen] 持有，折叠形态切换时保持。
  */
 @Composable
-internal fun HomeTablet(nav: NavController, state: HomeState) {
-    var page by rememberSaveable { mutableIntStateOf(PageRecommend) }
-    var region by rememberSaveable { mutableIntStateOf(0) }
+internal fun HomeTablet(
+    nav: NavController,
+    state: HomeState,
+    page: Int,
+    onPage: (Int) -> Unit,
+    region: Int,
+    onRegion: (Int) -> Unit,
+    recommendGrid: LazyGridState,
+    popularGrid: LazyGridState,
+) {
     val names = rememberRegionNames()
     Column(
         Modifier
@@ -121,9 +125,9 @@ internal fun HomeTablet(nav: NavController, state: HomeState) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BvChip(stringResource(R.string.home_tab_recommend), page == PageRecommend, { page = PageRecommend })
-                BvChip(stringResource(R.string.home_tab_popular), page == PagePopular, { page = PagePopular })
-                BvChip(stringResource(R.string.home_tab_region), page == PageRegion, { page = PageRegion })
+                BvChip(stringResource(R.string.home_tab_recommend), page == PageRecommend, { onPage(PageRecommend) })
+                BvChip(stringResource(R.string.home_tab_popular), page == PagePopular, { onPage(PagePopular) })
+                BvChip(stringResource(R.string.home_tab_region), page == PageRegion, { onPage(PageRegion) })
                 // 快捷分区：点击 = 选中「分区」页并切到该分区
                 TabletQuickRegions.forEach { type ->
                     val index = HomeRegions.indexOf(type)
@@ -131,8 +135,8 @@ internal fun HomeTablet(nav: NavController, state: HomeState) {
                         text = names[index],
                         selected = page == PageRegion && region == index,
                         onClick = {
-                            page = PageRegion
-                            region = index
+                            onPage(PageRegion)
+                            onRegion(index)
                         },
                     )
                 }
@@ -145,17 +149,20 @@ internal fun HomeTablet(nav: NavController, state: HomeState) {
                 .weight(1f)
         ) {
             when (page) {
-                PageRecommend -> TabletRecommendPage(nav, state)
-                PagePopular -> TabletPopularPage(nav, state)
-                else -> TabletRegionPage(nav, state, names, region, onRegion = { region = it })
+                PageRecommend -> TabletRecommendPage(nav, state, recommendGrid)
+                PagePopular -> TabletPopularPage(nav, state, popularGrid)
+                else -> TabletRegionPage(nav, state, names, region, onRegion = onRegion)
             }
         }
     }
 }
 
 @Composable
-private fun TabletRecommendPage(nav: NavController, state: HomeState) {
-    val gridState = rememberLazyGridState()
+private fun TabletRecommendPage(
+    nav: NavController,
+    state: HomeState,
+    gridState: LazyGridState,
+) {
     val vm = state.recommend
     val list = vm.recommendVideoList
     LaunchedEffect(Unit) { state.ensureRecommend() }
@@ -225,8 +232,11 @@ private fun TabletRecommendPage(nav: NavController, state: HomeState) {
 }
 
 @Composable
-private fun TabletPopularPage(nav: NavController, state: HomeState) {
-    val gridState = rememberLazyGridState()
+private fun TabletPopularPage(
+    nav: NavController,
+    state: HomeState,
+    gridState: LazyGridState,
+) {
     val vm = state.popular
     val list = vm.popularVideoList
     LaunchedEffect(Unit) { state.ensurePopular() }

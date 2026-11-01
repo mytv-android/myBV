@@ -73,6 +73,7 @@ dependencies {
     implementation(project(":player:shared"))
     implementation(project(":player:ui"))
     implementation(androidx.lifecycle.runtime.compose)
+    implementation(androidx.window)
     implementation(androidx.media3.common)
     implementation(androidx.media3.exoplayer)
     implementation(androidx.glance.appwidget)

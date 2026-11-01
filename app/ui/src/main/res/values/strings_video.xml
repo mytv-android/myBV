@@ -31,6 +31,8 @@
     <string name="video_detail_episode_number">第 %s 话</string>
     <string name="video_detail_season_feature">正片</string>
     <string name="video_detail_play">播放</string>
+    <string name="video_detail_pause">暂停</string>
+    <string name="video_detail_fullscreen">全屏</string>
     <string name="video_detail_continue">继续 %1$s · %2$s</string>
     <string name="video_detail_like">点赞</string>
     <string name="video_detail_coin">投币</string>

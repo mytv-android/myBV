@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -77,17 +78,33 @@ private val PhoneGridGap = 12.dp
 /**
  * 手机首页（原型 homePhone）：头像 + 搜索框、推荐 / 热门 / 分区三个标签、HorizontalPager。
  * 宽度 Medium（600–840dp）时网格用 3 列，否则 2 列。
+ * 标签页与网格状态由 [HomeScreen] 持有，折叠形态切换时不会回到第一页。
  */
 @Composable
-internal fun HomePhone(nav: NavController, state: HomeState) {
+internal fun HomePhone(
+    nav: NavController,
+    state: HomeState,
+    page: Int,
+    onPage: (Int) -> Unit,
+    region: Int,
+    onRegion: (Int) -> Unit,
+    recommendGrid: LazyGridState,
+    popularGrid: LazyGridState,
+) {
     val columns = if (LocalDeviceProfile.current.width == WidthClass.Medium) 3 else 2
-    val pager = rememberPagerState { 3 }
-    val scope = rememberCoroutineScope()
+    val pager = rememberPagerState(initialPage = page) { 3 }
     val tabs = listOf(
         stringResource(R.string.home_tab_recommend),
         stringResource(R.string.home_tab_popular),
         stringResource(R.string.home_tab_region),
     )
+    // 外部索引（HomeScreen 持有）与 pager 双向同步：横向滑动与折叠重排都落到同一个标签页
+    LaunchedEffect(page) {
+        if (pager.currentPage != page) pager.animateScrollToPage(page)
+    }
+    LaunchedEffect(pager.currentPage) {
+        if (pager.currentPage != page) onPage(pager.currentPage)
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -112,8 +129,8 @@ internal fun HomePhone(nav: NavController, state: HomeState) {
         }
         BvTabRow(
             tabs = tabs,
-            selected = pager.currentPage,
-            onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+            selected = page,
+            onSelect = onPage,
         )
         HorizontalPager(
             state = pager,
@@ -121,19 +138,23 @@ internal fun HomePhone(nav: NavController, state: HomeState) {
                 .fillMaxWidth()
                 .weight(1f),
             key = { it },
-        ) { page ->
-            when (page) {
-                0 -> PhoneRecommendPage(nav, state, columns)
-                1 -> PhonePopularPage(nav, state, columns)
-                else -> PhoneRegionPage(nav, state, columns)
+        ) { pageIndex ->
+            when (pageIndex) {
+                PageRecommend -> PhoneRecommendPage(nav, state, columns, recommendGrid)
+                PagePopular -> PhonePopularPage(nav, state, columns, popularGrid)
+                else -> PhoneRegionPage(nav, state, columns, region, onRegion)
             }
         }
     }
 }
 
 @Composable
-private fun PhoneRecommendPage(nav: NavController, state: HomeState, columns: Int) {
-    val gridState = rememberLazyGridState()
+private fun PhoneRecommendPage(
+    nav: NavController,
+    state: HomeState,
+    columns: Int,
+    gridState: LazyGridState,
+) {
     val vm = state.recommend
     val list = vm.recommendVideoList
     val bottom = LocalBottomBarPadding.current + 16.dp
@@ -213,8 +234,12 @@ private fun PhoneRecommendPage(nav: NavController, state: HomeState, columns: In
 }
 
 @Composable
-private fun PhonePopularPage(nav: NavController, state: HomeState, columns: Int) {
-    val gridState = rememberLazyGridState()
+private fun PhonePopularPage(
+    nav: NavController,
+    state: HomeState,
+    columns: Int,
+    gridState: LazyGridState,
+) {
     val vm = state.popular
     val list = vm.popularVideoList
     val bottom = LocalBottomBarPadding.current + 16.dp
@@ -255,22 +280,27 @@ private fun PhonePopularPage(nav: NavController, state: HomeState, columns: Int)
 }
 
 @Composable
-private fun PhoneRegionPage(nav: NavController, state: HomeState, columns: Int) {
+private fun PhoneRegionPage(
+    nav: NavController,
+    state: HomeState,
+    columns: Int,
+    region: Int,
+    onRegion: (Int) -> Unit,
+) {
     val names = rememberRegionNames()
-    var selected by rememberSaveable { mutableIntStateOf(0) }
     val bottom = LocalBottomBarPadding.current + 16.dp
     Column(Modifier.fillMaxSize()) {
         RegionChipRow(
             names = names,
-            selected = selected,
-            onSelect = { selected = it },
+            selected = region,
+            onSelect = onRegion,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp),
         )
-        key(selected) {
+        key(region) {
             RegionGrid(
                 nav = nav,
                 state = state,
-                type = HomeRegions[selected],
+                type = HomeRegions[region],
                 columns = GridCells.Fixed(columns),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottom),
                 spacing = PhoneGridGap,
@@ -354,7 +384,7 @@ internal fun LazyGridScope.ugcCards(
  * 每项 maskClip 圆角 28，封面 + CinemaScrim + 左下「今日精选」+ 标题；小项里文字随宽度淡出。
  */
 @Composable
-private fun PhoneFeaturedCarousel(items: List<UgcItem>, onOpen: (UgcItem) -> Unit, modifier: Modifier = Modifier) {
+internal fun PhoneFeaturedCarousel(items: List<UgcItem>, onOpen: (UgcItem) -> Unit, modifier: Modifier = Modifier) {
     val count by rememberUpdatedState(items.size)
     val carouselState = rememberCarouselState { count }
     HorizontalMultiBrowseCarousel(
