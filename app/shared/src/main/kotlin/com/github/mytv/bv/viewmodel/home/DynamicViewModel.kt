@@ -14,7 +14,7 @@ import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.BuildConfig
 import com.github.mytv.bv.R
 import com.github.mytv.bv.util.Prefs
-import com.github.mytv.bv.util.addAllWithMainContext
+import com.github.mytv.bv.util.addDistinctWithMainContext
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.toast
@@ -108,7 +108,7 @@ class DynamicViewModel(
                 // 请求期间换了 UP：这份数据是上一个 UP 的，别混进新 UP 的列表里
                 if (spaceHostMid != hostMid) return
                 currentSpacePage = nextPage
-                dynamicSpaceList.addDistinct(dynamicData.dynamics)
+                dynamicSpaceList.addDistinctWithMainContext(dynamicData.dynamics) { it.id }
                 spaceHistoryOffset = dynamicData.historyOffset
                 spaceHasMore = dynamicData.hasMore
                 spaceError = null
@@ -171,14 +171,16 @@ class DynamicViewModel(
         val nextPage = currentVideoPage + 1
         try {
             runCatching {
-                val dynamicVideoData = userRepository.getDynamicVideos(
-                    page = nextPage,
-                    offset = videoHistoryOffset ?: "",
-                    updateBaseline = videoUpdateBaseline ?: "",
-                    preferApiType = Prefs.apiType
-                )
+                val dynamicVideoData = withDynamicPageRetry {
+                    userRepository.getDynamicVideos(
+                        page = nextPage,
+                        offset = videoHistoryOffset ?: "",
+                        updateBaseline = videoUpdateBaseline ?: "",
+                        preferApiType = Prefs.apiType
+                    )
+                }
                 currentVideoPage = nextPage
-                dynamicVideoList.addAllWithMainContext(dynamicVideoData.videos)
+                dynamicVideoList.addDistinctWithMainContext(dynamicVideoData.videos) { it.aid }
                 videoHistoryOffset = dynamicVideoData.historyOffset
                 videoUpdateBaseline = dynamicVideoData.updateBaseline
                 videoHasMore = dynamicVideoData.hasMore
@@ -238,7 +240,7 @@ class DynamicViewModel(
                     )
                 }
                 currentAllPage = nextPage
-                dynamicAllList.addDistinct(dynamicData.dynamics)
+                dynamicAllList.addDistinctWithMainContext(dynamicData.dynamics) { it.id }
                 allHistoryOffset = dynamicData.historyOffset
                 allUpdateBaseline = dynamicData.updateBaseline
                 allHasMore = dynamicData.hasMore
@@ -290,16 +292,4 @@ class DynamicViewModel(
         spaceHistoryOffset = null
         spaceHostMid = null
     }
-}
-
-/**
- * 把一页动态并进列表，按动态 id 去重。
- *
- * 重试时服务端可能已经收下上一次请求，同一页会再来一遍；列表里出现重复 key 会让
- * LazyColumn 直接崩（「Key was already used」）。没有 id 的动态去不了重，照原样收下。
- */
-private fun MutableList<DynamicItem>.addDistinct(items: List<DynamicItem>) {
-    if (items.isEmpty()) return
-    val existing = mapNotNullTo(HashSet<String>()) { it.id }
-    addAll(items.filter { it.id == null || it.id !in existing })
 }

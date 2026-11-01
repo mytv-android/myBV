@@ -79,7 +79,7 @@ internal fun DynamicPhone(state: DynamicPageState, actions: DynamicActions) {
                         loading = state.loading || state.pulling,
                         modifier = Modifier.fillMaxSize(),
                         // 加载失败显示失败原因，避免把失败误报成「还没有动态」
-                        message = state.loadError ?: stringResource(R.string.dynamic_empty),
+                        message = state.loadError ?: stringResource(state.emptyMessageRes),
                         onRetry = state::loadMore,
                     )
                 } else {

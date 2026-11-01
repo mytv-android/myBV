@@ -136,7 +136,7 @@ internal fun DynamicTv(state: DynamicPageState, actions: DynamicActions) {
                             BvChip(
                                 text = stringResource(kind.label),
                                 selected = state.kind == kind,
-                                onClick = { state.kind = kind },
+                                onClick = { state.selectKind(kind) },
                                 selectOnFocus = true,
                             )
                         }
@@ -178,7 +178,7 @@ internal fun DynamicTv(state: DynamicPageState, actions: DynamicActions) {
                             .fillMaxSize()
                             .padding(start = 96.dp),
                         // 加载失败显示失败原因，避免把失败误报成「还没有动态」
-                        message = state.loadError ?: stringResource(R.string.dynamic_empty),
+                        message = state.loadError ?: stringResource(state.emptyMessageRes),
                         onRetry = state::loadMore,
                     )
                 } else {

@@ -239,8 +239,9 @@ internal class DynamicPageState(
     var upFilter by mutableStateOf<Long?>(null)
         private set
 
-    /** 电视标签：全部 / 视频 / 图文。 */
+    /** 电视标签：全部 / 视频 / 图文。切标签走 [selectKind]，别直接赋值。 */
     var kind by mutableStateOf(DynamicKind.All)
+        private set
 
     /** 平板右栏显示的动态。 */
     var selected by mutableStateOf<DynamicItem?>(null)
@@ -250,6 +251,8 @@ internal class DynamicPageState(
         private set
 
     private var autoLoads = 0
+    /** 上一次自动加载后筛选后的条数；没有变化说明刚拉的这一页对当前筛选毫无贡献。 */
+    private var autoFilledItems = -1
     private var commentJob: Job? = null
 
     val isLogin: Boolean get() = vm.isLogin
@@ -259,6 +262,14 @@ internal class DynamicPageState(
     val loadError: String? get() = if (upFilter != null) vm.spaceError else vm.allError
 
     private val hasMore: Boolean get() = if (upFilter != null) vm.spaceHasMore else vm.allHasMore
+
+    /** 列表为空时的提示：带着筛选（UP 主 / 类型）就别把「没有符合条件的动态」说成「还没有动态」。 */
+    val emptyMessageRes: Int
+        @get:StringRes get() = if (upFilter != null || kind != DynamicKind.All) {
+            R.string.dynamic_filter_empty
+        } else {
+            R.string.dynamic_empty
+        }
 
     /** 头像行：关注列表前 20 个（FollowViewModel 的顺序）。 */
     val ups: List<FollowedUser> by derivedStateOf { follow.followedUsers.take(20) }
@@ -279,11 +290,23 @@ internal class DynamicPageState(
     fun selectUp(mid: Long?) {
         if (upFilter == mid) return
         upFilter = mid
-        autoLoads = 0
+        resetAutoFill()
         // 点了头像就立刻拉第一页，别让用户盯着空页面等 autoFill。
         // 不看列表空不空：上一个 UP 拉完后 spaceHasMore 停在 false，只在列表为空时
         // 触发的话 loadMore 会把它当成「没有更多」，新 UP 一页都加载不出来。
         if (mid != null && !vm.loadingSpace) loadMore()
+    }
+
+    /** 电视标签（聚焦即选中）。换了筛选条件要把自动加载的记账清掉，否则新条件一页都不拉。 */
+    fun selectKind(value: DynamicKind) {
+        if (kind == value) return
+        kind = value
+        resetAutoFill()
+    }
+
+    private fun resetAutoFill() {
+        autoLoads = 0
+        autoFilledItems = -1
     }
 
     fun isSelected(item: DynamicItem): Boolean {
@@ -318,6 +341,8 @@ internal class DynamicPageState(
     fun refresh() {
         if (loading) return
         pulling = true
+        // 重新拉等于从头开始，自动加载的记账也要清掉
+        resetAutoFill()
         vm.viewModelScope.launch {
             try {
                 if (upFilter != null) {
@@ -336,12 +361,20 @@ internal class DynamicPageState(
     /**
      * 筛选（UP 主 / 类型）后结果太少时自动再加载几页（最多 5 页）。
      *
-     * 加载失败就不再自动加载：失败后紧接着重试往往还是同一个错，只会把同一条
+     * 关注动态流只能整页拉、再在前端按类型筛（feed/all 的 type 参数只有
+     * all / video / pgc / article，覆盖不了「视频 = 投稿 + 番剧」「图文 = 图文 + 专栏 +
+     * 文字」这两种组合，按 type 拉会漏内容）。所以筛选后每页能剩下的条目很少，
+     * 需要多拉几页才凑得满一行——但刚拉的这一页一条都没剩下时就不再拉了：
+     * 动态流是按时间排的，继续往后翻大概率也筛不出来，只会白拉好几页。
+     *
+     * 加载失败也不再自动加载：失败后紧接着重试往往还是同一个错，只会把同一条
      * 「加载动态失败」弹好几遍；要重试有列表上的重试按钮和下拉刷新。
      */
     fun autoFill() {
         if (upFilter == null && kind == DynamicKind.All) return
         if (items.size >= 6 || autoLoads >= 5 || loading || !hasMore || loadError != null) return
+        if (autoLoads > 0 && items.size == autoFilledItems) return
+        autoFilledItems = items.size
         autoLoads++
         loadMore()
     }

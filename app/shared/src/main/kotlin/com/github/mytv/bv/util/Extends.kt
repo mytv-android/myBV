@@ -47,6 +47,22 @@ suspend fun <T> SnapshotStateList<T>.addAllWithMainContext(newListBlock: suspend
     withContext(Dispatchers.Main) { addAll(newList) }
 }
 
+/**
+ * 按 [key] 去重后追加。
+ *
+ * 请求重试时服务端可能已经收下上一次请求，同一页会再来一遍；列表里出现重复 key 会让
+ * LazyColumn / LazyGrid 直接崩（「Key was already used」）。key 为 null 表示这一项
+ * 没有稳定标识，去不了重，照原样收下。
+ */
+suspend fun <T> SnapshotStateList<T>.addDistinctWithMainContext(newList: List<T>, key: (T) -> Any?) {
+    if (newList.isEmpty()) return
+    withContext(Dispatchers.Main) {
+        val existing = HashSet<Any>()
+        forEach { key(it)?.let(existing::add) }
+        addAll(newList.filter { item -> key(item)?.let { it !in existing } ?: true })
+    }
+}
+
 
 suspend fun <T> SnapshotStateList<T>.addWithMainContext(item: T) =
     withContext(Dispatchers.Main) { add(item) }

@@ -29,6 +29,7 @@
     <string name="dynamic_live">直播</string>
     <string name="dynamic_article">专栏</string>
     <string name="dynamic_empty">还没有动态</string>
+    <string name="dynamic_filter_empty">没有符合条件的动态</string>
     <string name="dynamic_select_hint">选择一条动态查看详情</string>
     <string name="dynamic_play">播放</string>
     <string name="dynamic_time_ago">· %1$s</string>
