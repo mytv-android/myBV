@@ -263,9 +263,17 @@ internal class DynamicPageState(
 
     private val hasMore: Boolean get() = if (upFilter != null) vm.spaceHasMore else vm.allHasMore
 
-    /** 列表为空时的提示：带着筛选（UP 主 / 类型）就别把「没有符合条件的动态」说成「还没有动态」。 */
+    /**
+     * 列表为空时的提示（字符串资源 id）：带着筛选（UP 主 / 类型）就别把「没有符合条件的动态」
+     * 说成「还没有动态」。
+     *
+     * 这里不能写 `@get:StringRes`：Kotlin 只让 `@get:` 落在有 backing field 的属性上，
+     * 而 [androidx.annotation.StringRes] 的 Java @Target 里没有 property，
+     * 直接写 `@StringRes` 也会因为找不到可用 target 报错。要保留 lint 检查就照
+     * AppearanceSettings.labelRes() 的写法换成带 @StringRes 的函数。
+     */
     val emptyMessageRes: Int
-        @get:StringRes get() = if (upFilter != null || kind != DynamicKind.All) {
+        get() = if (upFilter != null || kind != DynamicKind.All) {
             R.string.dynamic_filter_empty
         } else {
             R.string.dynamic_empty
