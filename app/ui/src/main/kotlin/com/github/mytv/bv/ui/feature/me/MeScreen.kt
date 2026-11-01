@@ -15,6 +15,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import dev.aaa1115910.biliapi.http.entity.user.MyInfoData
@@ -23,6 +24,7 @@ import dev.aaa1115910.biliapi.repositories.SeasonRepository
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.designsystem.component.TileRole
 import com.github.mytv.bv.ui.navigation.AccountsRoute
 import com.github.mytv.bv.ui.navigation.FavoriteRoute
@@ -164,9 +166,14 @@ fun MeScreen(nav: NavController) {
     // 进入页面（以及从其他页面返回、切换账号）时刷新，同旧电视 UserInfoScreen 的 ON_RESUME 刷新
     LaunchedEffect(state) { state.refresh() }
 
-    when (LocalDeviceProfile.current.layout) {
-        DeviceLayout.Phone -> MePhone(nav, state)
-        DeviceLayout.Tablet -> MeTablet(nav, state)
-        DeviceLayout.Tv -> MeTv(nav, state)
+    val layout = LocalDeviceProfile.current.layout
+    // 竖向分隔（书本半开 / 双屏跨屏）：入口列表与内容各占一块逻辑屏
+    val foldPanes = rememberFoldPanes()?.takeIf { it.vertical && it.isUsable(300.dp) }
+
+    when {
+        foldPanes != null && layout != DeviceLayout.Tv -> MeTablet(nav, state, foldPanes = foldPanes)
+        layout == DeviceLayout.Phone -> MePhone(nav, state)
+        layout == DeviceLayout.Tablet -> MeTablet(nav, state)
+        else -> MeTv(nav, state)
     }
 }

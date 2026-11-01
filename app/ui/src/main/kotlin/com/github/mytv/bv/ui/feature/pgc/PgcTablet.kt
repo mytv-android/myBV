@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -27,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -62,6 +64,7 @@ import coil.compose.AsyncImage
 import dev.aaa1115910.biliapi.entity.CarouselData
 import dev.aaa1115910.biliapi.entity.season.TimelineFilter
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.adaptive.FoldPanes
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
@@ -75,6 +78,7 @@ import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
 import com.github.mytv.bv.ui.feature.timeline.thumbnail
 import com.github.mytv.bv.ui.feature.timeline.todayDayOfWeek
 import com.github.mytv.bv.ui.navigation.FollowingSeasonRoute
+import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
 import com.github.mytv.bv.ui.navigation.PgcIndexRoute
 import com.github.mytv.bv.ui.navigation.PgcTimelineRoute
 import kotlinx.coroutines.delay
@@ -84,7 +88,12 @@ import kotlinx.coroutines.delay
  * 横幅（weight 1，高 320）+「今天更新」侧卡（300）、「热门」6 列海报网格。
  */
 @Composable
-internal fun PgcTablet(nav: NavController, state: PgcUiState) {
+internal fun PgcTablet(nav: NavController, state: PgcUiState, foldPanes: FoldPanes? = null) {
+    if (foldPanes != null) PgcFold(nav, state, foldPanes) else PgcFlat(nav, state)
+}
+
+@Composable
+private fun PgcFlat(nav: NavController, state: PgcUiState) {
     val names = pgcTabNames()
     val feed = state.feed
     val vm = feed.vm
@@ -205,6 +214,137 @@ internal fun PgcTablet(nav: NavController, state: PgcUiState) {
                 if (vm.updating) {
                     item(key = "loading", span = { GridItemSpan(maxLineSpan) }, contentType = "loading") {
                         LoadMoreIndicator()
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 竖向折叠 / 双屏的影视页：左片是分类导航与「今天更新」，右片是精选横幅与热门海报。
+ * 宽度取真实折叠边位置，中间留出铰链；海报列数随右片宽度自适应。
+ */
+@Composable
+private fun PgcFold(nav: NavController, state: PgcUiState, panes: FoldPanes) {
+    val names = pgcTabNames()
+    val feed = state.feed
+    val vm = feed.vm
+    val filter = state.type.timelineFilter
+    val gridState = rememberLazyGridState()
+    val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+        LocalBottomBarPadding.current + 16.dp
+
+    var shownTab by rememberSaveable { mutableIntStateOf(state.tab) }
+    LaunchedEffect(state.tab) {
+        if (shownTab != state.tab) {
+            shownTab = state.tab
+            gridState.scrollToItem(0)
+        }
+    }
+    gridState.LoadMoreEffect { if (feed.hot.isNotEmpty()) feed.loadMore() }
+
+    Row(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.statusBars)
+    ) {
+        Column(
+            Modifier
+                .width(panes.first)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 12.dp, end = 16.dp, top = 20.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                stringResource(R.string.pgc_title),
+                style = BvType.PageTitleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                names.forEachIndexed { index, name ->
+                    BvChip(text = name, selected = index == state.tab, onClick = { state.onTab(index) })
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BvButton(
+                    text = stringResource(R.string.pgc_index),
+                    onClick = { nav.navigate(PgcIndexRoute(state.type.ordinal)) },
+                    style = BvButtonStyle.Tonal,
+                    icon = Icons.Filled.Tune,
+                )
+                BvButton(
+                    text = stringResource(R.string.pgc_my_following),
+                    onClick = { nav.navigate(FollowingSeasonRoute) },
+                    style = BvButtonStyle.Tonal,
+                    icon = Icons.Filled.Star,
+                )
+            }
+            if (filter != null) {
+                TabletTodayCard(
+                    filter = filter,
+                    state = state,
+                    nav = nav,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
+                )
+            }
+        }
+        // 折叠边 / 物理铰链：一律留空
+        Spacer(Modifier.width(panes.hinge))
+        Column(
+            Modifier
+                .width(panes.second)
+                .fillMaxHeight()
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = bottom),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (feed.featured.isEmpty() && feed.hot.isEmpty()) {
+                EmptyOrLoading(
+                    loading = vm.updating,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    message = stringResource(R.string.pgc_empty),
+                    onRetry = { vm.reloadAll() },
+                )
+            } else {
+                TabletBanner(
+                    items = feed.featured,
+                    state = state,
+                    nav = nav,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                )
+                SectionHeader(title = stringResource(R.string.pgc_hot, names[state.tab]))
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    state = gridState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(feed.hot.size, key = { "${feed.hot[it].seasonId}-$it" }, contentType = { "poster" }) { index ->
+                        val item = feed.hot[index]
+                        PosterCard(data = item.toCard(), onClick = { nav.openSeason(item.seasonId) })
+                    }
+                    if (vm.updating) {
+                        item(key = "loading", span = { GridItemSpan(maxLineSpan) }, contentType = "loading") {
+                            LoadMoreIndicator()
+                        }
                     }
                 }
             }

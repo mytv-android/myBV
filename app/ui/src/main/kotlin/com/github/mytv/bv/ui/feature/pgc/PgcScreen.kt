@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import dev.aaa1115910.biliapi.entity.pgc.PgcType
@@ -13,6 +14,7 @@ import dev.aaa1115910.biliapi.repositories.SeasonRepository
 import dev.aaa1115910.biliapi.repositories.VideoDetailRepository
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.feature.timeline.SeasonFollowActions
 import com.github.mytv.bv.ui.feature.timeline.rememberSeasonFollow
 import org.koin.compose.koinInject
@@ -53,9 +55,14 @@ fun PgcScreen(nav: NavController) {
         follow = follow,
         onTab = { tab = it },
     )
-    when (LocalDeviceProfile.current.layout) {
-        DeviceLayout.Phone -> PgcPhone(nav, state)
-        DeviceLayout.Tablet -> PgcTablet(nav, state)
-        DeviceLayout.Tv -> PgcTv(nav, state)
+    val layout = LocalDeviceProfile.current.layout
+    // 竖向分隔（书本半开 / 双屏跨屏）：分类导航与内容各占一块逻辑屏
+    val foldPanes = rememberFoldPanes()?.takeIf { it.vertical && it.isUsable(300.dp) }
+
+    when {
+        foldPanes != null && layout != DeviceLayout.Tv -> PgcTablet(nav, state, foldPanes = foldPanes)
+        layout == DeviceLayout.Phone -> PgcPhone(nav, state)
+        layout == DeviceLayout.Tablet -> PgcTablet(nav, state)
+        else -> PgcTv(nav, state)
     }
 }

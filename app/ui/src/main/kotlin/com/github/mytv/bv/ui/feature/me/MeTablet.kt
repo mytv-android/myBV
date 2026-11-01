@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.ui.designsystem.adaptive.FoldPanes
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
@@ -57,6 +59,7 @@ import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
 import com.github.mytv.bv.ui.feature.timeline.SubGridSpec
 import com.github.mytv.bv.ui.feature.timeline.SubPageLoginPrompt
 import com.github.mytv.bv.ui.feature.toview.ToViewContent
+import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
 import com.github.mytv.bv.ui.navigation.LoginRoute
 import com.github.mytv.bv.ui.navigation.SeasonRoute
 import com.github.mytv.bv.ui.navigation.SpaceRoute
@@ -80,10 +83,12 @@ private fun paneGrid(columns: Int) = SubGridSpec(
  * 右栏 margin(16, 20, 16, 4)，圆角 28，surfaceContainerLow，padding 24，Column(spacedBy 16)：随左侧选择原地切换内容。
  */
 @Composable
-internal fun MeTablet(nav: NavController, state: MeState) {
+internal fun MeTablet(nav: NavController, state: MeState, foldPanes: FoldPanes? = null) {
     var pane by rememberSaveable { mutableStateOf(MeEntry.History) }
     var historyFilter by rememberSaveable { mutableStateOf(HistoryFilter.All) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val barBottom = LocalBottomBarPadding.current
+    val split = foldPanes?.takeIf { it.vertical }
     val scheme = MaterialTheme.colorScheme
 
     Row(
@@ -94,10 +99,15 @@ internal fun MeTablet(nav: NavController, state: MeState) {
     ) {
         Column(
             Modifier
-                .width(340.dp)
+                .width(split?.first ?: 340.dp)
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 24.dp),
+                .padding(
+                    start = 12.dp,
+                    end = 12.dp,
+                    top = 24.dp,
+                    bottom = 24.dp + barBottom,
+                ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             MeHeader(state, onLogin = { nav.navigate(LoginRoute) })
@@ -116,11 +126,26 @@ internal fun MeTablet(nav: NavController, state: MeState) {
                 }
             }
         }
+        if (split != null) {
+            // 折叠边 / 物理铰链：一律留空
+            Spacer(Modifier.width(split.hinge))
+        }
         Column(
             Modifier
-                .weight(1f)
+                .then(
+                    if (split != null) {
+                        Modifier.width(split.second)
+                    } else {
+                        Modifier.weight(1f)
+                    }
+                )
                 .fillMaxHeight()
-                .padding(start = 4.dp, top = 16.dp, end = 20.dp, bottom = 16.dp + navBottom)
+                .padding(
+                    start = if (split != null) 16.dp else 4.dp,
+                    top = 16.dp,
+                    end = if (split != null) 16.dp else 20.dp,
+                    bottom = 16.dp + navBottom + barBottom,
+                )
                 .clip(RoundedCornerShape(28.dp))
                 .background(scheme.surfaceContainerLow)
                 .padding(24.dp),
