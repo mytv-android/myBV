@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Tune
@@ -67,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import dev.aaa1115910.biliapi.repositories.SearchType
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.entity.db.SearchHistoryDB
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
@@ -85,6 +87,9 @@ private val TvKeys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".map { it.toString() 
 
 /** 中列（联想 / 历史）与右列（热搜）最多显示的条数。 */
 private const val TvColumnItems = 6
+
+/** 中列搜索历史最多显示的条数（末尾还要放「清除搜索历史」行）。 */
+private const val TvHistoryItems = TvColumnItems - 1
 
 private enum class TvFocusArea { Keyboard, Results }
 
@@ -162,6 +167,19 @@ private fun SearchTvInput(
     val cards = state.videoCards()
     val rowState = rememberLazyListState()
     val showResults = keyword.isNotBlank() && state.submitted.isNotEmpty()
+
+    // 搜索历史：菜单键删单条、末尾「清除搜索历史」一键清空
+    val histories = state.input.searchHistories
+    var confirmClear by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<SearchHistoryDB?>(null) }
+    var pendingRefocus by remember { mutableStateOf(false) }
+    val historyFocusRequester = remember { FocusRequester() }
+    // 删除是异步写库，列表真正变短后再把焦点还给中列（全删光了就回搜索框）
+    LaunchedEffect(histories.size) {
+        if (!pendingRefocus) return@LaunchedEffect
+        pendingRefocus = false
+        if (histories.isEmpty()) keyRequester.tryFocus() else historyFocusRequester.tryFocus()
+    }
 
     val voiceAvailable = remember(context) {
         Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).resolveActivity(context.packageManager) != null
@@ -285,10 +303,11 @@ private fun SearchTvInput(
         }
     }
 
-    // ---------- 中列：联想（无输入时为搜索历史） ----------
+    // ---------- 中列：联想（无输入时为搜索历史，可删单条 / 一键清空） ----------
     val showHistory = keyword.isBlank()
+    val historyItems = if (showHistory) histories.take(TvHistoryItems) else emptyList()
     val middleItems = if (showHistory) {
-        state.input.searchHistories.map { it.keyword }
+        emptyList()
     } else {
         (state.input.matchedSearchHistories.map { it.keyword } + state.input.suggests).distinct()
     }.take(TvColumnItems)
@@ -306,6 +325,42 @@ private fun SearchTvInput(
             style = BvType.Eyebrow,
             color = MaterialTheme.colorScheme.primary,
         )
+        historyItems.forEachIndexed { index, history ->
+            BvListItem(
+                title = history.keyword,
+                onClick = { pick(history.keyword) },
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
+                titleStyle = BvType.CardTitle,
+                modifier = Modifier
+                    .then(if (index == 0) Modifier.focusRequester(historyFocusRequester) else Modifier)
+                    // 菜单键删单条：没输入时根部那个「打开全屏结果」不消费菜单键，事件能落到这里
+                    .onBvKey { key ->
+                        if (key == BvKey.Menu) {
+                            deleteTarget = history
+                            true
+                        } else {
+                            false
+                        }
+                    },
+            )
+        }
+        if (showHistory && histories.isNotEmpty()) {
+            BvListItem(
+                title = stringResource(R.string.search_tv_history_clear),
+                subtitle = stringResource(R.string.search_tv_history_menu_hint),
+                onClick = { confirmClear = true },
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
+                titleStyle = BvType.CardTitle,
+                leading = {
+                    Icon(
+                        Icons.Rounded.DeleteSweep,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                },
+            )
+        }
         middleItems.forEach { word ->
             BvListItem(
                 title = word,
@@ -314,6 +369,27 @@ private fun SearchTvInput(
                 titleStyle = BvType.CardTitle,
             )
         }
+    }
+    if (confirmClear) {
+        SearchHistoryClearDialog(
+            onDismiss = { confirmClear = false },
+            onConfirm = {
+                confirmClear = false
+                pendingRefocus = true
+                state.input.deleteAllSearchHistories()
+            },
+        )
+    }
+    deleteTarget?.let { history ->
+        SearchHistoryDeleteDialog(
+            keyword = history.keyword,
+            onDismiss = { deleteTarget = null },
+            onConfirm = {
+                deleteTarget = null
+                pendingRefocus = true
+                state.input.deleteSearchHistory(history)
+            },
+        )
     }
 
     // ---------- 右列：热搜 ----------

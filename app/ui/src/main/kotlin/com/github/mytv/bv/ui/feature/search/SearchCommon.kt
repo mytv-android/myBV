@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dev.aaa1115910.biliapi.repositories.SearchFilterDuration
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.entity.db.SearchHistoryDB
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
@@ -178,6 +179,7 @@ internal fun HotwordItem(rank: Int, text: String, onClick: () -> Unit, modifier:
 @Composable
 internal fun SearchIdleContent(state: SearchUiState, onPick: (String) -> Unit, modifier: Modifier = Modifier) {
     var confirmClear by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<SearchHistoryDB?>(null) }
     val histories = state.input.searchHistories
     val hot = state.input.hotwords
     Column(
@@ -200,9 +202,19 @@ internal fun SearchIdleContent(state: SearchUiState, onPick: (String) -> Unit, m
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 histories.forEach { history ->
-                    BvChip(text = history.keyword, selected = false, onClick = { onPick(history.keyword) })
+                    BvChip(
+                        text = history.keyword,
+                        selected = false,
+                        onClick = { onPick(history.keyword) },
+                        onLongClick = { deleteTarget = history },
+                    )
                 }
             }
+            Text(
+                stringResource(R.string.search_history_hint),
+                style = BvType.Meta,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         if (hot.isNotEmpty()) {
             SectionHeader(
@@ -227,34 +239,93 @@ internal fun SearchIdleContent(state: SearchUiState, onPick: (String) -> Unit, m
         }
     }
     if (confirmClear) {
-        SearchDialogFrame(onDismiss = { confirmClear = false }) {
-            Text(stringResource(R.string.search_history_clear_title), style = BvType.PanelTitle)
-            Text(
-                stringResource(R.string.search_history_clear_message),
-                style = BvType.Body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(
-                Modifier
-                    .align(Alignment.End)
-                    .focusRestorer()
-                    .focusGroup(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                BvButton(
-                    text = stringResource(R.string.search_cancel),
-                    onClick = { confirmClear = false },
-                    style = BvButtonStyle.Outlined,
-                )
-                BvButton(
-                    text = stringResource(R.string.search_history_clear_confirm),
-                    onClick = {
-                        confirmClear = false
-                        state.input.deleteAllSearchHistories()
-                    },
-                )
-            }
-        }
+        SearchHistoryClearDialog(
+            onDismiss = { confirmClear = false },
+            onConfirm = {
+                confirmClear = false
+                state.input.deleteAllSearchHistories()
+            },
+        )
+    }
+    deleteTarget?.let { history ->
+        SearchHistoryDeleteDialog(
+            keyword = history.keyword,
+            onDismiss = { deleteTarget = null },
+            onConfirm = {
+                deleteTarget = null
+                state.input.deleteSearchHistory(history)
+            },
+        )
+    }
+}
+
+/** 清除全部搜索历史的确认框（手机 / 平板的「清除」、电视的「清除搜索历史」行）。 */
+@Composable
+internal fun SearchHistoryClearDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    SearchDialogFrame(onDismiss) {
+        Text(stringResource(R.string.search_history_clear_title), style = BvType.PanelTitle)
+        Text(
+            stringResource(R.string.search_history_clear_message),
+            style = BvType.Body,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        DialogButtons(
+            cancelText = stringResource(R.string.search_cancel),
+            onCancel = onDismiss,
+            confirmText = stringResource(R.string.search_history_clear_confirm),
+            onConfirm = onConfirm,
+        )
+    }
+}
+
+/** 删除单条搜索历史的确认框（手机长按 chip、电视菜单键）。 */
+@Composable
+internal fun SearchHistoryDeleteDialog(keyword: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    SearchDialogFrame(onDismiss) {
+        Text(stringResource(R.string.search_history_delete_title), style = BvType.PanelTitle)
+        Text(
+            stringResource(R.string.search_history_delete_message, keyword),
+            style = BvType.Body,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        DialogButtons(
+            cancelText = stringResource(R.string.search_cancel),
+            onCancel = onDismiss,
+            confirmText = stringResource(R.string.search_history_delete),
+            onConfirm = onConfirm,
+            destructive = true,
+        )
+    }
+}
+
+/** 对话框底部按钮行：左「取消」（描边，默认焦点）、右确认；[destructive] 用 error 容器色。 */
+@Composable
+private fun ColumnScope.DialogButtons(
+    cancelText: String,
+    onCancel: () -> Unit,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    destructive: Boolean = false,
+) {
+    Row(
+        Modifier
+            .align(Alignment.End)
+            .focusRestorer()
+            .focusGroup(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        BvButton(
+            text = cancelText,
+            onClick = onCancel,
+            style = BvButtonStyle.Outlined,
+        )
+        BvButton(
+            text = confirmText,
+            onClick = onConfirm,
+            style = BvButtonStyle.Filled,
+            containerColor = if (destructive) MaterialTheme.colorScheme.error else null,
+            contentColor = if (destructive) MaterialTheme.colorScheme.onError else null,
+        )
     }
 }
 
