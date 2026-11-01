@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalContentStartInset
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.adaptive.NavKind
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.designsystem.component.LocalVideoCardActions
 import com.github.mytv.bv.ui.designsystem.component.VideoCardActions
 import com.github.mytv.bv.ui.designsystem.nav.PhoneNavBar
@@ -103,6 +105,10 @@ fun AppShell(nav: NavHostController) {
     } else {
         0.dp
     }
+    // 竖向分隔且没有导航轨（Compact 双屏）时，底部导航栏只占左逻辑屏
+    val foldBarWidth = rememberFoldPanes()
+        ?.takeIf { it.vertical && it.isUsable(200.dp) }
+        ?.first
 
     val userViewModel: UserViewModel = koinViewModel()
     val railRequester = remember { FocusRequester() }
@@ -171,7 +177,13 @@ fun AppShell(nav: NavHostController) {
                     current = top,
                     onSelect = nav::navigateTopLevel,
                     overVideo = top == TopLevel.Shorts,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = if (foldBarWidth != null) {
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .width(foldBarWidth)
+                    } else {
+                        Modifier.align(Alignment.BottomCenter)
+                    },
                 )
             }
             if (showTvRail) {

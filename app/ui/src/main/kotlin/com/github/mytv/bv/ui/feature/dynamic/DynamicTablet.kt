@@ -37,6 +37,7 @@ import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
 import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
+import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
 
 /**
  * 平板动态（原型 dynTablet）：列表-详情。左列 width 470（标题 PageTitleLarge + 头像行 + DynamicCard，选中项 secondaryContainer）；
@@ -50,6 +51,7 @@ internal fun DynamicTablet(
 ) {
     val listState = rememberLazyListState()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val barBottom = LocalBottomBarPadding.current
     val split = foldPanes?.takeIf { it.vertical }
     listState.LoadMoreEffect { if (state.items.isNotEmpty()) state.loadMore() }
 
@@ -111,7 +113,11 @@ internal fun DynamicTablet(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = navBottom + 16.dp),
+                            contentPadding = PaddingValues(
+                                start = 8.dp,
+                                end = 8.dp,
+                                bottom = navBottom + barBottom + 16.dp,
+                            ),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(
@@ -153,7 +159,7 @@ internal fun DynamicTablet(
                     start = if (split != null) 16.dp else 12.dp,
                     top = 16.dp,
                     end = if (split != null) 16.dp else 20.dp,
-                    bottom = 16.dp + navBottom,
+                    bottom = 16.dp + navBottom + barBottom,
                 )
                 .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow),

@@ -270,7 +270,12 @@ private fun TabletopControlBar(
                 if (playing) R.string.video_detail_pause else R.string.video_detail_play
             ),
             onClick = {
-                if (playing) player?.pause() else player?.start()
+                // 以播放内核的实时状态为准：轮询的 playing 可能落后一次点击
+                val target = player
+                if (target != null) {
+                    if (target.isPlaying) target.pause() else target.start()
+                    playing = target.isPlaying
+                }
             },
         )
         WavyProgress(

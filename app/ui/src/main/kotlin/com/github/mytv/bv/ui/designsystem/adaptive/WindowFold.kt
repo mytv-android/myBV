@@ -116,15 +116,18 @@ fun rememberFoldPanes(): FoldPanes? {
     val windowWidth = configuration.screenWidthDp.dp
     val windowHeight = configuration.screenHeightDp.dp
     return remember(fold, windowWidth, windowHeight, startInset) {
-        if (fold.isVertical) {
-            FoldPanes(
+        val windowSize = if (fold.isVertical) windowWidth else windowHeight
+        // 折叠边必须真的落在当前窗口内；多窗口缩小后残留在窗口外的 Feature 直接忽略
+        val intersectsWindow = fold.start < windowSize && fold.start + fold.thickness > 0.dp
+        when {
+            !intersectsWindow -> null
+            fold.isVertical -> FoldPanes(
                 vertical = true,
                 first = (fold.start - startInset).coerceAtLeast(0.dp),
                 hinge = fold.thickness,
                 second = (windowWidth - fold.start - fold.thickness).coerceAtLeast(0.dp),
             )
-        } else {
-            FoldPanes(
+            else -> FoldPanes(
                 vertical = false,
                 first = fold.start.coerceAtLeast(0.dp),
                 hinge = fold.thickness,
