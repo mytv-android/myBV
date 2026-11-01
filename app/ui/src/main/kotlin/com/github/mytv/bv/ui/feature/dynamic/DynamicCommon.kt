@@ -226,8 +226,8 @@ internal fun CommentViewModel.loadMoreCommentsIfNeeded() {
 
 /**
  * 动态页三端共享的状态（ViewModel 在 DynamicScreen 里创建）。
- * 加载调用照抄旧手机 DynamicScreen（loadMoreAll / clearAllData），但在 viewModelScope（主线程）上调用：
- * DynamicViewModel 会直接写 SnapshotStateList。
+ * 加载入口是 ViewModel 的 loadAllPage / loadSpacePage（各自只允许一页在途，换 UP 时取消），
+ * 在 viewModelScope（主线程）上调用：DynamicViewModel 会直接写 SnapshotStateList。
  */
 @Stable
 internal class DynamicPageState(
@@ -299,10 +299,16 @@ internal class DynamicPageState(
         if (upFilter == mid) return
         upFilter = mid
         resetAutoFill()
+        // 换了筛选：上一个筛选的在途请求已经没人看了，取消掉。不取消的话，它失败时
+        // 错误会弹在新筛选上——「UP 主的动态刷出来了，却还提示加载动态失败」
+        vm.cancelPendingLoads()
         // 点了头像就立刻拉第一页，别让用户盯着空页面等 autoFill。
         // 不看列表空不空：上一个 UP 拉完后 spaceHasMore 停在 false，只在列表为空时
         // 触发的话 loadMore 会把它当成「没有更多」，新 UP 一页都加载不出来。
-        if (mid != null && !vm.loadingSpace) loadMore()
+        if (mid != null) {
+            vm.clearSpaceData()
+            loadMore()
+        }
     }
 
     /** 电视标签（聚焦即选中）。换了筛选条件要把自动加载的记账清掉，否则新条件一页都不拉。 */
@@ -335,14 +341,14 @@ internal class DynamicPageState(
 
     fun loadMore() {
         val up = upFilter
+        if (!vm.isLogin) return
         if (up != null) {
             // spaceHasMore 交给 ViewModel 判断：它会在换 UP 时先清掉上一份的分页状态，
-            // 在这里提前返回会让新 UP 一页都拉不到
-            if (vm.loadingSpace || !vm.isLogin) return
-            vm.viewModelScope.launch { vm.loadMoreSpace(up) }
+            // 在这里提前返回会让新 UP 一页都拉不到。同 UP 的在途请求由 ViewModel 去重
+            vm.loadSpacePage(up)
         } else {
-            if (vm.loadingAll || !vm.allHasMore || !vm.isLogin) return
-            vm.viewModelScope.launch { vm.loadMoreAll() }
+            if (!vm.allHasMore) return
+            vm.loadAllPage()
         }
     }
 
@@ -353,13 +359,16 @@ internal class DynamicPageState(
         resetAutoFill()
         vm.viewModelScope.launch {
             try {
-                if (upFilter != null) {
+                val up = upFilter
+                // clear*Data 会取消在途的那一页，所以这里启动的是新的一页
+                val job = if (up != null) {
                     vm.clearSpaceData()
-                    upFilter?.let { vm.loadMoreSpace(it) }
+                    vm.loadSpacePage(up)
                 } else {
                     vm.clearAllData()
-                    vm.loadMoreAll()
+                    vm.loadAllPage()
                 }
+                job?.join()
             } finally {
                 pulling = false
             }

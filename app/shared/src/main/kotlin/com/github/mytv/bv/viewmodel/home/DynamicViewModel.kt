@@ -19,8 +19,10 @@ import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.toast
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
@@ -37,12 +39,24 @@ class DynamicViewModel(
         /** 动态分页接口失败后的总尝试次数（含首次）。 */
         private const val DYNAMIC_PAGE_MAX_ATTEMPTS = 2
 
+        /**
+         * -352（风控/限流）时的总尝试次数。feed/space 对同一个 host_mid 连着请求很容易
+         * 被突发限流挡住，多缓一两次往往就放行了，所以比普通错误多试一次。
+         */
+        private const val DYNAMIC_PAGE_RISK_ATTEMPTS = 3
+
         /** 两次动态分页请求之间的间隔：-352 多半是突发限流，缓一下再试就有了。 */
         private const val DYNAMIC_PAGE_RETRY_DELAY_MS = 1000L
     }
 
     val dynamicVideoList = mutableStateListOf<DynamicVideo>()
     val dynamicAllList = mutableStateListOf<DynamicItem>()
+
+    /** 「全部动态」的在途分页请求；换 UP 主筛选时取消，别让它的迟到失败弹到新筛选上。 */
+    private var allLoadJob: Job? = null
+
+    /** 「UP 主空间动态」的在途分页请求；同一个 UP 同时只拉一页，换 UP 时取消上一页。 */
+    private var spaceLoadJob: Job? = null
 
     private var currentVideoPage = 0
     var loadingVideo = false
@@ -81,18 +95,51 @@ class DynamicViewModel(
         if (!loadingVideo) loadVideoData()
     }
 
-    suspend fun loadMoreAll() {
-        if (!loadingAll) loadAllData()
+    /**
+     * 加载用户[hostMid]的一页空间动态。
+     *
+     * 同一个 UP 同时只允许一页在途（[spaceLoadJob]），在途时再来一页直接忽略——
+     * autoFill、滚到底、下拉刷新都会调它。返回的 Job 给下拉刷新用来等这一页结束，
+     * 被跳过（已有同 UP 的在途请求）时返回 null。
+     */
+    fun loadSpacePage(hostMid: Long): Job? {
+        if (spaceLoadJob?.isActive == true) return null
+        spaceLoadJob = viewModelScope.launch { loadMoreSpace(hostMid) }
+        return spaceLoadJob
     }
 
     /**
-     * 加载用户[hostMid]的动态。换了 UP 会先清掉上一份，避免两个 UP 的动态混在一列里。
+     * 加载一页关注动态流（「全部动态」）。同 [loadSpacePage]，同一时刻只拉一页。
      */
-    suspend fun loadMoreSpace(hostMid: Long) {
-        if (loadingSpace) return
-        if (spaceHostMid != null && spaceHostMid != hostMid) clearSpaceData()
-        spaceHostMid = hostMid
+    fun loadAllPage(): Job? {
+        if (allLoadJob?.isActive == true) return null
+        allLoadJob = viewModelScope.launch { loadAllData() }
+        return allLoadJob
+    }
+
+    /**
+     * 取消在途的动态分页请求（换 UP 主筛选时调用）。
+     *
+     * 不取消的话，切走之前发出去的那一页失败时，错误会弹在用户正在看的新筛选上——
+     * 表现就是「UP 主的动态已经刷出来了，却还提示加载动态失败」。取消走的是
+     * CancellationException，各个加载函数的失败分支都认得它，不会弹提示。
+     */
+    fun cancelPendingLoads() {
+        allLoadJob?.cancel()
+        allLoadJob = null
+        spaceLoadJob?.cancel()
+        spaceLoadJob = null
+    }
+
+    /**
+     * 加载用户[hostMid]的动态。
+     *
+     * 换 UP 前调用方已经 [clearSpaceData]（会取消上一页的在途请求并重置分页状态），
+     * 所以这里看到的 hostMid 一定还是用户正在看的 UP。
+     */
+    private suspend fun loadMoreSpace(hostMid: Long) {
         if (!spaceHasMore || !bvUserRepository.isLogin) return
+        spaceHostMid = hostMid
         loadingSpace = true
         logger.fInfo { "Load more space dynamics [mid=$hostMid, offset=$spaceHistoryOffset, page=${currentSpacePage + 1}]" }
         val nextPage = currentSpacePage + 1
@@ -124,12 +171,17 @@ class DynamicViewModel(
                     else -> "加载动态失败: ${it.localizedMessage ?: it.javaClass.simpleName}"
                 }
                 spaceError = message
+                // 列表里已经有这个 UP 的动态：这一页失败不影响眼前的内容，只把原因记下来
+                // （列表空时显示、并拦住 autoFill 的自动重试），别再弹「加载动态失败」
+                if (dynamicSpaceList.isNotEmpty()) return@onFailure
                 withContext(Dispatchers.Main) {
                     message.toast(BVApp.context)
                 }
             }
         } finally {
-            loadingSpace = false
+            // 换 UP 时这一页会被取消（spaceLoadJob 已经换成新的了）：别把新一页的
+            // loading 标志一起抹掉，否则转圈会提前消失、autoFill 还会空转一轮
+            if (spaceLoadJob == null || spaceLoadJob === coroutineContext[Job]) loadingSpace = false
         }
     }
 
@@ -144,7 +196,10 @@ class DynamicViewModel(
      */
     private suspend fun <T> withDynamicPageRetry(hostMid: Long? = null, request: suspend () -> T): T {
         var lastError: Throwable? = null
-        for (attempt in 1..DYNAMIC_PAGE_MAX_ATTEMPTS) {
+        var retryDelayMs = DYNAMIC_PAGE_RETRY_DELAY_MS
+        var attempt = 0
+        while (true) {
+            attempt++
             try {
                 return request()
             } catch (e: CancellationException) {
@@ -152,14 +207,20 @@ class DynamicViewModel(
             } catch (e: Throwable) {
                 lastError = e
                 logger.fInfo {
-                    "Dynamic page request failed [attempt=$attempt/$DYNAMIC_PAGE_MAX_ATTEMPTS]: ${e.message}"
+                    "Dynamic page request failed [attempt=$attempt]: ${e.message}"
                 }
                 // 登录态问题重试没有意义，直接失败
                 if (e is AuthFailureException) break
                 // 重试前换了 UP：这一页属于上一个 UP
                 if (hostMid != null && spaceHostMid != hostMid) break
+                // 限流多试一次、也多缓一会儿：-352 的封锁窗口比普通错误的恢复时间长
+                val maxAttempts =
+                    if (e is RiskControlException) DYNAMIC_PAGE_RISK_ATTEMPTS else DYNAMIC_PAGE_MAX_ATTEMPTS
+                retryDelayMs =
+                    if (e is RiskControlException) DYNAMIC_PAGE_RETRY_DELAY_MS * 2 else DYNAMIC_PAGE_RETRY_DELAY_MS
+                if (attempt >= maxAttempts) break
             }
-            if (attempt < DYNAMIC_PAGE_MAX_ATTEMPTS) delay(DYNAMIC_PAGE_RETRY_DELAY_MS)
+            delay(retryDelayMs)
         }
         throw lastError ?: IllegalStateException("dynamic page request failed")
     }
@@ -206,12 +267,16 @@ class DynamicViewModel(
                     }
 
                     is RiskControlException -> {
+                        // 首页那一行已经有视频：这一页失败不影响眼前的内容，别再弹提示
+                        if (dynamicVideoList.isNotEmpty()) return@onFailure
                         withContext(Dispatchers.Main) {
                             "动态被风控拦截，请稍后重试".toast(BVApp.context)
                         }
                     }
 
                     else -> {
+                        // 首页那一行已经有视频：这一页失败不影响眼前的内容，别再弹提示
+                        if (dynamicVideoList.isNotEmpty()) return@onFailure
                         withContext(Dispatchers.Main) {
                             "加载动态失败: ${it.localizedMessage}".toast(BVApp.context)
                         }
@@ -257,12 +322,16 @@ class DynamicViewModel(
                 }
                 allError = message
                 if (it is AuthFailureException) logger.fInfo { "User auth failure" }
+                // 列表里已经有动态：这一页失败不影响眼前的内容，只记下原因（列表空时显示），
+                // 别再弹「加载动态失败」——这正是「动态刷出来了却还提示失败」的来源
+                if (dynamicAllList.isNotEmpty()) return@onFailure
                 withContext(Dispatchers.Main) {
                     message.toast(BVApp.context)
                 }
             }
         } finally {
-            loadingAll = false
+            // 同 loadMoreSpace：被取消的那一页别把新一页的 loading 标志抹掉
+            if (allLoadJob == null || allLoadJob === coroutineContext[Job]) loadingAll = false
         }
     }
 
@@ -275,6 +344,8 @@ class DynamicViewModel(
     }
 
     fun clearAllData() {
+        allLoadJob?.cancel()
+        allLoadJob = null
         dynamicAllList.clear()
         currentAllPage = 0
         loadingAll = false
@@ -284,6 +355,9 @@ class DynamicViewModel(
     }
 
     fun clearSpaceData() {
+        // 在途的那一页已经是旧状态了：取消掉，别让它的响应/失败写进新一页
+        spaceLoadJob?.cancel()
+        spaceLoadJob = null
         dynamicSpaceList.clear()
         currentSpacePage = 0
         loadingSpace = false
