@@ -135,7 +135,10 @@ internal class SearchUiState(
         input.keyword = kw
         if (addHistory) input.addSearchHistory(kw)
         editing = false
-        if (kw != submitted || SearchType.entries.all { resultOf(it).count == 0 }) refresh(kw)
+        // 同一关键词已经在请求中就别再发一轮：B 站会把重复搜索当风控处理，
+        // 返回 data 里只有 v_voucher 的降级响应，页面就变成「没有找到相关结果」
+        val loading = SearchType.entries.any { isLoading(it) }
+        if (kw != submitted || (!loading && SearchType.entries.all { resultOf(it).count == 0 })) refresh(kw)
     }
 
     /** 重新请求四类结果（旧电视版：关键词或筛选变化时 update()）。 */

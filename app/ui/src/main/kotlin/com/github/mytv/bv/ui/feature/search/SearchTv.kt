@@ -191,11 +191,11 @@ private fun SearchTvInput(
             }
         }
     }
-    // 搜索按钮 / 联想 / 热搜 / 历史：直接进入全屏结果，省掉遥控器在结果行里找按钮的步骤
+    // 搜索按钮 / 联想 / 热搜 / 历史：直接进入全屏结果，省掉遥控器在结果行里找按钮的步骤。
+    // 走 search() 而不是 refresh()：防抖已经自动搜过同一个关键词时不再重复请求，
+    // 否则连续两次相同请求会被 B 站风控成「没有找到相关结果」
     val pick: (String) -> Unit = { word ->
-        state.input.keyword = word
-        state.input.addSearchHistory(word)
-        state.refresh(word)
+        state.search(word)
         // 从全屏结果返回时把焦点还给结果行
         onArea(TvFocusArea.Results)
         onEnterFull()

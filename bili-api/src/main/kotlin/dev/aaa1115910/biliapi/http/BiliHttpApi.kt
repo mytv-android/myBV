@@ -1538,17 +1538,23 @@ object BiliHttpApi {
         order: String? = null,
         duration: Int? = null,
         buvid3: String? = null
-    ): BiliResponse<SearchResultData> = client.get("/x/web-interface/wbi/search/type") {
-        parameter("keyword", keyword)
-        parameter("search_type", type)
-        parameter("page", page)
-        tid?.let { parameter("tids", it) }
-        order?.let { parameter("order", it) }
-        duration?.let { parameter("duration", it) }
-        header("Cookie", "buvid3=$buvid3;")
-        // 搜索接口的 referer 必须是 search.bilibili.com，用 www 会被风控返回空结果
-        header("referer", "https://search.bilibili.com/")
-    }.body()
+    ): BiliResponse<SearchResultData> {
+        val bodyText = client.get("/x/web-interface/wbi/search/type") {
+            parameter("keyword", keyword)
+            parameter("search_type", type)
+            parameter("page", page)
+            tid?.let { parameter("tids", it) }
+            order?.let { parameter("order", it) }
+            duration?.let { parameter("duration", it) }
+            header("Cookie", "buvid3=$buvid3;")
+            // 搜索接口的 referer 必须是 search.bilibili.com，用 www 会被风控返回空结果
+            header("referer", "https://search.bilibili.com/")
+        }.bodyAsText()
+        // 重复请求同一个关键词时服务端会回 code=0、data 里只有 v_voucher 的降级
+        // 响应；直接反序列化会抛 MissingFieldException，调用方只会看到「没有结果」
+        checkForVVoucher(bodyText)
+        return json.decodeFromString(bodyText)
+    }
 
     /** 获取番剧首页数据 */
     suspend fun getPgcWebInitialStateData(pgcType: PgcType): PgcWebInitialStateData {
