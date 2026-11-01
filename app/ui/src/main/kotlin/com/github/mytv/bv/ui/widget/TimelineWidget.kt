@@ -14,7 +14,6 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -99,7 +98,7 @@ class TimelineWidget : GlanceAppWidget() {
     }
 }
 
-class TimelineWidgetReceiver : GlanceAppWidgetReceiver() {
+class TimelineWidgetReceiver : BvGlanceWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TimelineWidget()
 }
 

@@ -69,6 +69,8 @@ internal object WidgetRefresher {
 
     /** 桌面上没有放任何组件时不做周期网络请求。 */
     private suspend fun hasWidgets(context: Context): Boolean {
+        // 电视上整条小组件链路关闭：不查桌面、不联网、不碰 WorkManager
+        if (!widgetsSupported(context)) return false
         val manager = GlanceAppWidgetManager(context)
         return runCatching { manager.getGlanceIds(ContinueWidget::class.java).isNotEmpty() }
             .getOrDefault(false) ||
@@ -158,6 +160,7 @@ internal object WidgetRefresher {
         }
 
     suspend fun updateWidgets(context: Context) {
+        if (!widgetsSupported(context)) return
         widgets().forEach { widget ->
             runCatching { widget.updateAll(context) }
         }

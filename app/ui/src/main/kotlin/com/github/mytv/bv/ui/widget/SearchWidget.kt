@@ -11,7 +11,6 @@ import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -62,7 +61,7 @@ class SearchWidget : GlanceAppWidget() {
     }
 }
 
-class SearchWidgetReceiver : GlanceAppWidgetReceiver() {
+class SearchWidgetReceiver : BvGlanceWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = SearchWidget()
 }
 

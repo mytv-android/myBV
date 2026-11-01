@@ -48,6 +48,7 @@ internal object WidgetScheduler {
     private const val TIMELINE_WORK_NAME = "bv_widget_timeline_tick"
 
     fun ensureScheduled(context: Context) {
+        if (!widgetsSupported(context)) return
         val request = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(30, TimeUnit.MINUTES)
             .setConstraints(
                 Constraints.Builder()
@@ -66,7 +67,7 @@ internal object WidgetScheduler {
 
     /** @param atMillis 下一部番剧的更新时间（毫秒时间戳），到点触发一次时间表刷新。 */
     fun scheduleTimelineTick(context: Context, atMillis: Long?) {
-        if (atMillis == null) return
+        if (atMillis == null || !widgetsSupported(context)) return
         val delay = (atMillis - System.currentTimeMillis() + 60_000L).coerceAtLeast(60_000L)
         val request = OneTimeWorkRequestBuilder<TimelineTickWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
