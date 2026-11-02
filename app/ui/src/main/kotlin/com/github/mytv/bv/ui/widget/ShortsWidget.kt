@@ -14,6 +14,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -67,7 +68,7 @@ class ShortsWidget : GlanceAppWidget() {
     }
 }
 
-class ShortsWidgetReceiver : BvGlanceWidgetReceiver() {
+class ShortsWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ShortsWidget()
 }
 

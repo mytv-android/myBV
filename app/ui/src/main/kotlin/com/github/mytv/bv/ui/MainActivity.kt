@@ -49,11 +49,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         deepLinkIntent = intent
-        // WorkManager 首次初始化会同步打开 / 迁移自己的数据库，放在后台线程做，
-        // 慢设备上也拖不住启动画面（电视上这步直接空转）
-        lifecycleScope.launch(Dispatchers.IO) {
-            runCatching { WidgetScheduler.ensureScheduled(applicationContext) }
-        }
+        WidgetScheduler.ensureScheduled(applicationContext)
         observeWidgetSignals()
         observeThemeChanges()
         // 启动时后台检查缓存阈值（默认「不限制」，只有用户设置上限后才会清理）
