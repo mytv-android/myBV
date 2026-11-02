@@ -1,6 +1,7 @@
 package com.github.mytv.bv.ui.widget
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +48,16 @@ internal object WidgetScheduler {
     private const val WORK_NAME = "bv_widget_refresh"
     private const val TIMELINE_WORK_NAME = "bv_widget_timeline_tick"
 
+    /**
+     * WorkManager 2.9+ 拒绝在设备加密（DE）存储上下文初始化：
+     * 它的数据库在 CE，DE 下直接抛 "Cannot initialize WorkManager in direct boot mode"。
+     * 这部分设备上不存在可用的周期刷新，跳过调度即可，不能让它参与启动流程。
+     */
+    private fun cannotSchedule(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && context.isDeviceProtectedStorage
+
     fun ensureScheduled(context: Context) {
+        if (cannotSchedule(context)) return
         val request = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(30, TimeUnit.MINUTES)
             .setConstraints(
                 Constraints.Builder()
@@ -66,7 +76,7 @@ internal object WidgetScheduler {
 
     /** @param atMillis 下一部番剧的更新时间（毫秒时间戳），到点触发一次时间表刷新。 */
     fun scheduleTimelineTick(context: Context, atMillis: Long?) {
-        if (atMillis == null) return
+        if (atMillis == null || cannotSchedule(context)) return
         val delay = (atMillis - System.currentTimeMillis() + 60_000L).coerceAtLeast(60_000L)
         val request = OneTimeWorkRequestBuilder<TimelineTickWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
