@@ -11,7 +11,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.github.mytv.bv.entity.BvScheme
-import com.github.mytv.bv.ui.designsystem.adaptive.isTelevision
 import com.github.mytv.bv.ui.navigation.DynamicRoute
 import com.github.mytv.bv.ui.navigation.LoginRoute
 import com.github.mytv.bv.ui.navigation.PgcTimelineRoute
@@ -40,8 +39,6 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
         val uri = intent?.data ?: return@LaunchedEffect
         val text = uri.toString()
         if (handled == text) return@LaunchedEffect
-        // 电视上没有小组件：这些调用连同 WidgetStore / WidgetRefresher 的类都不碰
-        val widgetsEnabled = !context.isTelevision()
 
         when (uri.host) {
             BvScheme.Video.HOST -> {
@@ -63,7 +60,7 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
             BvScheme.Shorts.host -> {
                 handled = text
                 val aid = uri.getQueryParameter("aid")?.toLongOrNull()
-                if (aid != null && widgetsEnabled) {
+                if (aid != null) {
                     WidgetStore.markShortsSeen(context, aid)
                     WidgetRefresher.requestShorts(context)
                 }
@@ -72,10 +69,8 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
 
             BvScheme.Dynamic.host -> {
                 handled = text
-                if (widgetsEnabled) {
-                    WidgetStore.markDynamicSeen(context)
-                    WidgetRefresher.updateWidgetsSoon(context)
-                }
+                WidgetStore.markDynamicSeen(context)
+                WidgetRefresher.updateWidgetsSoon(context)
                 nav.navigate(DynamicRoute) { launchSingleTop = true }
             }
 

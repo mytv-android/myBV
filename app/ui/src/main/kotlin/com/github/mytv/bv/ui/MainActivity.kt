@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.tv.TvLauncherPublisher
-import com.github.mytv.bv.ui.designsystem.adaptive.isTelevision
 import com.github.mytv.bv.ui.designsystem.theme.BvRoot
 import com.github.mytv.bv.ui.feature.accounts.UserLockGate
 import com.github.mytv.bv.ui.feature.login.DeepLinkEffect
@@ -44,27 +43,19 @@ class MainActivity : ComponentActivity() {
         runCatching { BVApp.koinApplication.koin.get<TvLauncherPublisher>() }.getOrNull()
     }
 
-    /**
-     * 电视上桌面小组件整体关闭。这里不只是运行时短路：所有小组件入口都收在这个开关后面，
-     * 电视上 Glance / WorkManager 相关的类根本不会被解析加载，WorkManager 也就不会初始化。
-     */
-    private val widgetsEnabled: Boolean by lazy { !applicationContext.isTelevision() }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         var preferencesReady = false
         installSplashScreen().setKeepOnScreenCondition { !preferencesReady }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         deepLinkIntent = intent
-        if (widgetsEnabled) {
-            // WorkManager 首次初始化会同步打开 / 迁移自己的数据库，放在后台线程做，
-            // 慢设备上也拖不住启动画面
-            lifecycleScope.launch(Dispatchers.IO) {
-                runCatching { WidgetScheduler.ensureScheduled(applicationContext) }
-            }
-            observeWidgetSignals()
-            observeThemeChanges()
+        // WorkManager 首次初始化会同步打开 / 迁移自己的数据库，放在后台线程做，
+        // 慢设备上也拖不住启动画面（电视上这步直接空转）
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { WidgetScheduler.ensureScheduled(applicationContext) }
         }
+        observeWidgetSignals()
+        observeThemeChanges()
         // 启动时后台检查缓存阈值（默认「不限制」，只有用户设置上限后才会清理）
         lifecycleScope.launch(Dispatchers.IO) {
             runCatching { CacheManager(applicationContext).checkCache() }
@@ -77,7 +68,7 @@ class MainActivity : ComponentActivity() {
             }
             setContent {
                 BvRoot(initialPrefs, initialShowFps = showFps) {
-                    if (widgetsEnabled) WidgetAuthObserver()
+                    WidgetAuthObserver()
                     UserLockGate {
                         val nav = rememberNavController()
                         AppShell(nav)
@@ -107,7 +98,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // 回到桌面时让小组件拿到刚才在 App 里的改动（稍后再看、历史记录等）
-        if (widgetsEnabled) WidgetRefresher.refreshNow(applicationContext)
+        WidgetRefresher.refreshNow(applicationContext)
     }
 
     override fun onNewIntent(intent: Intent) {
