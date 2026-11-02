@@ -10,9 +10,10 @@
         业务代码接不住。开机自启 / 桌面小部件 / 一次 Activity 启动请求都会先创建进程，
         于是解锁前被拉起就必崩。
         这里去掉 WorkManagerInitializer 的自动初始化，改由 BVApp 实现
-        Configuration.Provider 按需初始化；DE 上下文下的进程在 BVApp.onCreate 直接结束。
+        Configuration.Provider 按需初始化；DE 上下文由 BVApp.attachBaseContext 在解锁后
+        切回 CE，只有用户尚未解锁时才结束进程。
     -->
-    <application>
+    <application android:defaultToDeviceProtectedStorage="false">
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
