@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import android.os.Process
-import android.os.UserManager
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -73,33 +71,15 @@ class BVApp : Application(), Configuration.Provider {
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().build()
 
-    /**
-     * 系统可能在解锁前为了安装 directBootAware 的提供者（Firebase、Room 等）就把本进程拉起来，
-     * 此时整个进程跑在设备加密（DE）存储上下文里，并且解锁后也不会自动切回 CE。
-     * 之前遇到这种情况直接结束进程，结果是被系统反复拉起：用户只看到永远停在启动页，
-     * 日志里连一条异常都没有。解锁后直接换成 CE 上下文，进程就能正常跑完启动流程。
-     */
-    override fun attachBaseContext(base: Context) {
-        val effective = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
-            base.isDeviceProtectedStorage && UserManager.get(base).isUserUnlocked
-        ) {
-            Log.w(TAG, "process started in device-protected storage, switching to CE")
-            base.createCredentialProtectedStorageContext()
-        } else {
-            base
-        }
-        super.attachBaseContext(effective)
-    }
-
     override fun onCreate() {
         super.onCreate()
-        // 仍停留在 DE 上下文说明用户尚未解锁：CE 里的 DataStore / Room 都读不到，
-        // 应用也没有需要解锁前运行的业务。这里结束进程让系统在解锁后重新拉起；
-        // 必须留日志，否则线上只能看到「卡在启动页」，没有任何可排查线索。
+        // 启动阶段一旦出问题，日志里至少要能看到进程走到过这里
+        Log.i(TAG, "onCreate")
+        // 这里曾经直接结束进程来躲开 WorkManager 在 DE 上下文初始化时的崩溃，但那个自动
+        // 初始化早已从清单移除，守卫只剩副作用：进程一死系统立刻重新拉起，用户看到的是
+        // 永远停在启动页，日志里连一条异常都没有。现在只记录，不再结束进程。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage) {
-            Log.w(TAG, "process started before user unlock, exiting")
-            Process.killProcess(Process.myPid())
-            return
+            Log.w(TAG, "running in device-protected storage context")
         }
         context = this.applicationContext
         // 迁移 Provider 跑在独立进程，只需要读写本应用数据文件，不能执行整套启动流程
