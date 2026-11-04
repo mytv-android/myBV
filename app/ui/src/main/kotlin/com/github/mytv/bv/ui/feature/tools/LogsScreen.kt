@@ -62,6 +62,7 @@ import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.util.LogCatcherUtil
 import dev.aaa1115910.m3qrcode.MaterialShapeQr
+import dev.aaa1115910.m3qrcode.QrOnWhiteColorScheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -346,7 +347,11 @@ private fun LogQrPanel(qrContent: String, fileName: String?) {
                     .background(Color.White)
                     .padding(14.dp),
             ) {
-                MaterialShapeQr(modifier = Modifier.fillMaxSize(), content = qrContent)
+                MaterialShapeQr(
+                    modifier = Modifier.fillMaxSize(),
+                    content = qrContent,
+                    colorScheme = QrOnWhiteColorScheme,
+                )
             }
             if (fileName != null) {
                 Text(

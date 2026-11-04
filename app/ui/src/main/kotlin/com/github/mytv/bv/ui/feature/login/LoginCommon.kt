@@ -83,6 +83,8 @@ import com.github.mytv.bv.viewmodel.login.AppQrLoginViewModel
 import com.github.mytv.bv.viewmodel.login.GeetestResult
 import com.github.mytv.bv.viewmodel.login.SmsLoginViewModel
 import dev.aaa1115910.m3qrcode.MaterialShapeQr
+import dev.aaa1115910.m3qrcode.QrInk
+import dev.aaa1115910.m3qrcode.QrOnWhiteColorScheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -97,9 +99,6 @@ import org.json.JSONObject
 import org.koin.compose.koinInject
 
 private val logger = KotlinLogging.logger("BvLogin")
-
-/** 二维码模块颜色（原型 `.m-qr i` #1b1b1f），白底容器上的文字也用它。 */
-private val QrInk = Color(0xFF1B1B1F)
 
 // ---------- 短信登录（照抄旧电视 SmsLoginContent / 旧手机 LoginScreen 的流程，含极验） ----------
 
@@ -300,6 +299,9 @@ internal fun QrLoginEffect(qr: AppQrLoginViewModel, onSuccess: () -> Unit) {
 /**
  * 二维码（现有 m3qrcode 的 Material 形状二维码），放在白底圆角 24、内边距 14 的容器里（原型 `.m-qr`）。
  * 请求中显示加载；已扫码时淡化二维码并提示在手机上确认；出错时显示重试。
+ *
+ * 配色显式传 [QrOnWhiteColorScheme]：白底卡片上码点必须是深色，用默认的壁纸动态色会得到中间调
+ * 码点配浅灰底，手机摄像头二值化不出来。
  */
 @Composable
 internal fun LoginQrCode(qr: AppQrLoginViewModel, size: Dp, modifier: Modifier = Modifier) {
@@ -320,6 +322,7 @@ internal fun LoginQrCode(qr: AppQrLoginViewModel, size: Dp, modifier: Modifier =
                     .fillMaxSize()
                     .alpha(if (state == QrLoginState.WaitingForScan) 1f else .15f),
                 content = qr.loginUrl,
+                colorScheme = QrOnWhiteColorScheme,
             )
         }
         when (state) {

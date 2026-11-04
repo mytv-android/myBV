@@ -29,6 +29,7 @@ import com.google.zxing.qrcode.encoder.Encoder
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import dev.aaa1115910.m3qrcode.MaterialShapeQr
+import dev.aaa1115910.m3qrcode.QrOnWhiteColorScheme
 
 private val commentLinkRegex = Regex("""https?://[^\s<>"']+""")
 
@@ -58,6 +59,9 @@ private fun canEncodeAsQr(link: String): Boolean =
 /**
  * 评论链接二维码：全屏遮罩内的对话框，二维码下方展示原始链接；返回键关闭。
  * 复用 app/shared 内置的 MaterialShapeQr，不引入新依赖。
+ *
+ * 二维码同样放在白底卡片里，配色走 [QrOnWhiteColorScheme]：默认的壁纸动态色会给出中间调码点
+ * 配浅灰底，对比度不够，扫码器认不出。
  */
 @Composable
 internal fun CommentQrCodeDialog(link: String, onDismiss: () -> Unit) {
@@ -100,6 +104,7 @@ internal fun CommentQrCodeDialog(link: String, onDismiss: () -> Unit) {
                         MaterialShapeQr(
                             modifier = Modifier.fillMaxSize(),
                             content = link,
+                            colorScheme = QrOnWhiteColorScheme,
                         )
                     }
                     Text(

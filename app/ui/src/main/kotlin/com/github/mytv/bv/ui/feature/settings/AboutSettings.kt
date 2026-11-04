@@ -53,6 +53,7 @@ import com.github.mytv.bv.util.FirebaseUtil
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.ui.PreferenceWrites
 import dev.aaa1115910.m3qrcode.MaterialShapeQr
+import dev.aaa1115910.m3qrcode.QrOnWhiteColorScheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -297,7 +298,11 @@ private fun LinkQrCodeDialog(title: String, link: String, onDismiss: () -> Unit)
                             .padding(12.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        MaterialShapeQr(modifier = Modifier.fillMaxSize(), content = link)
+                        MaterialShapeQr(
+                            modifier = Modifier.fillMaxSize(),
+                            content = link,
+                            colorScheme = QrOnWhiteColorScheme,
+                        )
                     }
                     Text(
                         text = link,
