@@ -10,7 +10,6 @@ import dev.aaa1115910.biliapi.entity.ugc.UgcItem
 import dev.aaa1115910.biliapi.repositories.RecommendVideoRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.util.Prefs
-import com.github.mytv.bv.util.addAllWithMainContext
 import com.github.mytv.bv.util.fError
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.toast
@@ -61,9 +60,13 @@ class RecommendViewModel(
                 page = nextPage,
                 preferApiType = Prefs.apiType
             )
-            beforeAppendData()
-            nextPage = recommendData.nextPage
-            recommendVideoList.addAllWithMainContext(recommendData.items)
+            // 刷新时 beforeAppendData 会清空列表：清空与回填必须在同一主线程块内原子完成，
+            // 否则中间的空列表帧会销毁 TV 上持有焦点的内容节点，焦点漂到导航栏
+            withContext(Dispatchers.Main) {
+                beforeAppendData()
+                nextPage = recommendData.nextPage
+                recommendVideoList.addAll(recommendData.items)
+            }
         }.onFailure {
             logger.fError { "Load recommend video list failed: ${it.stackTraceToString()}" }
             withContext(Dispatchers.Main) {
