@@ -4,10 +4,10 @@ import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
+import com.github.mytv.bv.player.core.BuildConfig
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
 import com.github.mytv.bv.player.entity.AudioLoudness
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import kotlin.math.pow
 
 /**
@@ -23,8 +23,17 @@ import kotlin.math.pow
  */
 @UnstableApi
 internal class VolumeBalanceAudioProcessor(
-    level: AudioBalanceLevel = AudioBalanceLevel.Off
+    level: AudioBalanceLevel = AudioBalanceLevel.Off,
+    private val gainKernel: PcmGainKernel = if (BuildConfig.ENABLE_RUST_AUDIO) {
+        OptionalRustPcmGainKernel()
+    } else {
+        KotlinPcmGainKernel
+    },
 ) : BaseAudioProcessor() {
+
+    /** 最近一次 PCM 增益块使用的后端；不表示压缩码流经过了处理。 */
+    val processingBackend: String
+        get() = gainKernel.name
 
     @Volatile
     private var level: AudioBalanceLevel = level
@@ -81,49 +90,21 @@ internal class VolumeBalanceAudioProcessor(
         }
 
         val out = replaceOutputBuffer(inputBuffer.remaining())
-        out.order(ByteOrder.nativeOrder())
-
-        val input = inputBuffer.duplicate().order(ByteOrder.nativeOrder())
-        val inputLimit = input.limit()
-        val isFloat = encoding == C.ENCODING_PCM_FLOAT
-        val bytesPerSample = if (isFloat) 4 else 2
-        val frameBytes = bytesPerSample * channelCount
-        val frameCount = (inputLimit - input.position()) / frameBytes
-
-        for (frame in 0 until frameCount) {
-            advanceGain()
-            val gain = currentGain
-            for (channel in 0 until channelCount) {
-                if (isFloat) {
-                    out.putFloat((input.getFloat() * gain).coerceIn(-1.0, 1.0).toFloat())
-                } else {
-                    val sample = input.getShort().toDouble()
-                    out.putShort(
-                        (sample * gain)
-                            .coerceIn(Short.MIN_VALUE.toDouble(), Short.MAX_VALUE.toDouble())
-                            .toInt()
-                            .toShort()
-                    )
-                }
-            }
-        }
-
-        // 不足一帧的尾部字节原样透传
-        while (input.position() < inputLimit) {
-            out.put(input.get())
-        }
-
-        inputBuffer.position(inputLimit)
+        // 每块读取同一个参数快照，两个后端使用相同的斜坡规则。
+        currentGain = gainKernel.process(
+            input = inputBuffer,
+            output = out,
+            encoding = if (encoding == C.ENCODING_PCM_FLOAT) {
+                PcmGainEncoding.Float32
+            } else {
+                PcmGainEncoding.Signed16
+            },
+            channels = channelCount,
+            currentGain = currentGain,
+            targetGain = targetGain,
+            stepPerFrame = gainStepPerFrame,
+        )
         out.flip()
-    }
-
-    private fun advanceGain() {
-        if (currentGain == targetGain) return
-        currentGain = if (gainStepPerFrame >= 0.0) {
-            minOf(targetGain, currentGain + gainStepPerFrame)
-        } else {
-            maxOf(targetGain, currentGain + gainStepPerFrame)
-        }
     }
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {

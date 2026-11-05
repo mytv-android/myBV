@@ -405,6 +405,7 @@ class ExoMediaPlayer(
                 audio: ${mPlayer?.audioFormat?.bitrate ?: 0} kbps
                 video codec: ${mPlayer?.videoFormat?.sampleMimeType ?: "null"}
                 audio codec: ${mPlayer?.audioFormat?.sampleMimeType ?: "null"} (${getAudioRendererName()})
+                audio PCM backend (last used): ${volumeBalanceProcessor?.processingBackend ?: "bypass"}
             """.trimIndent()
         }
 
