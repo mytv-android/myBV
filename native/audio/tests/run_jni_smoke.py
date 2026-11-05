@@ -30,8 +30,8 @@ def main() -> None:
     )
     classes = target / "jni-test-classes"
     classes.mkdir(parents=True, exist_ok=True)
-    fixture = audio / "tests/java/com/github/mytv/bv/player/audio/NativePcmGain.java"
-    subprocess.run([java_tool("javac"), "-d", str(classes), str(fixture)], check=True)
+    fixtures = sorted((audio / "tests/java").rglob("*.java"))
+    subprocess.run([java_tool("javac"), "-d", str(classes), *map(str, fixtures)], check=True)
     subprocess.run(
         [java_tool("java"), f"-Djava.library.path={target / 'release'}", "-cp", str(classes), "com.github.mytv.bv.player.audio.NativePcmGain"],
         check=True,

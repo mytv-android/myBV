@@ -6,6 +6,8 @@
 #[cfg(feature = "jni-bridge")]
 mod jni_bridge;
 
+pub mod spatial;
+
 /// PCM byte order is little-endian, as used by supported Android ABIs.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PcmEncoding {
