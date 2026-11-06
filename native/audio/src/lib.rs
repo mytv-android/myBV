@@ -1,11 +1,16 @@
 //! Small PCM kernels independent of Android, decoding, and audio output.
 //!
-//! Android owns the buffers and playback clock. A call borrows one complete
-//! block; it does not retain pointers, allocate buffers, or create threads.
+//! Android owns the buffers and playback clock. Steady-state processing borrows
+//! one block without retaining pointers, allocating buffers or creating threads.
+//! Adaptive session construction separately allocates its bounded delay lines.
 
 #[cfg(feature = "jni-bridge")]
 mod jni_bridge;
 
+#[cfg(feature = "jni-bridge")]
+mod adaptive_jni;
+
+pub mod adaptive;
 pub mod spatial;
 
 /// PCM byte order is little-endian, as used by supported Android ABIs.

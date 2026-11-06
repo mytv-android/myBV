@@ -36,7 +36,9 @@ internal fun createVideoPlayer(context: Context): AbstractVideoPlayer {
         },
         enableFfmpegAudioRenderer = Prefs.enableFfmpegAudioRenderer,
         enableSkipSilence = Prefs.playerSkipSilence,
-        audioBalanceLevel = Prefs.playerAudioBalanceLevel
+        audioBalanceLevel = Prefs.playerAudioBalanceLevel,
+        spatialAudioMode = Prefs.playerSpatialAudioMode,
+        stereoUpmixSettings = Prefs.playerUpmixSettings,
     )
     return when (Prefs.playerType) {
         PlayerType.Media3 -> ExoPlayerFactory().create(context, options)

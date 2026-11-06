@@ -21,7 +21,8 @@ public final class NativePcmGain {
         checkEveryPcm16Value();
         checkFloatAndRampParity();
         NativeSpatialAudio.test();
-        System.out.println("JNI smoke tests passed: offsets, bounds, aliases, PCM16, float, gain ramps and spatial 5.1");
+        NativeAdaptiveUpmix.test();
+        System.out.println("JNI smoke tests passed: offsets, bounds, aliases, PCM16, float, gain ramps, matrix and adaptive 5.1 lifecycle");
     }
 
     private static ByteBuffer buffer(int size) {

@@ -14,6 +14,8 @@ abstract class RustAudioBuildTask : Exec() {
 val enableRustAudio = providers.gradleProperty("mybv.rustAudio")
     .map { it.toBooleanStrict() }
     .orElse(false)
+val enableEac3Encoder = providers.gradleProperty("mybv.eac3Encoder")
+    .map { it.toBooleanStrict() }.orElse(false)
 val rustAudioAbis = providers.gradleProperty("mybv.rustAbis")
     .orElse("arm64-v8a,armeabi-v7a")
     .map { value -> value.split(',').map(String::trim).filter(String::isNotEmpty).distinct() }
@@ -28,6 +30,7 @@ android {
     defaultConfig {
         minSdk = AppConfiguration.minSdk
         buildConfigField("boolean", "ENABLE_RUST_AUDIO", enableRustAudio.get().toString())
+        buildConfigField("boolean", "ENABLE_EAC3_ENCODER", enableEac3Encoder.get().toString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -62,6 +65,35 @@ android {
         buildConfig = true
     }
 
+}
+
+if (enableEac3Encoder.get()) {
+    require(enableRustAudio.get()) { "mybv.eac3Encoder requires mybv.rustAudio=true" }
+    val prefix = providers.gradleProperty("mybv.ffmpegPrefix").orNull
+        ?: error("mybv.eac3Encoder requires mybv.ffmpegPrefix; see native/encode/README.md")
+    val buildEncoder = tasks.register<RustAudioBuildTask>("buildEac3Encoder") {
+        val abis = rustAudioAbis.get()
+        require(abis.isNotEmpty() && abis.all { it in setOf("arm64-v8a", "armeabi-v7a") })
+        val destination = layout.buildDirectory.dir("generated/eac3Encoder/${abis.joinToString("-")}/jniLibs")
+        jniLibsDirectory.set(destination)
+        inputs.files(rootProject.fileTree("native/encode") {
+            include("Cargo.toml", "Cargo.lock", ".cargo/config.toml", "build.rs", "src/**")
+        })
+        inputs.file(rootProject.file("tools/build_eac3_jni.py"))
+        inputs.property("abis", abis)
+        inputs.files(rootProject.fileTree(rootProject.file(prefix)) {
+            abis.forEach { abi -> include("$abi/include/**", "$abi/lib/*.so", "$abi/SOURCE.txt") }
+        })
+        workingDir(rootProject.projectDir)
+        commandLine(listOf("python", rootProject.file("tools/build_eac3_jni.py").absolutePath,
+            "--prefix", rootProject.file(prefix).absolutePath,
+            "--output", destination.get().asFile.absolutePath,
+            "--target", layout.buildDirectory.dir("eac3EncoderTarget").get().asFile.absolutePath,
+            "--abis") + abis)
+    }
+    androidComponents.onVariants { variant ->
+        variant.sources.jniLibs?.addGeneratedSourceDirectory(buildEncoder) { it.jniLibsDirectory }
+    }
 }
 
 if (enableRustAudio.get()) {
@@ -135,5 +167,8 @@ tasks.withType<Test> {
     providers.gradleProperty("mybv.testNativeAudio").orNull?.let { directory ->
         systemProperty("java.library.path", rootProject.file(directory).absolutePath)
         systemProperty("mybv.requireNativeAudio", "true")
+        inputs.files(rootProject.fileTree(directory) {
+            include("mybv_audio.dll", "libmybv_audio.so", "libmybv_audio.dylib")
+        }).withPropertyName("hostAudioLibrary").withPathSensitivity(PathSensitivity.NONE)
     }
 }

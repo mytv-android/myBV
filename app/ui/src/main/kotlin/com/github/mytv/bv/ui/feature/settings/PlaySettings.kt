@@ -22,6 +22,8 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.entity.PlayerType
 import com.github.mytv.bv.player.entity.Audio
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
+import com.github.mytv.bv.player.entity.SpatialAudioMode
+import com.github.mytv.bv.player.entity.StereoUpmixSettings
 import com.github.mytv.bv.player.entity.PlayMode
 import com.github.mytv.bv.player.entity.PlayerLongPressAction
 import com.github.mytv.bv.player.entity.Resolution
@@ -65,6 +67,8 @@ internal fun PlaySettings(container: SettingsContainer) {
             playerType = Prefs.playerType,
             renderMode = Prefs.videoRenderMode,
             audioBalance = Prefs.playerAudioBalanceLevel,
+            spatialAudio = Prefs.playerSpatialAudioMode,
+            upmix = Prefs.playerUpmixSettings,
             ffmpegAudio = Prefs.enableFfmpegAudioRenderer,
             skipSilence = Prefs.playerSkipSilence,
             skipPgcIntroOutro = Prefs.skipPgcIntroOutro,
@@ -83,6 +87,8 @@ internal fun PlaySettings(container: SettingsContainer) {
     var playerType by remember { mutableStateOf(initial.playerType) }
     var renderMode by remember { mutableStateOf(initial.renderMode) }
     var audioBalance by remember { mutableStateOf(initial.audioBalance) }
+    var spatialAudio by remember { mutableStateOf(initial.spatialAudio) }
+    var upmix by remember { mutableStateOf(initial.upmix) }
     var ffmpegAudio by remember { mutableStateOf(initial.ffmpegAudio) }
     var skipSilence by remember { mutableStateOf(initial.skipSilence) }
     var skipPgcIntroOutro by remember { mutableStateOf(initial.skipPgcIntroOutro) }
@@ -134,6 +140,51 @@ internal fun PlaySettings(container: SettingsContainer) {
                 PreferenceWrites.enqueue { Prefs.playerAudioBalanceLevel = it }
             },
         )
+        SettingChoiceGroup(
+            label = stringResource(R.string.settings_play_spatial_audio),
+            options = SpatialAudioMode.entries,
+            isSelected = { it == spatialAudio },
+            optionLabel = { it.getDisplayName(context) },
+            onSelect = {
+                spatialAudio = it
+                PreferenceWrites.enqueue { Prefs.playerSpatialAudioMode = it }
+            },
+        )
+        Text(stringResource(R.string.settings_play_spatial_audio_desc), style = BvType.Meta)
+        if (spatialAudio == SpatialAudioMode.Surround51) {
+            fun save(value: StereoUpmixSettings) {
+                upmix = value
+                PreferenceWrites.enqueue { Prefs.playerUpmixSettings = value }
+            }
+            SettingChoiceGroup(
+                label = stringResource(R.string.settings_upmix_centre),
+                options = listOf(0.0, 0.25, 0.45, 0.65, 0.75),
+                isSelected = { abs(it - upmix.centre) < 0.001 },
+                optionLabel = { "${(it * 100).toInt()}%" },
+                onSelect = { save(upmix.copy(centre = it)) },
+            )
+            SettingChoiceGroup(
+                label = stringResource(R.string.settings_upmix_surround),
+                options = listOf(0.0, 0.15, 0.30, 0.45, 0.60),
+                isSelected = { abs(it - upmix.surround) < 0.001 },
+                optionLabel = { "${(it * 100).toInt()}%" },
+                onSelect = { save(upmix.copy(surround = it)) },
+            )
+            SettingChoiceGroup(
+                label = stringResource(R.string.settings_upmix_decorrelation),
+                options = listOf(0.0, 0.35, 0.65, 1.0),
+                isSelected = { abs(it - upmix.decorrelation) < 0.001 },
+                optionLabel = { "${(it * 100).toInt()}%" },
+                onSelect = { save(upmix.copy(decorrelation = it)) },
+            )
+            SettingChoiceGroup(
+                label = stringResource(R.string.settings_upmix_trim),
+                options = listOf(-6.0, -3.0, 0.0),
+                isSelected = { it == upmix.trimDb },
+                optionLabel = { stringResource(R.string.settings_upmix_trim_value, it.toInt()) },
+                onSelect = { save(upmix.copy(trimDb = it)) },
+            )
+        }
         SettingChoiceGroup(
             label = stringResource(R.string.settings_play_speed),
             options = PlaySpeeds,
@@ -280,6 +331,8 @@ private data class PlayPreferences(
     val playMode: PlayMode,
     val playerType: PlayerType,
     val audioBalance: AudioBalanceLevel,
+    val spatialAudio: SpatialAudioMode,
+    val upmix: StereoUpmixSettings,
     val ffmpegAudio: Boolean,
     val skipSilence: Boolean,
     val skipPgcIntroOutro: Boolean,

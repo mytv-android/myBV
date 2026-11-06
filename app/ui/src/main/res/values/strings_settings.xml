@@ -213,4 +213,11 @@
     <string name="settings_update_dismiss_none">走了走了</string>
     <string name="settings_update_dismiss_error">算了算了</string>
     <string name="settings_update_dismiss_busy">你已经无路可逃！</string>
+    <string name="settings_play_spatial_audio">双声道空间处理</string>
+    <string name="settings_play_spatial_audio_desc">将双声道扩展为 5.1，原生多声道保留。需要增强音频版本和兼容的输出设备，不支持时保留原音。重新打开视频后生效。</string>
+    <string name="settings_upmix_centre">中置强度</string>
+    <string name="settings_upmix_surround">环绕强度</string>
+    <string name="settings_upmix_decorrelation">环绕扩散</string>
+    <string name="settings_upmix_trim">输出音量补偿</string>
+    <string name="settings_upmix_trim_value">%1$d dB</string>
 </resources>

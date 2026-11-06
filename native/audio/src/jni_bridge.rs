@@ -84,7 +84,7 @@ fn process_direct_buffers(
     )
 }
 
-fn pcm_encoding(value: jint) -> Option<PcmEncoding> {
+pub(crate) fn pcm_encoding(value: jint) -> Option<PcmEncoding> {
     match value {
         1 => Some(PcmEncoding::Signed16),
         2 => Some(PcmEncoding::Float32),
@@ -149,7 +149,7 @@ pub unsafe extern "system" fn Java_com_github_mytv_bv_player_audio_NativeSpatial
 }
 
 #[allow(clippy::too_many_arguments)]
-fn with_direct_buffers<R>(
+pub(crate) fn with_direct_buffers<R>(
     env: &JNIEnv,
     input: &JByteBuffer,
     input_offset: jint,

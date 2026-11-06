@@ -1,0 +1,7 @@
+The optional myBV E-AC-3 encoder dynamically links FFmpeg 8.0.1 (LGPL 2.1 or later).
+Official unmodified source: https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz
+SHA256: 05ee0b03119b45c0bdb4df654b96802e909e0a752f72e4fe3794f487229e5a41
+Only avcodec/eac3, avutil and swresample are enabled; GPL and nonfree are disabled.
+Rebuild recipe: tools/build_ffmpeg_audio.py and native/encode/README.md in the accompanying source.
+Libraries remain separate and can be replaced with API/ABI-compatible modified builds.
+See ffmpeg_audio_lgpl.txt for the LGPL. No Dolby Atmos/JOC object encoder is included.
