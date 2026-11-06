@@ -30,6 +30,14 @@ import com.github.mytv.bv.player.AbstractVideoPlayer
 import com.github.mytv.bv.player.PlayerHttpClient
 import com.github.mytv.bv.player.VideoPlayerOptions
 import com.github.mytv.bv.player.audio.VolumeBalanceAudioProcessor
+import com.github.mytv.bv.player.audio.SpatialAudioProcessor
+import com.github.mytv.bv.player.audio.SpatialAudioSink
+import com.github.mytv.bv.player.audio.NativeAdaptiveUpmix
+import com.github.mytv.bv.player.audio.NativeSpatialAudio
+import com.github.mytv.bv.player.audio.NativeEac3
+import com.github.mytv.bv.player.audio.Eac3AudioOutputProvider
+import com.github.mytv.bv.player.entity.SpatialAudioMode
+import com.github.mytv.bv.player.core.BuildConfig
 import com.github.mytv.bv.player.cdn.FrequentBufferingDetector
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
 import com.github.mytv.bv.player.entity.AudioLoudness
@@ -113,13 +121,28 @@ class ExoMediaPlayer(
             null
         }
 
+    private val spatialBackendReady = when (options.spatialAudioMode) {
+        SpatialAudioMode.Off -> false
+        SpatialAudioMode.Surround51 -> NativeAdaptiveUpmix.available
+        SpatialAudioMode.Matrix51 -> NativeSpatialAudio.isAvailable
+    }
+    private val spatialOutput = if (spatialBackendReady &&
+        BuildConfig.ENABLE_EAC3_ENCODER && NativeEac3.available) Eac3AudioOutputProvider(context) else null
+    private val supportsSpatialOutput: (Int, Int) -> Boolean = { rate, encoding ->
+        spatialOutput?.supports51(rate, encoding) ?: SpatialAudioProcessor.supportsDirect51(rate, encoding)
+    }
+    private val spatialProcessor = if (spatialBackendReady)
+        SpatialAudioProcessor(mode = options.spatialAudioMode, settings = options.stereoUpmixSettings,
+            supportsOutput = supportsSpatialOutput) else null
+
     init {
         initPlayer()
     }
 
     @OptIn(UnstableApi::class)
     override fun initPlayer() {
-        val renderersFactory = BvRenderersFactory(context, volumeBalanceProcessor).apply {
+        val renderersFactory = BvRenderersFactory(context, volumeBalanceProcessor, spatialProcessor,
+            spatialOutput, supportsSpatialOutput).apply {
             setExtensionRendererMode(
                 when (options.enableFfmpegAudioRenderer) {
                     // 用 PREFER 而不是 ON：ON 会对所有轨道强制走扩展渲染器，
@@ -405,6 +428,9 @@ class ExoMediaPlayer(
                 audio: ${mPlayer?.audioFormat?.bitrate ?: 0} kbps
                 video codec: ${mPlayer?.videoFormat?.sampleMimeType ?: "null"}
                 audio codec: ${mPlayer?.audioFormat?.sampleMimeType ?: "null"} (${getAudioRendererName()})
+                audio PCM backend (last used): ${volumeBalanceProcessor?.processingBackend ?: "bypass"}
+                stereo upmix: ${spatialProcessor?.status ?: if (options.spatialAudioMode == SpatialAudioMode.Off) "off" else "unavailable; original audio"}
+                spatial outlet: ${spatialOutput?.status ?: "PCM / original bitstream"}
             """.trimIndent()
         }
 
@@ -485,7 +511,10 @@ class ExoMediaPlayer(
 @OptIn(UnstableApi::class)
 private class BvRenderersFactory(
     context: Context,
-    private val volumeBalanceProcessor: VolumeBalanceAudioProcessor?
+    private val volumeBalanceProcessor: VolumeBalanceAudioProcessor?,
+    private val spatialProcessor: SpatialAudioProcessor?,
+    private val spatialOutput: Eac3AudioOutputProvider?,
+    private val supportsSpatialOutput: (Int, Int) -> Boolean,
 ) : DefaultRenderersFactory(context) {
     override fun buildAudioSink(
         context: Context,
@@ -493,10 +522,18 @@ private class BvRenderersFactory(
         enableAudioTrackPlaybackParams: Boolean
     ): AudioSink {
         val builder = DefaultAudioSink.Builder(context)
-            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableFloatOutput(enableFloatOutput && spatialProcessor == null)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-        volumeBalanceProcessor?.let { builder.setAudioProcessors(arrayOf(it)) }
-        return builder.build()
+        spatialOutput?.let { builder.setAudioOutputProvider(it) }
+        val processors = listOfNotNull(volumeBalanceProcessor, spatialProcessor)
+        if (processors.isNotEmpty()) builder.setAudioProcessors(processors.toTypedArray())
+        val sink = builder.build()
+        return if (spatialProcessor?.backendAvailable == true) SpatialAudioSink(sink,
+            sourceFormatObserver = {
+                spatialProcessor.sourceFormat(it)
+                spatialOutput?.sourceFormat(it)
+            },
+            canOutput51 = { supportsSpatialOutput(it.sampleRate, C.ENCODING_PCM_16BIT) }) else sink
     }
 }
 

@@ -83,4 +83,7 @@
     <string name="video_player_menu_subtitle_size">字体大小</string>
     <string name="video_player_menu_subtitle_switch">选择字幕</string>
     <string name="video_player_press_back_again_to_exit">再次按下返回键退出播放</string>
+    <string name="spatial_audio_off">原始声音</string>
+    <string name="spatial_audio_adaptive">自适应 5.1</string>
+    <string name="spatial_audio_matrix">基础矩阵 5.1</string>
 </resources>
