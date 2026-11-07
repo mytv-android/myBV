@@ -13,6 +13,10 @@
     <string name="tools_logs_item">%1$s · %2$d KB</string>
     <string name="tools_logs_qr_title">扫码下载日志</string>
     <string name="tools_logs_qr_hint">选择一个日志文件，用同一局域网内的设备扫码下载</string>
+    <!-- Android 17 起本地网络保护：内置服务的入站连接需要 ACCESS_LOCAL_NETWORK -->
+    <string name="tools_logs_permission_hint">扫码下载需要「本地网络」权限，否则同一局域网的设备连不上本机</string>
+    <string name="tools_logs_permission_grant">授予权限</string>
+    <string name="tools_logs_permission_settings">去系统设置开启</string>
 
     <string name="tools_codec_title">解码器信息</string>
     <string name="tools_codec_empty">没有找到解码器</string>

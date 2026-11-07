@@ -1,11 +1,14 @@
 package com.github.mytv.bv.ui
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,6 +16,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.github.mytv.bv.BVApp
+import com.github.mytv.bv.network.LocalNetworkPermission
 import com.github.mytv.bv.tv.TvLauncherPublisher
 import com.github.mytv.bv.ui.designsystem.theme.BvRoot
 import com.github.mytv.bv.ui.feature.accounts.UserLockGate
@@ -38,6 +42,12 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     /** 深链 Intent 用 State 承载，singleTop 热启动时 onNewIntent 也能触发重组。 */
     private var deepLinkIntent by mutableStateOf<Intent?>(null)
+
+    private val localNetworkPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            // 权限按 UID 生效，BVApp 里常驻的 HttpServer 无需重启即可恢复局域网可达
+            Log.i(TAG, "ACCESS_LOCAL_NETWORK granted=$granted")
+        }
 
     private val tvPublisher: TvLauncherPublisher? by lazy {
         runCatching { BVApp.koinApplication.koin.get<TvLauncherPublisher>() }.getOrNull()
@@ -89,6 +99,20 @@ class MainActivity : ComponentActivity() {
                 runCatching { publisher.syncToView() }
             }
         }
+        requestLocalNetworkPermissionOnce()
+    }
+
+    /**
+     * Android 17 的本地网络保护：BVApp 启动即常驻日志下载服务，但同局域网设备扫二维码
+     * 时会被拦在本地网络之外（表现是超时，服务端毫无异常）。进首页、界面已经可见时申请一次，
+     * 拒绝后不再反复弹窗，由日志页的入口提供再次申请 / 去系统设置的路径。
+     */
+    private fun requestLocalNetworkPermissionOnce() {
+        if (localNetworkPermissionRequested) return
+        if (!LocalNetworkPermission.isRequired) return
+        if (LocalNetworkPermission.isGranted(this)) return
+        localNetworkPermissionRequested = true
+        localNetworkPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
     }
 
     override fun onStop() {
@@ -126,5 +150,12 @@ class MainActivity : ComponentActivity() {
                 .debounce(500)
                 .collect { WidgetRefresher.updateWidgetsSoon(applicationContext) }
         }
+    }
+
+    private companion object {
+        const val TAG = "BvMainActivity"
+
+        /** 每个进程只主动申请一次：用户拒绝后反复弹窗只会招致「永久拒绝」。 */
+        var localNetworkPermissionRequested = false
     }
 }

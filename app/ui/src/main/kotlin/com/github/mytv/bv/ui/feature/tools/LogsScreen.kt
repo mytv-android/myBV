@@ -1,10 +1,18 @@
 package com.github.mytv.bv.ui.feature.tools
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.net.wifi.WifiManager
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +61,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.network.HttpServer
+import com.github.mytv.bv.network.LocalNetworkPermission
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvButton
@@ -99,6 +108,16 @@ private fun ipAddress(context: Context): String = runCatching {
     ip
 }.getOrDefault("")
 
+/** Compose 里取宿主 Activity：申请运行时权限、跳系统设置都要它。 */
+private fun Context.findActivity(): Activity? {
+    var context: Context? = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
+}
+
 private data class LogEntry(
     val file: File,
     val sizeKb: Long,
@@ -141,7 +160,27 @@ fun LogsScreen(nav: NavController) {
     var saving by remember { mutableStateOf(false) }
     val firstRequester = remember { FocusRequester() }
 
+    // Android 17 的本地网络保护：扫码下载是局域网入站连接，没有 ACCESS_LOCAL_NETWORK 时
+    // 对方只会等到超时，而本机 127.0.0.1 照常能打开，服务端日志里什么异常都没有。
+    var localNetworkGranted by remember {
+        mutableStateOf(LocalNetworkPermission.isGranted(context))
+    }
+    var localNetworkBlocked by remember { mutableStateOf(false) }
+    val activity = remember(context) { context.findActivity() }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        localNetworkGranted = granted
+        // 连续两次拒绝后系统不再弹窗，只能引导用户去设置里授予
+        localNetworkBlocked =
+            !granted && activity != null && !LocalNetworkPermission.shouldShowRationale(activity)
+    }
+
     LaunchedEffect(Unit) {
+        // 先要权限再读文件：弹窗早一点出现，用户等二维码的时间也短一点
+        if (!localNetworkGranted) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        }
         val ip = withContext(Dispatchers.IO) { ipAddress(context) }
         val serverPort = runCatching {
             HttpServer.server?.engine?.resolvedConnectors()?.firstOrNull()?.port
@@ -155,6 +194,18 @@ fun LogsScreen(nav: NavController) {
             withFrameNanos { }
             firstRequester.tryToolFocus()
         }
+    }
+
+    val onGrantPermission: () -> Unit = {
+        permissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+    }
+    val onOpenPermissionSettings: () -> Unit = {
+        activity?.startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", activity.packageName, null)
+            )
+        )
     }
 
     val saveLog: () -> Unit = {
@@ -225,7 +276,14 @@ fun LogsScreen(nav: NavController) {
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    LogQrPanel(qrContent = qrContent, fileName = selected?.name)
+                    LogQrPanel(
+                        qrContent = qrContent,
+                        fileName = selected?.name,
+                        permissionMissing = !localNetworkGranted,
+                        permissionBlocked = localNetworkBlocked,
+                        onGrantPermission = onGrantPermission,
+                        onOpenPermissionSettings = onOpenPermissionSettings,
+                    )
                 }
             }
         }
@@ -246,7 +304,14 @@ fun LogsScreen(nav: NavController) {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(stringResource(R.string.tools_logs_qr_title), style = BvType.PanelTitle)
-                    LogQrPanel(qrContent = qrContent, fileName = selected?.name)
+                    LogQrPanel(
+                        qrContent = qrContent,
+                        fileName = selected?.name,
+                        permissionMissing = !localNetworkGranted,
+                        permissionBlocked = localNetworkBlocked,
+                        onGrantPermission = onGrantPermission,
+                        onOpenPermissionSettings = onOpenPermissionSettings,
+                    )
                     BvButton(
                         text = stringResource(R.string.tools_close),
                         onClick = { showQrDialog = false },
@@ -333,7 +398,14 @@ private fun LogList(
 
 /** 二维码面板：白底圆角 24、内边距 14 的 Material 形状二维码 + 文件名；未选择时显示提示。 */
 @Composable
-private fun LogQrPanel(qrContent: String, fileName: String?) {
+private fun LogQrPanel(
+    qrContent: String,
+    fileName: String?,
+    permissionMissing: Boolean = false,
+    permissionBlocked: Boolean = false,
+    onGrantPermission: () -> Unit = {},
+    onOpenPermissionSettings: () -> Unit = {},
+) {
     Column(
         Modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -361,6 +433,24 @@ private fun LogQrPanel(qrContent: String, fileName: String?) {
                     textAlign = TextAlign.Center,
                 )
             }
+        }
+        if (permissionMissing) {
+            Text(
+                stringResource(R.string.tools_logs_permission_hint),
+                style = BvType.Small,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+            )
+            BvButton(
+                text = stringResource(
+                    if (permissionBlocked) R.string.tools_logs_permission_settings
+                    else R.string.tools_logs_permission_grant
+                ),
+                onClick = {
+                    if (permissionBlocked) onOpenPermissionSettings() else onGrantPermission()
+                },
+                style = BvButtonStyle.Tonal,
+            )
         }
         Text(
             stringResource(R.string.tools_logs_qr_hint),

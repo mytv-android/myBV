@@ -4,6 +4,13 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!--
+        Android 17（API 37）起的本地网络保护：targetSdk ≥ 37 的应用默认被阻断本地网络流量，
+        接受局域网入站连接同样要这个权限。内置的日志下载服务（network/HttpServer.kt）
+        少它就只有 127.0.0.1 能通，同局域网设备一律超时，而 start/端口监听都照常成功，
+        日志里什么异常都没有。权限属于 NEARBY_DEVICES 组，授予后按 UID 立即生效。
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
