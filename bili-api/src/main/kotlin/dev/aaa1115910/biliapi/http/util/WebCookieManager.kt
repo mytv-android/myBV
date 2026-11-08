@@ -259,6 +259,15 @@ object WebCookieManager {
     }
 
     /**
+     * 作废已签发的 bili_ticket：票据由当前会话的 csrf + cookie 签出，账号切换后
+     * 旧票据仍绑定上一个会话，继续带上去会被风控拒绝。清掉 [biliTicketCheckedEpochDay]
+     * 让新会话可以立刻重新签发，而不是等到第二天。
+     */
+    fun invalidateBiliTicket() {
+        biliTicketCheckedEpochDay = 0L
+    }
+
+    /**
      * 每天调用一次 ExClimbWuzhi 激活 buvid，缓解风控。
      */
     suspend fun ensureBuvidActiveOncePerDay() {

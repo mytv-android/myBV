@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.aaa1115910.biliapi.http.BiliHttpApi
+import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.repositories.AuthRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.dao.AppDatabase
@@ -27,6 +28,9 @@ class UserRepository(
         /** cookie 续期下发的账号级 cookie，只走 [applyWebCookieRefresh]，不写入 webExtraCookies */
         val AUTH_COOKIE_NAMES =
             setOf("SESSDATA", "bili_jct", "refresh_token", "DedeUserID__ckMd5", "sid")
+
+        /** 由会话 csrf + cookie 签发的账号级 Web 票据，换号后必须作废 */
+        private val SESSION_WEB_COOKIE_NAMES = setOf("bili_ticket", "bili_ticket_expires")
     }
 
     var isLogin by mutableStateOf(Prefs.isLogin)
@@ -152,8 +156,24 @@ class UserRepository(
         saveToPrefs(authData)
         reloadFromPrefs()
         BVApp.instance?.initRepository()
+        clearPreviousSessionCredentials()
         BVApp.instance?.initProxy()
         updateAvatar()
+    }
+
+    /**
+     * 登录（换号）后作废上一个会话的安全凭据：风控验证下发的 gaia_vtoken，
+     * 以及用旧会话 csrf + cookie 签出的 bili_ticket。二者都跟着账号走，
+     * 换号后继续带上去只会被 B 站按风控拒绝，所以和新账号一起清掉，
+     * 并立刻为新会话重新签发票据。
+     */
+    private suspend fun clearPreviousSessionCredentials() {
+        logger.info { "Clear previous session security credentials" }
+        authRepository.gaiaVtoken = null
+        Prefs.removeWebCookies(SESSION_WEB_COOKIE_NAMES)
+        WebCookieManager.invalidateBiliTicket()
+        runCatching { WebCookieManager.ensureBiliTicket() }
+            .onFailure { logger.warn(it) { "Re-issue bili_ticket after login failed" } }
     }
 
     suspend fun updateAvatar() {

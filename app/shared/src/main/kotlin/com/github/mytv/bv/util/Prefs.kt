@@ -291,6 +291,14 @@ object Prefs {
         }
     }
 
+    /** 丢弃指定 Web cookie，用于换号后作废上一个会话签发的账号级票据 */
+    fun removeWebCookies(names: Set<String>) {
+        val kept = webCookieMap(webExtraCookies).filterKeys { it !in names }
+        webExtraCookies = buildString {
+            kept.forEach { (key, value) -> if (value.isNotBlank()) append("$key=$value;") }
+        }
+    }
+
     private fun webCookieMap(raw: String): Map<String, String> =
         raw.split(";").mapNotNull { part ->
             val index = part.indexOf("=")
