@@ -1,11 +1,20 @@
 package com.github.mytv.bv.ui.feature.settings
 
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.ClipData
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.SystemClock
+import android.provider.MediaStore
+import android.provider.Settings
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,18 +76,157 @@ private enum class UpdateStatus {
     NoAvailableUpdate, CheckError, DownloadError, InstallError
 }
 
-/** 用 FileProvider 打开下载好的 APK（旧 UpdateDialog.installUpdate）。 */
-private fun installApk(context: Context, file: File): Boolean = runCatching {
+/** 授权页跳转次数上限：授权页打得开但固件不认这个开关时，防止「回前台 → 重试 → 再跳授权页」死循环。 */
+private const val MAX_SETTINGS_ATTEMPTS = 2
+
+/** 手动安装时导出 APK 的目录名（Android 10+ 是公共下载目录下的子目录，更老的系统退到外部应用目录）。 */
+private const val MANUAL_INSTALL_DIR = "update"
+
+/** 安装器 Intent：clipData 和 setData 都要给，部分 ROM 的安装器只读其中一个，漏一个就静默失败。 */
+private fun installIntent(uri: Uri, action: String) = Intent(action).apply {
+    addCategory(Intent.CATEGORY_DEFAULT)
+    setDataAndType(uri, "application/vnd.android.package-archive")
+    clipData = ClipData.newRawUri("", uri)
+    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+}
+
+/**
+ * 二级 Intent 兜底拉起系统安装器：ACTION_VIEW → ACTION_INSTALL_PACKAGE（部分老 ROM 只认后者）。
+ * 有没有安装权限是安装器自己的事：这里只负责拉起来，让 startActivity 的结果说话。
+ */
+private fun startInstallerActivity(context: Context, file: File): Boolean {
     // 必须用实际 applicationId（debug 包带 .debug 后缀），BuildConfig.APPLICATION_ID 是 app:shared 里写死的
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        addCategory(Intent.CATEGORY_DEFAULT)
-        setDataAndType(uri, "application/vnd.android.package-archive")
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    return listOf(Intent.ACTION_VIEW, Intent.ACTION_INSTALL_PACKAGE).any { action ->
+        runCatching { context.startActivity(installIntent(uri, action)) }
+            .onFailure { updateLogger.warn(it) { "No activity handled install intent: $action" } }
+            .isSuccess
     }
-    context.startActivity(intent)
-}.isSuccess
+}
+
+/** 会话安装结果广播的 action，与 manifest 里 intent-filter 的 ${applicationId} 前缀保持一致。 */
+private fun installStatusAction(context: Context) = "${context.packageName}.action.UPDATE_INSTALL_STATUS"
+
+/** 会话安装的结果回调：系统要往 Intent 里写 EXTRA_STATUS，PendingIntent 必须是 MUTABLE。 */
+private fun statusIntentSender(context: Context): IntentSender {
+    val intent = Intent(context, UpdateInstallReceiver::class.java)
+        .setAction(installStatusAction(context))
+    val mutable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+    return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or mutable)
+        .intentSender
+}
+
+/**
+ * 三级兜底：PackageInstaller 会话安装，不依赖任何安装器 Activity 的 IntentFilter，
+ * 电视盒子上「没有应用能响应安装 Intent」时仍有机会装上。写 APK 走 IO。
+ */
+private suspend fun installViaSession(context: Context, file: File): Boolean =
+    withContext(Dispatchers.IO) {
+        runCatching {
+            val installer = context.packageManager.packageInstaller
+            val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+                .apply { setSize(file.length()) }
+            installer.openSession(installer.createSession(params)).use { session ->
+                session.openWrite(file.name, 0, file.length()).use { output ->
+                    file.inputStream().use { input -> input.copyTo(output) }
+                    output.flush()
+                    // fsync 要 API 24+，minSdk 23 的设备只能用 flush
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) session.fsync(output)
+                }
+                session.commit(statusIntentSender(context))
+            }
+        }
+            .onFailure { updateLogger.warn(it) { "PackageInstaller session install failed" } }
+            .isSuccess
+    }
+
+/**
+ * 多级兜底拉起系统安装器：ACTION_VIEW → ACTION_INSTALL_PACKAGE → PackageInstaller 会话。
+ * 任意一级成功即返回 true，全灭才轮到授权页 / 手动安装。
+ */
+private suspend fun installApk(context: Context, file: File): Boolean {
+    if (startInstallerActivity(context, file)) return true
+    return installViaSession(context, file)
+}
+
+/**
+ * 「安装未知应用」授权页逐级降级：Android 8 前是安全设置里的全局开关，之后是
+ * 带包名的专页 → 全局页 → 应用详情页（开关在详情页里）。
+ * 电视盒子上这些页面经常一个都没有，返回 false 让调用方转手动安装。
+ */
+private fun openUnknownSourcesSettings(context: Context): Boolean {
+    val packageUri = Uri.parse("package:${context.packageName}")
+    val intents = listOfNotNull(
+        // Android 8 之前没有按应用授予的「安装未知应用」，全局开关在安全设置里
+        Intent(Settings.ACTION_SECURITY_SETTINGS).takeIf { Build.VERSION.SDK_INT < Build.VERSION_CODES.O },
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, packageUri),
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES),
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri),
+    )
+    return intents.any { intent ->
+        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { updateLogger.warn(it) { "No activity handled settings intent: ${intent.action}" } }
+            .isSuccess
+    }
+}
+
+/**
+ * 授权页全打不开：把已下载并校验过的 APK 复制到用户够得着的地方，让文件管理器 / U 盘能装上。
+ * 返回给界面看的路径，null 表示导出失败。
+ */
+private fun exportApkForManualInstall(context: Context, apk: File): String? = runCatching {
+    exportToDownloads(context, apk)?.let { return@runCatching it }
+    val dir = File(context.getExternalFilesDir(null), MANUAL_INSTALL_DIR)
+    if (!dir.exists()) dir.mkdirs()
+    val target = File(dir, apk.name)
+    apk.copyTo(target, overwrite = true)
+    target.absolutePath
+}.getOrNull()
+
+/**
+ * Android 10+：写进公共「下载」目录（MediaStore），不需要存储权限，文件管理器直接能看到。
+ * 返回形如 Download/update/xxx.apk 的展示路径；更低版本或写失败返回 null。
+ */
+private fun exportToDownloads(context: Context, apk: File): String? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+    return runCatching {
+        val relativePath = "${Environment.DIRECTORY_DOWNLOADS}/$MANUAL_INSTALL_DIR"
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, apk.name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.android.package-archive")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return@runCatching null
+        resolver.openOutputStream(uri)?.use { output ->
+            apk.inputStream().use { input -> input.copyTo(output) }
+        } ?: return@runCatching null
+        // IS_PENDING 归零之后文件才对其他应用可见
+        values.clear()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+        "$relativePath/${apk.name}"
+    }.getOrNull()
+}
+
+/**
+ * PackageInstaller 会话安装的结果回调。界面刷新靠回 ON_RESUME 后查 PackageManager，
+ * 这里只记日志，并在 STATUS_PENDING_USER_ACTION 时补拉系统的确认界面（部分 ROM 不自己弹）。
+ */
+class UpdateInstallReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, Int.MIN_VALUE)
+        val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+        updateLogger.info { "PackageInstaller status=$status message=$message" }
+        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            @Suppress("DEPRECATION")
+            val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
+            runCatching { context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        }
+    }
+}
 
 private val signatureFlags: Int
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -144,6 +293,38 @@ private fun signatureMatches(context: Context, apk: File): Boolean {
 }
 
 /**
+ * 装错包 / 降级保护：安装包的包名必须与预期一致（桥接版装的是 myBV，同包自更新装的是自己），
+ * versionCode 不能低于已安装版本。读不到安装包信息时放行，交给系统安装器兜底。
+ */
+private fun apkTargetBlocker(context: Context, apk: File): String? = runCatching {
+    val pm = context.packageManager
+    val archive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.getPackageArchiveInfo(apk.absolutePath, PackageManager.PackageInfoFlags.of(0L))
+    } else {
+        @Suppress("DEPRECATION")
+        pm.getPackageArchiveInfo(apk.absolutePath, 0)
+    } ?: return@runCatching null
+    val expected = if (context.packageName == LegacyMigrationContract.LEGACY_APP_ID) {
+        LegacyMigrationContract.NEW_APP_ID
+    } else {
+        context.packageName
+    }
+    if (archive.packageName != expected) return@runCatching "安装包与当前应用不匹配（${archive.packageName}）"
+    val installed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.getPackageInfo(archive.packageName, PackageManager.PackageInfoFlags.of(0L))
+    } else {
+        @Suppress("DEPRECATION")
+        pm.getPackageInfo(archive.packageName, 0)
+    } ?: return@runCatching null // 目标应用还没装过（桥接版首次装 myBV），没有降级可言
+    @Suppress("DEPRECATION")
+    if (archive.versionCode < installed.versionCode) {
+        "安装包版本 ${archive.versionCode} 低于已安装的 ${installed.versionCode}"
+    } else {
+        null
+    }
+}.getOrNull()
+
+/**
  * 系统安装器返回后确认是否真的装上了：拿安装包的包名去查已安装版本，versionCode 不低于安装包即算成功。
  * 同包自更新和桥接版装 myBV 走同一套判断；读不到安装包信息按未安装处理，让对话框回到可重试的状态。
  */
@@ -203,6 +384,31 @@ internal fun SettingsUpdateDialog(
     // 交给系统安装器之后要等本页重新 resume 才能确认结果，否则「安装中」会一直挂着
     var installingApk by remember { mutableStateOf<File?>(null) }
     var awaitingInstall by remember { mutableStateOf(false) }
+    // 三级安装兜底全灭、跳了授权页：等用户从设置页回来，回前台时无条件重试一次安装
+    var awaitingPermission by remember { mutableStateOf(false) }
+    // 已经跳了几次授权页；到上限就直接导出手动安装，不在弹窗和设置页之间死循环
+    var settingsAttempts by remember { mutableIntStateOf(0) }
+
+    /**
+     * 三级安装兜底全灭后的退路：有额度就跳「安装未知应用」授权页（用户回来再试），
+     * 跳不了或已到上限就把 APK 导到外部目录提示手动安装——不留「无法打开设置」的死路。
+     */
+    val onInstallChainFailed: suspend (File) -> Unit = { apk ->
+        if (settingsAttempts < MAX_SETTINGS_ATTEMPTS && openUnknownSourcesSettings(context)) {
+            settingsAttempts++
+            awaitingPermission = true
+            status = UpdateStatus.Installing
+        } else {
+            awaitingPermission = false
+            val exported = withContext(Dispatchers.IO) { exportApkForManualInstall(context, apk) }
+            errorDetail = if (exported != null) {
+                context.getString(R.string.settings_update_install_manual, exported)
+            } else {
+                context.getString(R.string.settings_update_install_export_failed)
+            }
+            status = UpdateStatus.InstallError
+        }
+    }
 
     val checkUpdate: () -> Unit = {
         status = UpdateStatus.UpdatingInfo
@@ -239,6 +445,8 @@ internal fun SettingsUpdateDialog(
             downloaded = 0L
             total = 0L
             targetProgress = 0f
+            // 重新下载就是全新的一次安装尝试，授权页额度重新计算
+            settingsAttempts = 0
             scope.launch {
                 val result = withContext(Dispatchers.IO) {
                     runCatching {
@@ -276,18 +484,24 @@ internal fun SettingsUpdateDialog(
                             withContext(Dispatchers.IO) {
                                 runCatching { CacheManager(context).checkCache(preserve = file) }
                             }
-                            val signatureOk = withContext(Dispatchers.IO) { signatureMatches(context, file) }
-                            if (!signatureOk) {
-                                errorDetail = "更新包签名与当前应用不一致，无法覆盖安装"
+                            val blocker = withContext(Dispatchers.IO) {
+                                apkTargetBlocker(context, file)
+                                    ?: if (signatureMatches(context, file)) {
+                                        null
+                                    } else {
+                                        "更新包签名与当前应用不一致，无法覆盖安装"
+                                    }
+                            }
+                            if (blocker != null) {
+                                errorDetail = blocker
                                 status = UpdateStatus.InstallError
                             } else {
                                 status = UpdateStatus.Installing
                                 installingApk = file
-                                awaitingInstall = true
-                                if (!installApk(context, file)) {
-                                    awaitingInstall = false
-                                    errorDetail = "没有权限打开安装程序，请允许本应用安装未知应用"
-                                    status = UpdateStatus.InstallError
+                                if (installApk(context, file)) {
+                                    awaitingInstall = true
+                                } else {
+                                    onInstallChainFailed(file)
                                 }
                             }
                         }
@@ -312,26 +526,44 @@ internal fun SettingsUpdateDialog(
     }
 
     // 系统安装器是另一个应用：装上、取消之后本页只会 resume，不会重建。
-    // 回到前台时确认结果——装好了就关掉对话框（桥接版随后交给迁移提示），没装上则回到可重试的失败态。
+    // 回到前台时确认结果——装好了就关掉对话框（桥接版随后交给迁移提示）；
+    // 从授权页回来则无条件重试一次安装，仍装不上才按次数上限转手动安装。
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, awaitingInstall) {
+    DisposableEffect(lifecycleOwner, awaitingInstall, awaitingPermission) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && awaitingInstall) {
-                awaitingInstall = false
+            if (event == Lifecycle.Event.ON_RESUME) {
                 val apk = installingApk
-                scope.launch {
-                    var installed = apk != null && withContext(Dispatchers.IO) { installSucceeded(context, apk) }
-                    if (!installed) {
-                        // 安装器可能比 PackageManager 提交稍早返回，稍等一下再判一次
-                        delay(1500)
-                        installed = apk != null && withContext(Dispatchers.IO) { installSucceeded(context, apk) }
-                    }
-                    if (installed) {
-                        active = false
-                        onDismiss()
-                    } else if (status == UpdateStatus.Installing) {
-                        errorDetail = context.getString(R.string.settings_update_install_cancelled)
-                        status = UpdateStatus.InstallError
+                val fromSettings = awaitingPermission
+                if (apk != null && (awaitingInstall || fromSettings)) {
+                    awaitingInstall = false
+                    awaitingPermission = false
+                    scope.launch {
+                        var installed = withContext(Dispatchers.IO) { installSucceeded(context, apk) }
+                        if (!installed) {
+                            // 安装器可能比 PackageManager 提交稍早返回，稍等一下再判一次
+                            delay(1500)
+                            installed = withContext(Dispatchers.IO) { installSucceeded(context, apk) }
+                        }
+                        if (installed) {
+                            active = false
+                            onDismiss()
+                            return@launch
+                        }
+                        // 授权页回来不重新判断权限（canRequestPackageInstalls 在盒子上恒 false，
+                        // 问它等于白问），直接再走一遍安装链：用户可能刚开了开关，
+                        // 也可能固件根本不认这个开关——后者由次数上限转手动安装兜底
+                        if (fromSettings) {
+                            if (installApk(context, apk)) {
+                                awaitingInstall = true
+                            } else {
+                                onInstallChainFailed(apk)
+                            }
+                            return@launch
+                        }
+                        if (status == UpdateStatus.Installing) {
+                            errorDetail = context.getString(R.string.settings_update_install_cancelled)
+                            status = UpdateStatus.InstallError
+                        }
                     }
                 }
             }
@@ -401,16 +633,25 @@ internal fun SettingsUpdateDialog(
             }
 
             else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val bodyText = when (status) {
+                    UpdateStatus.Installing -> if (awaitingPermission) {
+                        // 已跳去授权页：告诉用户回来会自动重试，这是第几次
+                        stringResource(
+                            R.string.settings_update_body_grant_permission,
+                            settingsAttempts,
+                            MAX_SETTINGS_ATTEMPTS,
+                        )
+                    } else {
+                        stringResource(R.string.settings_update_body_installing)
+                    }
+
+                    UpdateStatus.DownloadError -> stringResource(R.string.settings_update_body_download_error)
+                    UpdateStatus.InstallError -> stringResource(R.string.settings_update_body_install_error)
+                    UpdateStatus.CheckError -> stringResource(R.string.settings_update_body_check_error)
+                    else -> stringResource(R.string.settings_update_body_none)
+                }
                 Text(
-                    stringResource(
-                        when (status) {
-                            UpdateStatus.Installing -> R.string.settings_update_body_installing
-                            UpdateStatus.DownloadError -> R.string.settings_update_body_download_error
-                            UpdateStatus.InstallError -> R.string.settings_update_body_install_error
-                            UpdateStatus.CheckError -> R.string.settings_update_body_check_error
-                            else -> R.string.settings_update_body_none
-                        }
-                    ),
+                    bodyText,
                     style = BvType.Body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -117,6 +117,15 @@
                 android:value="tcl_launcher_card.png" />
         </activity>
 
+        <!-- PackageInstaller 会话安装的结果回调（三级安装兜底）；系统往 Intent 里写安装状态 -->
+        <receiver
+            android:name="com.github.mytv.bv.ui.feature.settings.UpdateInstallReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="${applicationId}.action.UPDATE_INSTALL_STATUS" />
+            </intent-filter>
+        </receiver>
+
         <!-- 桌面小组件（Jetpack Glance） -->
         <receiver
             android:name="com.github.mytv.bv.ui.widget.ContinueWidgetReceiver"
