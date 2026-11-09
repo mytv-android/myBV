@@ -12,20 +12,20 @@ class ChannelRepository {
     // custom proxy server
     var proxyChannel: ManagedChannel? = null
 
-    fun initDefaultChannel(accessKey: String, buvid: String) {
+    fun initDefaultChannel(accessKey: String, buvid: String, mid: Long? = null) {
         defaultChannel?.shutdownNow()
-        defaultChannel = generateChannel(accessKey, buvid)
+        defaultChannel = generateChannel(accessKey, buvid, mid)
     }
 
-    fun initProxyChannel(accessKey: String, buvid: String, proxyServer: String) {
+    fun initProxyChannel(accessKey: String, buvid: String, proxyServer: String, mid: Long? = null) {
         proxyChannel?.shutdownNow()
         val proxyServerSpilt = proxyServer.split(":")
         val endPoint = proxyServerSpilt.first()
         val port = proxyServerSpilt.getOrNull(1)?.toInt()
         proxyChannel = if (port != null) {
-            generateChannel(accessKey, buvid, endPoint, port, port == 443)
+            generateChannel(accessKey, buvid, mid, endPoint, port, port == 443)
         } else {
-            generateChannel(accessKey, buvid, endPoint)
+            generateChannel(accessKey, buvid, mid, endPoint)
         }
         //proxyChannel = generateChannel(accessKey, buvid, "192.168.2.125", 8080, false)
     }

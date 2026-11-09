@@ -7,6 +7,8 @@ import dev.aaa1115910.biliapi.entity.login.QrLoginState
 import dev.aaa1115910.biliapi.entity.login.SmsLoginResult
 import dev.aaa1115910.biliapi.entity.login.WebCookies
 import dev.aaa1115910.biliapi.http.BiliPassportHttpApi
+import dev.aaa1115910.biliapi.http.util.BiliAppConf
+import dev.aaa1115910.biliapi.http.util.BiliCustomParams
 import io.ktor.util.date.toJvmDate
 import org.koin.core.annotation.Single
 import java.util.Date
@@ -69,11 +71,13 @@ class LoginRepository {
     /**
      * 请求扫码登录的二维码，支持 Http+gRPC 接口使用
      */
-    suspend fun requestAppQrLogin(): QrLoginData {
+    suspend fun requestAppQrLogin(buvid: String = ""): QrLoginData {
+        val localId = buvid.ifBlank { "0" }
         val response = BiliPassportHttpApi.getAppQRUrl(
-            localId = "0",
+            localId = localId,
             ts = (System.currentTimeMillis() / 1000).toInt(),
-            mobiApp = "android_hd"
+            mobiApp = BiliAppConf.MOBI_APP,
+            buvid = buvid
         ).getResponseData()
         return QrLoginData(
             url = response.url,
@@ -86,11 +90,13 @@ class LoginRepository {
      *
      * @param authCode 二维码内容
      */
-    suspend fun checkAppQrLoginState(authCode: String): QrLoginResult {
+    suspend fun checkAppQrLoginState(authCode: String, buvid: String = ""): QrLoginResult {
+        val localId = buvid.ifBlank { "0" }
         val response = BiliPassportHttpApi.loginWithAppQR(
             authCode = authCode,
-            localId = "0",
+            localId = localId,
             ts = (System.currentTimeMillis() / 1000).toInt(),
+            buvid = buvid
         )
         println(response)
         var resultCookies: WebCookies? = null
@@ -119,8 +125,8 @@ class LoginRepository {
         }
         return QrLoginResult(
             state = resultState,
-            accessToken = response.data?.accessToken,
-            refreshToken = response.data?.refreshToken,
+            accessToken = response.data?.accessToken ?: response.data?.tokenInfo?.accessToken,
+            refreshToken = response.data?.refreshToken ?: response.data?.tokenInfo?.refreshToken,
             cookies = resultCookies
         )
     }
@@ -160,7 +166,7 @@ class LoginRepository {
             geeSeccode = "$geetestValidate|jordan",
             channel = "bili",
             buvid = buvid,
-            statistics = """{"appId":1,"platform":3,"version":"7.27.0","abtest":""}""",
+            statistics = BiliCustomParams.statistics(),
             ts = System.currentTimeMillis() / 1000
         )
         return if (response.code == 0 && response.data != null) {
@@ -200,6 +206,36 @@ class LoginRepository {
             captchaKey = captchaKey
         ).getResponseData()
         return SmsLoginResult.fromSmsLoginResponse(response)
+    }
+
+    /** 文档 §6.4：access_key 续期；返回新的 token 对。 */
+    suspend fun refreshAccessToken(
+        accessKey: String,
+        refreshToken: String
+    ): Pair<String, String>? {
+        if (accessKey.isBlank() || refreshToken.isBlank()) return null
+        val data = BiliPassportHttpApi.refreshToken(
+            accessKey = accessKey,
+            refreshToken = refreshToken
+        ).getResponseData()
+        val tokenInfo = data.tokenInfo
+        val newAccess = data.accessToken ?: tokenInfo?.accessToken ?: return null
+        val newRefresh = data.refreshToken ?: tokenInfo?.refreshToken ?: refreshToken
+        return newAccess to newRefresh
+    }
+
+    /** 文档 §6.4：退出前注销 access_key；失败由调用方忽略。 */
+    suspend fun revoke(
+        accessKey: String,
+        mid: Long? = null,
+        session: String? = null
+    ) {
+        if (accessKey.isBlank()) return
+        BiliPassportHttpApi.revoke(
+            accessKey = accessKey,
+            mid = mid,
+            session = session
+        )
     }
 }
 

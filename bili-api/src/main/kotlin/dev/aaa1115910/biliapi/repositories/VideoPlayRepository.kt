@@ -3,6 +3,7 @@ package dev.aaa1115910.biliapi.repositories
 import bilibili.app.playerunite.v1.PlayerGrpcKt
 import bilibili.app.playerunite.v1.playViewUniteReq
 import bilibili.community.service.dm.v1.DMGrpcKt
+import bilibili.community.service.dm.v1.dmSegMobileReq
 import bilibili.community.service.dm.v1.dmViewReq
 import bilibili.pgc.gateway.player.v2.playViewReq
 import bilibili.playershared.videoVod
@@ -18,6 +19,8 @@ import dev.aaa1115910.biliapi.entity.video.VideoShot
 import dev.aaa1115910.biliapi.grpc.utils.handleGrpcException
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.BiliHttpProxyApi
+import dev.aaa1115910.biliapi.http.entity.danmaku.DanmakuData
+import dev.aaa1115910.biliapi.http.util.AppRequestContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -248,6 +251,8 @@ class VideoPlayRepository(
         subType: Int? = null,
         epid: Int? = null,
         seasonId: Int? = null,
+        duration: Int? = null,
+        scene: String? = null,
         preferApiType: ApiType = ApiType.Web
     ) {
         val result = when (preferApiType) {
@@ -271,10 +276,70 @@ class VideoPlayRepository(
                 subType = subType,
                 epid = epid,
                 sid = seasonId,
+                duration = duration,
+                deviceTs = System.currentTimeMillis() / 1000,
+                scene = scene,
                 accessKey = authRepository.accessToken ?: ""
             )
         }
         println("send heartbeat result: $result")
+    }
+
+    /**
+     * 文档 §11：App 模式优先用 gRPC `DM/DmSegMobile`（6 分钟一段），
+     * 失败时回退到 XML 弹幕，保证老接口仍可用。
+     */
+    suspend fun getDanmakuData(
+        aid: Long,
+        cid: Long,
+        preferApiType: ApiType = ApiType.Web
+    ): List<DanmakuData> {
+        return when (preferApiType) {
+            ApiType.Web -> BiliHttpApi.getDanmakuXml(
+                cid = cid,
+                sessData = authRepository.sessionData ?: ""
+            ).data
+
+            ApiType.App -> runCatching {
+                val result = mutableListOf<DanmakuData>()
+                for (segment in 1..MAX_DANMAKU_SEGMENTS) {
+                    val reply = danmakuStub?.dmSegMobile(dmSegMobileReq {
+                        pid = aid
+                        oid = cid
+                        type = 1
+                        segmentIndex = segment.toLong()
+                        teenagersMode = if (AppRequestContext.teenagersMode) 1 else 0
+                    }) ?: break
+                    if (reply.elemsList.isEmpty()) break
+                    result += reply.elemsList.map { elem ->
+                        DanmakuData(
+                            time = elem.progress / 1000f,
+                            type = elem.mode,
+                            size = elem.fontsize,
+                            color = elem.color,
+                            timestamp = elem.ctime.toInt(),
+                            pool = elem.pool,
+                            midHash = elem.midHash,
+                            dmid = elem.id,
+                            level = elem.weight,
+                            text = elem.content
+                        )
+                    }
+                }
+                if (result.isEmpty()) throw IllegalStateException("empty danmaku")
+                result
+            }.getOrElse {
+                BiliHttpApi.getDanmakuXml(
+                    cid = cid,
+                    sessData = authRepository.sessionData ?: ""
+                ).data
+            }
+        }
+    }
+
+    private companion object {
+        /** 6 分钟一段，最多取 2 小时，避免异常视频无限翻页。 */
+        const val MAX_DANMAKU_SEGMENTS = 20
     }
 
     suspend fun getDanmakuMask(

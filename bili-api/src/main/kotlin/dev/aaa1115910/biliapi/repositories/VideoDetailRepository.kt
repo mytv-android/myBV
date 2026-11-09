@@ -19,6 +19,7 @@ import dev.aaa1115910.biliapi.entity.video.season.SeasonDetail
 import dev.aaa1115910.biliapi.grpc.utils.handleGrpcException
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.entity.user.garb.EquipPart
+import dev.aaa1115910.biliapi.http.util.BiliAppConf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
@@ -220,7 +221,7 @@ class VideoDetailRepository(
                 val appSeasonData = BiliHttpApi.getAppSeasonInfo(
                     epId = epid,
                     seasonId = seasonId,
-                    mobiApp = "android_hd",
+                    mobiApp = BiliAppConf.MOBI_APP,
                     accessKey = authRepository.accessToken ?: ""
                 ).getResponseData()
                 return SeasonDetail.fromSeasonData(appSeasonData)
@@ -266,6 +267,7 @@ class VideoDetailRepository(
                             CommentSort.Time -> Mode.MAIN_LIST_TIME
                         }
                         pagination = feedPagination {
+                            pageSize = 20
                             offset = page.nextAppPage
                         }
                     }
@@ -310,6 +312,7 @@ class VideoDetailRepository(
                             CommentSort.Time -> Mode.MAIN_LIST_TIME
                         }
                         pagination = feedPagination {
+                            pageSize = 20
                             offset = page.nextAppPage
                         }
                     }

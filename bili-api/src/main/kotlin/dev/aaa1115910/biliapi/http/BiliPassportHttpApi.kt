@@ -1,7 +1,10 @@
 package dev.aaa1115910.biliapi.http
 
 import dev.aaa1115910.biliapi.http.entity.BiliResponse
+import dev.aaa1115910.biliapi.http.entity.BiliResponseWithoutData
 import dev.aaa1115910.biliapi.http.entity.login.CaptchaData
+import dev.aaa1115910.biliapi.http.entity.login.GuestData
+import dev.aaa1115910.biliapi.http.entity.login.TokenRefreshData
 import dev.aaa1115910.biliapi.http.entity.login.qr.AppQRDataRequest
 import dev.aaa1115910.biliapi.http.entity.login.qr.AppQRLoginData
 import dev.aaa1115910.biliapi.http.entity.login.qr.RequestWebQRData
@@ -82,7 +85,8 @@ object BiliPassportHttpApi {
     suspend fun getAppQRUrl(
         localId: String? = null,
         ts: Int,
-        mobiApp: String? = null
+        mobiApp: String? = null,
+        buvid: String? = null
     ): BiliResponse<AppQRDataRequest> =
         client.post("/x/passport-tv-login/qrcode/auth_code") {
             setBody(FormDataContent(
@@ -90,6 +94,7 @@ object BiliPassportHttpApi {
                     localId?.let { append("local_id", it) }
                     append("ts", "$ts")
                     mobiApp?.let { append("mobi_app", it) }
+                    buvid?.takeIf { it.isNotBlank() }?.let { append("buvid", it) }
                 }
             ))
         }.body()
@@ -101,7 +106,8 @@ object BiliPassportHttpApi {
     suspend fun loginWithAppQR(
         authCode: String,
         localId: String? = null,
-        ts: Int
+        ts: Int,
+        buvid: String? = null
     ): BiliResponse<AppQRLoginData> =
         client.post("/x/passport-tv-login/qrcode/poll") {
             setBody(FormDataContent(
@@ -109,6 +115,56 @@ object BiliPassportHttpApi {
                     append("auth_code", authCode)
                     localId?.let { append("local_id", it) }
                     append("ts", "$ts")
+                    buvid?.takeIf { it.isNotBlank() }?.let { append("buvid", it) }
+                }
+            ))
+        }.body()
+
+    /** 文档 §6.4：用 refresh_token 换新的 access_key。 */
+    suspend fun refreshToken(
+        accessKey: String,
+        refreshToken: String,
+        sts: Long = System.currentTimeMillis() / 1000
+    ): BiliResponse<TokenRefreshData> =
+        client.post("/x/passport-login/oauth2/refresh_token") {
+            setBody(FormDataContent(
+                Parameters.build {
+                    append("access_key", accessKey)
+                    append("refresh_token", refreshToken)
+                    append("sts", "$sts")
+                }
+            ))
+        }.body()
+
+    /** 文档 §6.4：注销当前 access_key。 */
+    suspend fun revoke(
+        accessKey: String,
+        mid: Long? = null,
+        session: String? = null,
+        revokeType: Int = 2
+    ): BiliResponseWithoutData =
+        client.post("/x/passport-login/revoke") {
+            setBody(FormDataContent(
+                Parameters.build {
+                    append("access_key", accessKey)
+                    mid?.let { append("mid", "$it") }
+                    session?.takeIf { it.isNotBlank() }?.let { append("session", it) }
+                    append("revoke_type", "$revokeType")
+                }
+            ))
+        }.body()
+
+    /** 文档 §5.3：游客注册。`deviceInfo` 为设备信息 JSON。 */
+    suspend fun guestReg(
+        deviceInfo: String,
+        accessKey: String? = null
+    ): BiliResponse<GuestData> =
+        client.post("/x/passport-user/guest/reg") {
+            accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+            parameter("dt", 1)
+            setBody(FormDataContent(
+                Parameters.build {
+                    append("device_info", deviceInfo)
                 }
             ))
         }.body()

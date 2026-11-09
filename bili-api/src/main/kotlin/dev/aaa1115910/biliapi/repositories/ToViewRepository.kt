@@ -28,14 +28,14 @@ class ToViewRepository(
                     // viewAt = cursor,
                     sessData = authRepository.sessionData!!,
                 ).getResponseData()
-                print(data)
                 ToViewData.fromToViewResponse(data)
             }
 
             ApiType.App -> {
                 val data = BiliHttpApi.getToView(
                     // viewAt = cursor,
-                    sessData = authRepository.sessionData!!,
+                    sessData = "",
+                    accessKey = authRepository.accessToken.orEmpty(),
                 ).getResponseData()
                 ToViewData.fromToViewResponse(data)
             }

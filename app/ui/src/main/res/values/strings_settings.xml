@@ -140,6 +140,10 @@
     <string name="settings_account_lock_off">未设置</string>
     <string name="settings_account_incognito">无痕模式</string>
     <string name="settings_account_incognito_desc">开启后不上报播放进度和历史记录</string>
+    <string name="settings_account_disable_rcmd">关闭个性化推荐</string>
+    <string name="settings_account_disable_rcmd_desc">向服务端声明不基于观看行为推荐内容</string>
+    <string name="settings_account_teenagers">青少年模式</string>
+    <string name="settings_account_teenagers_desc">按青少年模式请求内容；部分内容会被限制</string>
 
     <!-- 存储 -->
     <string name="settings_store_threshold">缓存上限</string>

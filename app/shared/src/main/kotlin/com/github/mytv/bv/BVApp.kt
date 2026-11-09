@@ -3,6 +3,8 @@ package com.github.mytv.bv
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import androidx.datastore.core.DataStore
@@ -15,6 +17,7 @@ import coil.ImageLoader
 import de.schnettler.datastore.manager.DataStoreManager
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.BiliHttpProxyApi
+import dev.aaa1115910.biliapi.http.util.AppRequestContext
 import dev.aaa1115910.biliapi.http.util.BiliAppConf
 import dev.aaa1115910.biliapi.http.util.BiliDns
 import dev.aaa1115910.biliapi.http.util.BiliWebConf
@@ -22,6 +25,7 @@ import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.repositories.AuthRepository
 import dev.aaa1115910.biliapi.repositories.BiliApiModule
 import dev.aaa1115910.biliapi.repositories.ChannelRepository
+import dev.aaa1115910.biliapi.repositories.FingerprintRepository
 import com.github.mytv.bv.dao.AppDatabase
 import com.github.mytv.bv.entity.AuthData
 import com.github.mytv.bv.entity.db.UserDB
@@ -29,6 +33,7 @@ import com.github.mytv.bv.migration.LegacyDataMigrator
 import com.github.mytv.bv.network.HttpServer
 import com.github.mytv.bv.player.PlayerHttpClient
 import com.github.mytv.bv.repository.UserRepository
+import com.github.mytv.bv.util.BiliDeviceInfo
 import com.github.mytv.bv.util.BitmapSizeLimitInterceptor
 import com.github.mytv.bv.util.BlacklistUtil
 import com.github.mytv.bv.util.FirebaseUtil
@@ -152,11 +157,38 @@ class BVApp : Application(), Configuration.Provider {
     private fun initApiConfig() {
         BiliAppConf.osVersion = Build.VERSION.RELEASE
         BiliAppConf.model = Build.MODEL
+        BiliAppConf.brand = Build.BRAND
+        BiliAppConf.currentNetwork = runCatching { detectNetworkType() }
+            .getOrDefault(BiliAppConf.NETWORK)
         BiliWebConf.webViewVersion = runCatching {
             WebViewCompat.getCurrentLoadedWebViewPackage()!!.versionName!!
                 .substringBefore(".").toInt()
         }.getOrDefault(144)
         initWebCookieManager()
+    }
+
+    private fun detectNetworkType(): Int {
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = manager.activeNetwork ?: return 0
+        val capabilities = manager.getNetworkCapabilities(network) ?: return 0
+        return when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> 2
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> 1
+            else -> 0
+        }
+    }
+
+    /** 把设置页的推荐/青少年开关同步给请求层。 */
+    fun refreshCustomParams() {
+        AppRequestContext.teenagersMode = Prefs.teenagersMode
+        AppRequestContext.disableRcmd = Prefs.disableRcmd
+        AppRequestContext.customParams = buildMap {
+            put("disable_rcmd", if (Prefs.disableRcmd) "1" else "0")
+            if (Prefs.teenagersMode) {
+                put("teenagers_mode", "1")
+                put("teenagers_age", Prefs.teenagersAge.toString())
+            }
+        }
     }
 
     private fun initWebCookieManager() {
@@ -189,7 +221,11 @@ class BVApp : Application(), Configuration.Provider {
 
     fun initRepository() {
         val channelRepository by koinApplication.koin.inject<ChannelRepository>()
-        channelRepository.initDefaultChannel(Prefs.accessToken, Prefs.buvid)
+        channelRepository.initDefaultChannel(
+            Prefs.accessToken,
+            Prefs.buvid,
+            Prefs.uid.takeIf { it != 0L }
+        )
 
         val authRepository by koinApplication.koin.inject<AuthRepository>()
         authRepository.sessionData = Prefs.sessData.takeIf { it.isNotEmpty() }
@@ -201,6 +237,17 @@ class BVApp : Application(), Configuration.Provider {
         authRepository.buvid3 = Prefs.buvid3
         authRepository.buvid = Prefs.buvid
         authRepository.bindWebCookieManager()
+
+        AppRequestContext.displayId = Prefs.displayId
+        AppRequestContext.deviceId = Prefs.deviceId
+        AppRequestContext.fpLocal = Prefs.fpLocal
+        AppRequestContext.fpRemote = Prefs.fpRemote
+        AppRequestContext.guestId = Prefs.guestId
+        AppRequestContext.firstLaunchTime = Prefs.firstLaunchTime
+        AppRequestContext.onFpRemoteChanged = { Prefs.fpRemote = it }
+        AppRequestContext.onGuestIdChanged = { Prefs.guestId = it }
+        AppRequestContext.deviceInfoProvider = { BiliDeviceInfo.snapshot() }
+        refreshCustomParams()
     }
 
     fun initProxy() {
@@ -212,7 +259,8 @@ class BVApp : Application(), Configuration.Provider {
                 channelRepository.initProxyChannel(
                     Prefs.accessToken,
                     Prefs.buvid,
-                    Prefs.proxyGRPCServer
+                    Prefs.proxyGRPCServer,
+                    Prefs.uid.takeIf { it != 0L }
                 )
             }
         }
@@ -223,6 +271,27 @@ class BVApp : Application(), Configuration.Provider {
             // 无网络或接口报错时保持静默，不能影响启动；
             // cookie 维护涉及多次网络请求，单独并发，避免拖慢后面的预热
             launch { runCatching { WebCookieManager.initialize() } }
+            launch {
+                runCatching {
+                    koinApplication.koin.get<FingerprintRepository>().ensureFingerprint()
+                }
+            }
+            launch {
+                runCatching {
+                    koinApplication.koin.get<FingerprintRepository>().ensureGuestId()
+                }
+            }
+            launch {
+                runCatching {
+                    koinApplication.koin.get<UserRepository>().refreshAccessTokenIfNeeded()
+                }
+            }
+            launch {
+                // 文档 §7：启动时校验/刷新账号态；未登录也会返回 code=0
+                runCatching {
+                    BiliHttpApi.getAccountMine(Prefs.accessToken.takeIf { it.isNotBlank() })
+                }
+            }
             BiliHttpApi.warmUpClient()
             PlayerHttpClient.preheat(this@BVApp)
         }

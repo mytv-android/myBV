@@ -13,29 +13,29 @@ data class AppQRDataRequest(
 @Serializable
 data class AppQRLoginData(
     @SerialName("is_new")
-    val isNew: Boolean,
-    val mid: Long,
+    val isNew: Boolean = false,
+    val mid: Long = 0,
     @SerialName("access_token")
-    val accessToken: String,
+    val accessToken: String? = null,
     @SerialName("refresh_token")
-    val refreshToken: String,
+    val refreshToken: String? = null,
     @SerialName("expires_in")
-    val expiresIn: Int,
+    val expiresIn: Int = 0,
     @SerialName("token_info")
-    val tokenInfo: TokenInfo,
+    val tokenInfo: TokenInfo? = null,
     @SerialName("cookie_info")
     val cookieInfo: CookieInfo,
     val sso: List<String> = emptyList()
 ) {
     @Serializable
     data class TokenInfo(
-        val mid: Long,
+        val mid: Long? = null,
         @SerialName("expires_in")
-        val expiresIn: Int,
+        val expiresIn: Int? = null,
         @SerialName("access_token")
-        val accessToken: String,
+        val accessToken: String? = null,
         @SerialName("refresh_token")
-        val refreshToken: String
+        val refreshToken: String? = null
     )
 
     @Serializable

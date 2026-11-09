@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import dev.aaa1115910.biliapi.repositories.AuthRepository
+import dev.aaa1115910.biliapi.repositories.LoginRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.dao.AppDatabase
 import com.github.mytv.bv.entity.AuthData
@@ -20,6 +21,7 @@ import java.util.Date
 @Single
 class UserRepository(
     private val authRepository: AuthRepository,
+    private val loginRepository: LoginRepository,
     private val db: AppDatabase = BVApp.getAppDatabase()
 ) {
     companion object {
@@ -96,7 +98,30 @@ class UserRepository(
         updateAuthRepository()
     }
 
+    /** 文档 §6.4：access_key 临近过期时用 refresh_token 续期。 */
+    suspend fun refreshAccessTokenIfNeeded() {
+        val access = accessToken
+        val refresh = refreshToken
+        if (access.isBlank() || refresh.isBlank()) return
+        // 提前一天续期，避免播放中途掉登录态
+        if (expiredDate.time - System.currentTimeMillis() > 24 * 60 * 60 * 1000L) return
+        val tokens = runCatching {
+            loginRepository.refreshAccessToken(access, refresh)
+        }.getOrNull() ?: return
+        accessToken = tokens.first
+        refreshToken = tokens.second
+        logger.info { "Refresh access token success" }
+        saveToPrefs()
+    }
+
     suspend fun logout() {
+        runCatching {
+            loginRepository.revoke(
+                accessKey = accessToken,
+                mid = uid.takeIf { it > 0 },
+                session = sid.takeIf { it.isNotBlank() }
+            )
+        }
         val user = db.userDao().findUserByUid(uid)
         user?.let {
             db.userDao().delete(it)

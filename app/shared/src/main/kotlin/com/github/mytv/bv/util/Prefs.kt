@@ -269,6 +269,87 @@ object Prefs {
         }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefBuvid3Key, value) }
 
+    /** 本地设备指纹 fp_local；首次读取时生成并持久化。 */
+    var fpLocal: String
+        get() = runBlocking {
+            val id = dsm.getPreferenceFlow(PrefKeys.prefFpLocalRequest).first()
+            if (id != "") {
+                id
+            } else {
+                val random = generateBuvid()
+                fpLocal = random
+                random
+            }
+        }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefFpLocalKey, value) }
+
+    /** 服务端指纹 fp_remote（/x/resource/fingerprint 返回）。 */
+    var fpRemote: String
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefFpRemoteRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefFpRemoteKey, value) }
+
+    /** 未登录游客 ID。 */
+    var guestId: String
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefGuestIdRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefGuestIdKey, value) }
+
+    /** 大屏展示/投屏标识。 */
+    var displayId: String
+        get() = runBlocking {
+            val id = dsm.getPreferenceFlow(PrefKeys.prefDisplayIdRequest).first()
+            if (id != "") {
+                id
+            } else {
+                val random = UUID.randomUUID().toString().replace("-", "")
+                displayId = random
+                random
+            }
+        }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefDisplayIdKey, value) }
+
+    /** 设备 ID；首次读取时生成并持久化。 */
+    var deviceId: String
+        get() = runBlocking {
+            val id = dsm.getPreferenceFlow(PrefKeys.prefDeviceIdRequest).first()
+            if (id != "") {
+                id
+            } else {
+                val random = UUID.randomUUID().toString().replace("-", "")
+                deviceId = random
+                random
+            }
+        }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefDeviceIdKey, value) }
+
+    /** 首次启动时间戳（毫秒）。 */
+    var firstLaunchTime: Long
+        get() = runBlocking {
+            val value = dsm.getPreferenceFlow(PrefKeys.prefFirstLaunchTimeRequest).first()
+            if (value > 0) {
+                value
+            } else {
+                val now = System.currentTimeMillis()
+                firstLaunchTime = now
+                now
+            }
+        }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefFirstLaunchTimeKey, value) }
+
+    /** 关闭个性化推荐。 */
+    var disableRcmd: Boolean
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefDisableRcmdRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefDisableRcmdKey, value) }
+
+    /** 青少年模式。 */
+    var teenagersMode: Boolean
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefTeenagersModeRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefTeenagersModeKey, value) }
+
+    /** 青少年年龄档。 */
+    var teenagersAge: Int
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefTeenagersAgeRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefTeenagersAgeKey, value) }
+
     /**
      * Web 指纹/票据 cookie（buvid3、buvid4、b_nut、bili_ticket 等），
      * 以 "name=value;name=value;" 格式存储。账号级 cookie 不放这里，避免登出后仍被注入。
@@ -612,6 +693,15 @@ object PrefKeys {
     val prefShowFpsKey = booleanPreferencesKey("sf")
     val prefBuvidKey = stringPreferencesKey("random_buvid")
     val prefBuvid3Key = stringPreferencesKey("random_buvid3")
+    val prefFpLocalKey = stringPreferencesKey("fp_local")
+    val prefFpRemoteKey = stringPreferencesKey("fp_remote")
+    val prefGuestIdKey = stringPreferencesKey("guest_id")
+    val prefDisplayIdKey = stringPreferencesKey("display_id")
+    val prefDeviceIdKey = stringPreferencesKey("device_id")
+    val prefFirstLaunchTimeKey = longPreferencesKey("first_launch_time")
+    val prefDisableRcmdKey = booleanPreferencesKey("disable_rcmd")
+    val prefTeenagersModeKey = booleanPreferencesKey("teenagers_mode")
+    val prefTeenagersAgeKey = intPreferencesKey("teenagers_age")
     val prefWebExtraCookiesKey = stringPreferencesKey("web_extra_cookies")
     val prefPlayerTypeKey = intPreferencesKey("pt")
     val prefVideoRenderModeKey = intPreferencesKey("video_render_mode")
@@ -686,6 +776,15 @@ object PrefKeys {
     val prefShowFpsRequest = PreferenceRequest(prefShowFpsKey, false)
     val prefBuvidRequest = PreferenceRequest(prefBuvidKey, "")
     val prefBuvid3Request = PreferenceRequest(prefBuvid3Key, "")
+    val prefFpLocalRequest = PreferenceRequest(prefFpLocalKey, "")
+    val prefFpRemoteRequest = PreferenceRequest(prefFpRemoteKey, "")
+    val prefGuestIdRequest = PreferenceRequest(prefGuestIdKey, "")
+    val prefDisplayIdRequest = PreferenceRequest(prefDisplayIdKey, "")
+    val prefDeviceIdRequest = PreferenceRequest(prefDeviceIdKey, "")
+    val prefFirstLaunchTimeRequest = PreferenceRequest(prefFirstLaunchTimeKey, 0L)
+    val prefDisableRcmdRequest = PreferenceRequest(prefDisableRcmdKey, false)
+    val prefTeenagersModeRequest = PreferenceRequest(prefTeenagersModeKey, false)
+    val prefTeenagersAgeRequest = PreferenceRequest(prefTeenagersAgeKey, 16)
     val prefWebExtraCookiesRequest = PreferenceRequest(prefWebExtraCookiesKey, "")
     val prefPlayerTypeRequest = PreferenceRequest(prefPlayerTypeKey, PlayerType.Media3.ordinal)
     val prefVideoRenderModeRequest =

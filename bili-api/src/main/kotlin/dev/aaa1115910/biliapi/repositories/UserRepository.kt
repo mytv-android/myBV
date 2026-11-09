@@ -195,7 +195,6 @@ class UserRepository(
                     mid = mid,
                     lastAvid = page.lastAvid,
                     order = order.value,
-                    ts = System.currentTimeMillis(),
                     accessKey = authRepository.accessToken ?: ""
                 ).getResponseData()
                 SpaceVideoData.fromAppSpaceVideoData(appSpaceVideoData)

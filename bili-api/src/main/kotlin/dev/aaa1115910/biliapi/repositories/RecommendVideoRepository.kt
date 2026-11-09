@@ -70,6 +70,7 @@ class RecommendVideoRepository(
         page: RecommendPage = RecommendPage(),
         preferApiType: ApiType = ApiType.Web
     ): RecommendData {
+        var nextAppIdx = page.nextAppIdx
         val items = when (preferApiType) {
             ApiType.Web -> BiliHttpApi.getFeedRcmd(
                 idx = page.nextWebIdx,
@@ -78,13 +79,17 @@ class RecommendVideoRepository(
                 .getResponseData().item
                 .map { UgcItem.fromRcmdItem(it) }
 
-            ApiType.App -> BiliHttpApi.getFeedIndex(
-                idx = page.nextAppIdx,
-                accessKey = authRepository.accessToken
-            )
-                .getResponseData().items
-                .filter { it.cardGoto == "av" }
-                .map { UgcItem.fromRcmdItem(it) }
+            ApiType.App -> {
+                val data = BiliHttpApi.getFeedIndex(
+                    idx = page.nextAppIdx,
+                    accessKey = authRepository.accessToken
+                ).getResponseData()
+                nextAppIdx = data.config.idx?.toInt()
+                    ?: (data.items.lastOrNull()?.idx?.plus(1) ?: page.nextAppIdx)
+                data.items
+                    .filter { it.cardGoto == "av" }
+                    .map { UgcItem.fromRcmdItem(it) }
+            }
         }
         val nextPage = when (preferApiType) {
             ApiType.Web -> RecommendPage(
@@ -92,7 +97,7 @@ class RecommendVideoRepository(
             )
 
             ApiType.App -> RecommendPage(
-                nextAppIdx = items.first().idx + 1
+                nextAppIdx = nextAppIdx
             )
         }
         return RecommendData(
@@ -124,14 +129,15 @@ class RecommendVideoRepository(
             }
 
             ApiType.App -> {
-                val items = BiliHttpApi.getFeedIndex(
+                val data = BiliHttpApi.getFeedIndex(
                     idx = page.nextAppIdx,
                     accessKey = authRepository.accessToken
-                ).getResponseData().items
+                ).getResponseData()
                 RecommendStoryData(
-                    items = items.mapNotNull { StoryItem.fromAppRcmdItem(it) },
+                    items = data.items.mapNotNull { StoryItem.fromAppRcmdItem(it) },
                     nextPage = page.copy(
-                        nextAppIdx = items.firstOrNull()?.idx?.plus(1) ?: page.nextAppIdx
+                        nextAppIdx = data.config.idx?.toInt()
+                            ?: (data.items.lastOrNull()?.idx?.plus(1) ?: page.nextAppIdx)
                     )
                 )
             }

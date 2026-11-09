@@ -58,6 +58,7 @@ class CommentRepository(
                                 CommentSort.Time -> Mode.MAIN_LIST_TIME
                             }
                             pagination = feedPagination {
+                                pageSize = 20
                                 offset = page.nextAppPage
                             }
                         }
@@ -105,6 +106,7 @@ class CommentRepository(
                             CommentSort.Time -> Mode.MAIN_LIST_TIME
                         }
                         pagination = feedPagination {
+                            pageSize = 20
                             offset = page.nextAppPage
                         }
                     }

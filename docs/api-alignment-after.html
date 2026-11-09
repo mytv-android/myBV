@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>myBV 请求对齐补齐结果</title>
+<style>
+  :root{
+    --bg:#0a0c11; --bg2:#0f1219; --panel:#151924; --panel2:#1b2030;
+    --text:#e8ebf4; --muted:#9aa4b8; --faint:#6f7a8f; --line:#252c3d;
+    --pink:#fb7299; --blue:#4cc3ff; --green:#3ddc97; --amber:#ffb454;
+    --red:#ff6b6b; --purple:#a78bfa; --cyan:#22d3ee;
+    --shadow:0 18px 50px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.65}
+  code{font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:.88em;background:color-mix(in srgb,var(--blue) 10%,transparent);border:1px solid color-mix(in srgb,var(--blue) 18%,transparent);padding:1px 6px;border-radius:6px}
+  a{color:var(--blue);text-decoration:none}
+  .hero{position:relative;overflow:hidden;padding:60px 28px 38px;border-bottom:1px solid var(--line)}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;pointer-events:none}
+  .hero::before{width:520px;height:520px;left:-120px;top:-240px;background:radial-gradient(circle,var(--green),transparent 65%)}
+  .hero::after{width:600px;height:600px;right:-160px;top:-280px;background:radial-gradient(circle,var(--blue),transparent 65%)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+  .hero .wrap{position:relative}
+  .eyebrow{display:inline-block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 70%,transparent);padding:6px 12px;border-radius:999px}
+  .eyebrow b{color:var(--green)}
+  h1{font-size:clamp(30px,4.4vw,52px);line-height:1.08;margin:18px 0 12px;letter-spacing:-.02em}
+  h1 span{background:linear-gradient(100deg,var(--green),var(--cyan) 45%,var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{max-width:820px;color:var(--muted);font-size:15.5px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 80%,transparent);padding:7px 12px;border-radius:999px}
+  .chip b{color:var(--text)}
+  main{padding-bottom:70px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  .stat .n{font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .stat .l{font-size:12.5px;color:var(--muted);margin-top:5px}
+  .stat.green .n{color:var(--green)} .stat.amber .n{color:var(--amber)} .stat.purple .n{color:var(--purple)} .stat.cyan .n{color:var(--cyan)}
+  h2{font-size:22px;margin:44px 0 8px;letter-spacing:-.01em}
+  .lead{color:var(--muted);font-size:13.5px;margin:0 0 18px;max-width:860px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--green))}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .card p{margin:0;color:var(--muted);font-size:13px}
+  .card ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:12.8px}
+  .card li{margin:6px 0}
+  .card li b{color:var(--text)}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
+  .tag.done{color:var(--green);background:color-mix(in srgb,var(--green) 13%,transparent);border:1px solid color-mix(in srgb,var(--green) 28%,transparent)}
+  .tag.part{color:var(--amber);background:color-mix(in srgb,var(--amber) 13%,transparent);border:1px solid color-mix(in srgb,var(--amber) 28%,transparent)}
+  .tag.miss{color:var(--purple);background:color-mix(in srgb,var(--purple) 13%,transparent);border:1px solid color-mix(in srgb,var(--purple) 28%,transparent)}
+  .table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .table th,.table td{padding:11px 13px;text-align:left;font-size:12.8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .table th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);background:var(--bg2)}
+  .table tr:last-child td{border-bottom:0}
+  .table td:first-child{white-space:nowrap;color:var(--faint);font-weight:700}
+  .table td b{color:var(--text)}
+  .callout{margin-top:34px;border:1px solid color-mix(in srgb,var(--amber) 24%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 9%,var(--panel)),var(--panel2));border-radius:18px;padding:20px}
+  .callout h3{margin:0 0 8px;font-size:16px}
+  .callout p{margin:0;color:var(--muted);font-size:13.5px}
+  .callout p + p{margin-top:8px}
+  .files{columns:2;column-gap:20px;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .files div{break-inside:avoid;margin:0 0 7px}
+  footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:12px;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+  @media (max-width:880px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.files{columns:1}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><b>ALIGNED</b> · 补齐结果</div>
+    <h1>请求画像<br><span>补齐完成</span></h1>
+    <p class="sub">按 <code>BILIBILI_HD_REQUEST_FLOW.md</code> 把报告里的 P0/P1 缺口落到代码：身份、UA、指纹、登录参数、gRPC 元数据、推荐流、播放/弹幕与设置开关。当前工作区尚未提交，也未本地构建。</p>
+    <div class="meta">
+      <span class="chip">审计项：<b>54</b></span>
+      <span class="chip">已对齐：<b>39</b></span>
+      <span class="chip">部分：<b>12</b></span>
+      <span class="chip">缺失：<b>1</b></span>
+      <span class="chip">P0 剩余：<b>0</b></span>
+    </div>
+    <div class="stats">
+      <div class="stat green"><div class="n">39</div><div class="l">已对齐</div></div>
+      <div class="stat amber"><div class="n">12</div><div class="l">部分对齐</div></div>
+      <div class="stat purple"><div class="n">1</div><div class="l">仍缺失</div></div>
+      <div class="stat cyan"><div class="n">2</div><div class="l">额外增强</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <h2>这一轮补了什么</h2>
+  <p class="lead">优先改“服务端怎么看你”，再补参数和接口。下面按请求链路分组。</p>
+
+  <div class="grid">
+    <div class="card" style="--accent:var(--pink)">
+      <h3>公共参数与签名 <span class="tag done">已补齐</span></h3>
+      <p>登录后自动注入 access_key；channel 改为 bili；locale 跟随系统；statistics 用 appId=5。</p>
+      <ul>
+        <li><b>access_key</b>：从 <code>AppRequestContext</code> 自动写入 query/body</li>
+        <li><b>statistics / disable_rcmd / teenagers</b>：全局公共参数</li>
+        <li><b>channel</b>：<code>BiliAppConf.CHANNEL = "bili"</code></li>
+        <li><b>签名覆盖</b>：新增 <code>markAppRequest()</code>，api.bilibili.com 上的 App 接口也能签</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--blue)">
+      <h3>HTTP 头与 UA <span class="tag done">已补齐</span></h3>
+      <p>UA 改为官方 HD 形态；补齐 Display-ID、Device-ID、fp_local、fp_remote、session_id、GuestId。</p>
+      <ul>
+        <li><b>UA</b>：<code>http.agent + version + os/android model/... network/...</code></li>
+        <li><b>GET / 非 GET</b>：分别使用 <code>c()+a()</code> 与 <code>a()</code></li>
+        <li><b>GuestId</b>：游客注册后写入请求头</li>
+        <li><b>HTTP 上不再注入 x-bili-*-bin</b>，这部分只留给 gRPC</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--purple)">
+      <h3>设备身份 <span class="tag done">已补齐</span></h3>
+      <p>新增指纹上报与游客注册，fp_local / fp_remote 会持久化。</p>
+      <ul>
+        <li><b>/x/resource/fingerprint</b>：DeviceInfo protobuf → AES/ECB → RSA/ECB</li>
+        <li><b>fp_local</b>：首次生成并写入 Prefs</li>
+        <li><b>fp_remote</b>：接口返回的 <code>bili_deviceId</code></li>
+        <li><b>/x/passport-user/guest/reg</b>：未登录时 best-effort 获取 GuestId</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--green)">
+      <h3>gRPC 元数据 <span class="tag done">已补齐</span></h3>
+      <p>Device 字段、restriction、exps、network、locale 都按文档补齐。</p>
+      <ul>
+        <li><b>x-bili-device-bin</b>：fp_local、fp_remote、fp、fts</li>
+        <li><b>x-bili-restriction-bin</b>：青少年 / 关闭个性化推荐</li>
+        <li><b>x-bili-exps-bin</b>：空 Exps 占位</li>
+        <li><b>network / locale</b>：从系统读取，不再写死 WIFI / zh-Hans</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--amber)">
+      <h3>登录与 token <span class="tag done">已补齐</span></h3>
+      <p>TV 扫码补 buvid / local_id；新增 refresh_token 与 revoke。</p>
+      <ul>
+        <li><b>AuthInterceptor 参数</b>：<code>local_id = buvid</code>，并带 <code>buvid</code></li>
+        <li><b>AuthInfo</b>：顶层 token 缺失时回退 <code>token_info</code></li>
+        <li><b>refresh_token</b>：临近过期自动续期</li>
+        <li><b>revoke</b>：退出时注销 access_key（失败静默）</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--cyan)">
+      <h3>推荐 / 播放 / 弹幕 <span class="tag done">已补齐</span></h3>
+      <p>feed 参数、App 播放接口、gRPC 分段弹幕与心跳字段。</p>
+      <ul>
+        <li><b>feed/index</b>：guidance、voice_balance、open_event、banner_hash、interest</li>
+        <li><b>App playurl</b>：新增不带 platform=oc 的 App 规则方法</li>
+        <li><b>DmSegMobile</b>：App 模式按 6 分钟分段拉取，失败回退 XML</li>
+        <li><b>心跳</b>：补 duration、device_ts、scene 参数位</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--pink)">
+      <h3>启动 / 搜索 / 分 P 接口 <span class="tag done">已补齐</span></h3>
+      <p>把文档列出但之前没有的端点补进 <code>BiliHttpApi</code>。</p>
+      <ul>
+        <li><b>启动</b>：splash/list、splash/show、notice、account/mine</li>
+        <li><b>频道流</b>：/x/channel/feed/index</li>
+        <li><b>App 搜索</b>：/x/v2/search、/x/v2/search/type</li>
+        <li><b>分 P</b>：/x/player/pagelist；<b>点击上报</b>：/x/report/click/now</li>
+      </ul>
+    </div>
+
+    <div class="card" style="--accent:var(--blue)">
+      <h3>设置入口 <span class="tag done">已补齐</span></h3>
+      <p>新增“关闭个性化推荐”和“青少年模式”开关，实时同步请求层。</p>
+      <ul>
+        <li><b>Prefs</b>：disableRcmd、teenagersMode、teenagersAge</li>
+        <li><b>AccountSettings</b>：两个 Switch</li>
+        <li><b>refreshCustomParams()</b>：切换后立即更新公共参数</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>仍需验证 / 未完全对齐</h2>
+  <p class="lead">剩下的不是 P0，但有些依赖真实抓包或产品入口，不能只靠静态代码宣称完成。</p>
+  <table class="table">
+    <thead><tr><th>项</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>C7</td><td><span class="tag miss">缺失</span></td><td><b>x-bili-ticket / aurora / gaia</b>：文档本身标注“未逆向参数生成”，只保留了 gaia_vtoken 的调用点。</td></tr>
+      <tr><td>A10</td><td><span class="tag part">部分</span></td><td><b>签名覆盖面</b>：新增 markAppRequest 后 App 接口可显式签名，但 Web/App 混合调用的边界仍需逐个确认。</td></tr>
+      <tr><td>A11</td><td><span class="tag part">部分</span></td><td><b>编码一致性</b>：签名用自定义 encode()，URL 由 Ktor 序列化；含 <code>!'()*</code> 的值仍建议补一条实测。</td></tr>
+      <tr><td>B6</td><td><span class="tag part">部分</span></td><td><b>GuestId</b>：请求头与注册流程已接，但 device_info 是 best-effort，服务端可能仍返回 -400。</td></tr>
+      <tr><td>C4</td><td><span class="tag part">部分</span></td><td><b>network-bin</b>：type 已动态；tf / oid 仍使用默认值。</td></tr>
+      <tr><td>C5</td><td><span class="tag part">部分</span></td><td><b>fawkes</b>：appkey/env/sessionId 已有；版本/渠道字段未补，android64 是否适用于 HD 待验证。</td></tr>
+      <tr><td>F4</td><td><span class="tag part">部分</span></td><td><b>开屏/公告</b>：接口已补，account/mine 已接入启动预热；splash/notice 还没有 UI 入口。</td></tr>
+      <tr><td>F5</td><td><span class="tag part">部分</span></td><td><b>频道流</b>：接口已补，页面未接。</td></tr>
+      <tr><td>G4</td><td><span class="tag part">部分</span></td><td><b>HTTP playurl</b>：App 规则方法已加；当前 App 模式主路径仍是 gRPC，Web 分支保留 platform=oc。</td></tr>
+      <tr><td>H1</td><td><span class="tag part">部分</span></td><td><b>XML 弹幕</b>：raw deflate 仍依赖 Ktor 解码；没有接 segment_index。</td></tr>
+      <tr><td>I1</td><td><span class="tag part">部分</span></td><td><b>App 搜索</b>：接口已补，返回 JsonElement，尚未映射到现有搜索页；当前搜索仍走 Web/gRPC。</td></tr>
+      <tr><td>I5</td><td><span class="tag part">部分</span></td><td><b>HTTP 历史</b>：Web 分支仍是 /x/web-interface/history/cursor；App 分支走 gRPC CursorV2。</td></tr>
+      <tr><td>I6</td><td><span class="tag part">部分</span></td><td><b>心跳</b>：duration/device_ts/scene 参数位已加；source 还没有明确语义，未强行填值。</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <h3>验证状态</h3>
+    <p>按项目规则没有在本地跑 <code>gradlew</code>，以上是静态代码改动。CI 构建后建议优先验证四条链路：<b>登录</b>（TV 扫码是否仍成功、refresh/revoke 是否被服务端接受）、<b>指纹</b>（/x/resource/fingerprint 是否返回 bili_deviceId）、<b>gRPC</b>（PlayViewUnite、DmSegMobile、MainList 是否正常）、<b>推荐流</b>（feed/index 新增参数是否影响返回）。</p>
+    <p>如果 CI 报编译错误，最可能集中在 Koin 生成代码（UserRepository 新增 LoginRepository 依赖）与 proto DSL 字段名；这两处都是重新生成即可定位的。</p>
+  </div>
+
+  <h2>改动文件</h2>
+  <div class="files">
+    <div>bili-api/http/util/BiliAppConf.kt</div>
+    <div>bili-api/http/util/AppRequestContext.kt</div>
+    <div>bili-api/http/util/BiliCustomParams.kt</div>
+    <div>bili-api/http/util/DeviceInfoSnapshot.kt</div>
+    <div>bili-api/http/util/FingerprintCrypto.kt</div>
+    <div>bili-api/http/util/ApiSign.kt</div>
+    <div>bili-api/http/plugins/BiliUserAgent.kt</div>
+    <div>bili-api/http/BiliHttpApi.kt</div>
+    <div>bili-api/http/BiliPassportHttpApi.kt</div>
+    <div>bili-api/http/entity/FingerprintData.kt</div>
+    <div>bili-api/http/entity/login/TokenRefreshData.kt</div>
+    <div>bili-api/http/entity/login/qr/AppQR.kt</div>
+    <div>bili-api/http/entity/video/PageListData.kt</div>
+    <div>bili-api/grpc/utils/Channel.kt</div>
+    <div>bili-api/repositories/FingerprintRepository.kt</div>
+    <div>bili-api/repositories/LoginRepository.kt</div>
+    <div>bili-api/repositories/VideoPlayRepository.kt</div>
+    <div>app/shared/BVApp.kt</div>
+    <div>app/shared/util/Prefs.kt</div>
+    <div>app/shared/util/BiliDeviceInfo.kt</div>
+    <div>app/shared/repository/UserRepository.kt</div>
+    <div>app/shared/viewmodel/VideoPlayerV3ViewModel.kt</div>
+    <div>app/shared/viewmodel/login/AppQrLoginViewModel.kt</div>
+    <div>app/ui/feature/settings/AccountSettings.kt</div>
+    <div>app/ui/res/values/strings_settings.xml</div>
+  </div>
+
+  <footer>
+    <span>对比基准：BILIBILI_HD_REQUEST_FLOW.md · iBiliPlayer 2.0.1 / 2001100</span>
+    <span><a href="api-alignment-report.html">返回补齐前审计</a></span>
+  </footer>
+</main>
+
+</body>
+</html>

@@ -42,7 +42,7 @@ class AppQrLoginViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 withContext(Dispatchers.Main) { state = QrLoginState.RequestingQRCode }
-                val qrLoginData = loginRepository.requestAppQrLogin()
+                val qrLoginData = loginRepository.requestAppQrLogin(Prefs.buvid)
                 loginUrl = qrLoginData.url
                 key = qrLoginData.key
                 logger.fInfo { "Get login request code url" }
@@ -71,7 +71,7 @@ class AppQrLoginViewModel(
     private suspend fun checkLoginResult() {
         logger.fInfo { "Check for login result" }
         runCatching {
-            val qrLoginResult = loginRepository.checkAppQrLoginState(key)
+            val qrLoginResult = loginRepository.checkAppQrLoginState(key, Prefs.buvid)
             withContext(Dispatchers.Main) { state = qrLoginResult.state }
             when (state) {
                 QrLoginState.WaitingForScan -> {
@@ -97,8 +97,8 @@ class AppQrLoginViewModel(
                         biliJct = qrLoginResult.cookies!!.biliJct,
                         sessData = qrLoginResult.cookies!!.sessData,
                         tokenExpiredData = qrLoginResult.cookies!!.expiredDate.time,
-                        accessToken = qrLoginResult.accessToken!!,
-                        refreshToken = qrLoginResult.refreshToken!!
+                        accessToken = qrLoginResult.accessToken.orEmpty(),
+                        refreshToken = qrLoginResult.refreshToken.orEmpty()
                     )
 
                     timer.cancel()

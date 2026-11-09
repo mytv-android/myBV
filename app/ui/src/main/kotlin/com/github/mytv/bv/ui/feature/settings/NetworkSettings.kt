@@ -125,7 +125,11 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
                 PreferenceWrites.enqueue {
                     Prefs.ipv4Only = enable
                     runCatching {
-                        channelRepository.initDefaultChannel(Prefs.accessToken, Prefs.buvid)
+                        channelRepository.initDefaultChannel(
+                            Prefs.accessToken,
+                            Prefs.buvid,
+                            Prefs.uid.takeIf { it != 0L }
+                        )
                     }
                 }
             },
@@ -179,6 +183,7 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
                                 accessKey = Prefs.accessToken,
                                 buvid = Prefs.buvid,
                                 proxyServer = server,
+                                mid = Prefs.uid.takeIf { it != 0L },
                             )
                         }
                     }

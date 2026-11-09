@@ -5,6 +5,7 @@ import dev.aaa1115910.biliapi.entity.pgc.PgcType
 import dev.aaa1115910.biliapi.http.BiliHttpApi.getRegionDynamic
 import dev.aaa1115910.biliapi.http.entity.BiliResponse
 import dev.aaa1115910.biliapi.http.entity.BiliResponseWithoutData
+import dev.aaa1115910.biliapi.http.entity.FingerprintData
 import dev.aaa1115910.biliapi.http.entity.RiskControlException
 import dev.aaa1115910.biliapi.http.entity.danmaku.DanmakuData
 import dev.aaa1115910.biliapi.http.entity.danmaku.DanmakuResponse
@@ -58,6 +59,7 @@ import dev.aaa1115910.biliapi.http.entity.video.CheckVideoFavoured
 import dev.aaa1115910.biliapi.http.entity.video.GaiaVgateRegisterData
 import dev.aaa1115910.biliapi.http.entity.video.GaiaVgateValidateData
 import dev.aaa1115910.biliapi.http.entity.video.InteractiveEdgeInfo
+import dev.aaa1115910.biliapi.http.entity.video.PageListItem
 import dev.aaa1115910.biliapi.http.entity.video.PlayUrlData
 import dev.aaa1115910.biliapi.http.entity.video.PlayUrlV2Data
 import dev.aaa1115910.biliapi.http.entity.video.PopularVideoData
@@ -78,6 +80,8 @@ import dev.aaa1115910.biliapi.http.plugins.BiliUserAgent
 import dev.aaa1115910.biliapi.http.util.BiliAppConf
 import dev.aaa1115910.biliapi.http.util.BiliDns
 import dev.aaa1115910.biliapi.http.util.encApiSign
+import dev.aaa1115910.biliapi.http.util.encAppUrl
+import dev.aaa1115910.biliapi.http.util.markAppRequest
 import dev.aaa1115910.biliapi.http.util.skipAddBuvid3Cookie
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -96,8 +100,10 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.ContentType
 import io.ktor.http.Parameters
 import io.ktor.http.URLProtocol
+import io.ktor.http.content.TextContent
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.jvm.javaio.toInputStream
@@ -105,6 +111,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
@@ -319,6 +326,51 @@ object BiliHttpApi {
             dedeUserID?.let { cookieParts.add("DedeUserID=$it") }
             gaiaVtoken?.takeIf { it.isNotBlank() }?.let {
                 parameter("gaia_vtoken", it)
+                header("x-bili-gaia-vtoken", it)
+                cookieParts.add("x-bili-gaia-vtoken=$it")
+            }
+            if (cookieParts.isNotEmpty()) header("Cookie", cookieParts.joinToString(";") + ";")
+        }.bodyAsText()
+        checkForVVoucher(bodyText)
+        return json.decodeFromString(bodyText)
+    }
+
+    /**
+     * 获取视频流（App 规则）。
+     *
+     * 与 [getVideoPlayUrl] 的区别：不带 `platform=oc` / `otype` / `type` 这些 Web 参数，
+     * 显式标记 App 请求，由签名拦截器补 access_key、公共参数与 sign。
+     */
+    suspend fun getAppVideoPlayUrl(
+        av: Long? = null,
+        bv: String? = null,
+        cid: Long,
+        qn: Int? = null,
+        fnval: Int? = null,
+        fnver: Int? = null,
+        fourk: Int? = 1,
+        session: String? = null,
+        sessData: String? = null,
+        dedeUserID: Long? = null,
+        gaiaVtoken: String? = null
+    ): BiliResponse<PlayUrlData> {
+        val bodyText = client.get("/x/player/playurl") {
+            markAppRequest()
+            require(av != null || bv != null) { "av and bv cannot be null at the same time" }
+            parameter("avid", av)
+            parameter("bvid", bv)
+            parameter("cid", cid)
+            parameter("qn", qn)
+            parameter("fnval", fnval)
+            parameter("fnver", fnver)
+            parameter("fourk", fourk)
+            parameter("session", session)
+            val cookieParts = mutableListOf<String>()
+            sessData?.let { cookieParts.add("SESSDATA=$it") }
+            dedeUserID?.let { cookieParts.add("DedeUserID=$it") }
+            gaiaVtoken?.takeIf { it.isNotBlank() }?.let {
+                parameter("gaia_vtoken", it)
+                header("x-bili-gaia-vtoken", it)
                 cookieParts.add("x-bili-gaia-vtoken=$it")
             }
             if (cookieParts.isNotEmpty()) header("Cookie", cookieParts.joinToString(";") + ";")
@@ -367,6 +419,7 @@ object BiliHttpApi {
             dedeUserID?.let { cookieParts.add("DedeUserID=$it") }
             gaiaVtoken?.takeIf { it.isNotBlank() }?.let {
                 parameter("gaia_vtoken", it)
+                header("x-bili-gaia-vtoken", it)
                 cookieParts.add("x-bili-gaia-vtoken=$it")
             }
             if (cookieParts.isNotEmpty()) header("Cookie", cookieParts.joinToString(";") + ";")
@@ -714,13 +767,15 @@ object BiliHttpApi {
         // business: String = "",
         // viewAt: Long = 0,
         // pageSize: Int = 20,
-        sessData: String = ""
+        sessData: String = "",
+        accessKey: String? = null
     ): BiliResponse<ToViewData> = client.get("/x/v2/history/toview") {
         // parameter("max", max)
         // parameter("business", business)
         // parameter("view_at", viewAt)
         // parameter("ps", pageSize)
-        header("Cookie", "SESSDATA=$sessData;")
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+        if (sessData.isNotBlank()) header("Cookie", "SESSDATA=$sessData;")
     }.body()
 
     /**
@@ -895,6 +950,10 @@ object BiliHttpApi {
         subType: Int? = null,
         dt: Int? = null,
         playType: Int? = null,
+        source: Int? = null,
+        duration: Int? = null,
+        deviceTs: Long? = null,
+        scene: String? = null,
         accessKey: String? = null
     ): String = client.post("/x/v2/history/report") {
         require(avid != null || bvid != null) { "avid and bvid cannot be null at the same time" }
@@ -914,6 +973,10 @@ object BiliHttpApi {
                     subType?.let { append("sub_type", "$it") }
                     dt?.let { append("dt", "$it") }
                     playType?.let { append("play_type", "$it") }
+                    source?.let { append("source", "$it") }
+                    duration?.let { append("duration", "$it") }
+                    deviceTs?.let { append("device_ts", "$it") }
+                    scene?.takeIf { it.isNotBlank() }?.let { append("scene", it) }
                     accessKey?.let { append("access_key", it) }
                 }
             ))
@@ -1124,14 +1187,18 @@ object BiliHttpApi {
         mid: Long,
         lastAvid: Long,
         order: String = "pubdate",
-        ts: Long,
+        sort: String? = null,
+        pageSize: Int = 20,
+        includeCursor: Boolean = true,
         accessKey: String
     ): BiliResponse<AppSpaceVideoData> =
         client.get("https://app.bilibili.com/x/v2/space/archive/cursor") {
             parameter("vmid", mid)
-            parameter("aid", lastAvid)
+            parameter("ps", pageSize)
             parameter("order", order)
-            parameter("ts", ts)
+            sort?.let { parameter("sort", it) }
+            parameter("aid", lastAvid)
+            parameter("include_cursor", if (includeCursor) 1 else 0)
             parameter("access_key", accessKey)
         }.body()
 
@@ -1704,12 +1771,178 @@ object BiliHttpApi {
      */
     suspend fun getFeedIndex(
         idx: Int = 0,
+        pull: Boolean = false,
+        flush: Int = 0,
+        guidance: Int = 0,
+        voiceBalance: Long = 0,
+        openEvent: String? = null,
+        bannerHash: String? = null,
+        interest: String? = null,
+        interestV2: String? = null,
+        splashId: String? = null,
         accessKey: String? = null,
     ): BiliResponse<RcmdIndexData> =
         client.get("https://app.bilibili.com/x/v2/feed/index") {
             parameter("idx", idx)
+            parameter("pull", if (pull) "true" else "false")
+            parameter("login_event", 0)
+            parameter("flush", flush)
+            parameter("guidance", guidance)
+            parameter("voice_balance", voiceBalance)
+            openEvent?.takeIf { it.isNotBlank() }?.let { parameter("open_event", it) }
+            bannerHash?.takeIf { it.isNotBlank() }?.let { parameter("banner_hash", it) }
+            interest?.takeIf { it.isNotBlank() }?.let { parameter("interest", it) }
+            interestV2?.takeIf { it.isNotBlank() }?.let { parameter("interest_v2", it) }
+            splashId?.takeIf { it.isNotBlank() }?.let { parameter("splash_id", it) }
+            // HD 首页仍带这两个布局参数；文档未列，但保留可避免拿不到大屏卡片
+            parameter("column", 2)
+            parameter("https_url_req", 1)
             accessKey?.let { parameter("access_key", it) }
         }.body()
+
+    /**
+     * 文档 §5.2：设备指纹上报。body 为 `{"key":...,"content":...}`，
+     * 使用 JSON body，因此需要显式 [encAppUrl] 给 URL 签名。
+     */
+    suspend fun reportFingerprint(
+        body: String,
+        accessKey: String? = null
+    ): BiliResponse<FingerprintData> = client.post("https://app.bilibili.com/x/resource/fingerprint") {
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+        setBody(TextContent(body, ContentType.Application.Json))
+        encAppUrl()
+    }.body()
+
+    /** 文档 §7.1：开屏广告列表。 */
+    suspend fun getSplashList(
+        width: Int? = null,
+        height: Int? = null,
+        birth: String? = null,
+        adExtra: String? = null,
+        network: String? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/splash/list") {
+        parameter("width", width)
+        parameter("height", height)
+        parameter("birth", birth)
+        parameter("ad_extra", adExtra)
+        parameter("network", network)
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §7：开屏曝光。 */
+    suspend fun getSplashShow(
+        id: Long? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/splash/show") {
+        id?.let { parameter("id", it) }
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §7：公告。 */
+    suspend fun getNotice(
+        plat: Int = 0,
+        channel: String? = null,
+        type: String? = null,
+        ver: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/notice") {
+        parameter("plat", plat)
+        channel?.let { parameter("channel", it) }
+        type?.let { parameter("type", it) }
+        ver?.let { parameter("ver", it) }
+    }.body()
+
+    /** 文档 §7：当前账号信息；未登录也会返回 code=0。 */
+    suspend fun getAccountMine(
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/account/mine") {
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §8.3：频道流。 */
+    suspend fun getChannelFeed(
+        channelId: Long,
+        channelName: String? = null,
+        pull: Boolean = false,
+        displayId: Long? = null,
+        fromSpmid: String? = null,
+        fromPage: String? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/channel/feed/index") {
+        parameter("channel_id", channelId)
+        channelName?.let { parameter("channel_name", it) }
+        parameter("pull", if (pull) 1 else 0)
+        parameter("login_event", 0)
+        displayId?.let { parameter("display_id", it) }
+        fromSpmid?.let { parameter("from_spmid", it) }
+        fromPage?.let { parameter("from_page", it) }
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §12：App 综合搜索。 */
+    suspend fun getAppSearch(
+        keyword: String,
+        page: Int = 1,
+        pageSize: Int = 20,
+        order: String? = null,
+        duration: Int? = null,
+        rid: Int? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/search") {
+        parameter("keyword", keyword)
+        parameter("pn", page)
+        parameter("ps", pageSize)
+        order?.let { parameter("order", it) }
+        duration?.let { parameter("duration", it) }
+        rid?.let { parameter("rid", it) }
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §12：App 分类搜索。`type` 1 视频、2 用户、3 专栏、4 直播、5 综合、6 番剧、7 影视。 */
+    suspend fun getAppSearchType(
+        keyword: String,
+        type: Int,
+        page: Int = 1,
+        pageSize: Int = 20,
+        categoryId: Int? = null,
+        order: String? = null,
+        orderSort: Int? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.get("https://app.bilibili.com/x/v2/search/type") {
+        parameter("keyword", keyword)
+        parameter("type", type)
+        parameter("pn", page)
+        parameter("ps", pageSize)
+        categoryId?.let { parameter("category_id", it) }
+        order?.let { parameter("order", it) }
+        orderSort?.let { parameter("order_sort", it) }
+        accessKey?.takeIf { it.isNotBlank() }?.let { parameter("access_key", it) }
+    }.body()
+
+    /** 文档 §9.3：稿件分 P。 */
+    suspend fun getPageList(avid: Long): BiliResponse<List<PageListItem>> =
+        client.get("/x/player/pagelist") {
+            markAppRequest()
+            parameter("aid", avid)
+        }.body()
+
+    /** 文档 §15：点击上报。 */
+    suspend fun sendClickReport(
+        aid: Long,
+        cid: Long? = null,
+        accessKey: String? = null
+    ): BiliResponse<JsonElement> = client.post("/x/report/click/now") {
+        markAppRequest()
+        setBody(
+            FormDataContent(
+                Parameters.build {
+                    append("aid", "$aid")
+                    cid?.let { append("cid", "$it") }
+                    accessKey?.takeIf { it.isNotBlank() }?.let { append("access_key", it) }
+                }
+            )
+        )
+    }.body()
 
     private suspend fun seasonIndexResult(
         seasonIndexType: SeasonIndexType,

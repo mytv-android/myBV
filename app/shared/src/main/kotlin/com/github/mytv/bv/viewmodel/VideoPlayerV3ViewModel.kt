@@ -719,17 +719,20 @@ class VideoPlayerV3ViewModel(
 
     suspend fun loadDanmaku(cid: Long) {
         runCatching {
-            val danmakuXmlData = BiliHttpApi.getDanmakuXml(cid = cid, sessData = Prefs.sessData)
-
-            // mode 映射沿用旧引擎的行为语义：4→顶部、5→底部、其余滚动
-            val danmakuList = danmakuXmlData.data.map {
+            // App 模式走 gRPC 分段弹幕，Web 模式走 XML；仓库内部已做回退
+            val danmakuList = videoPlayRepository.getDanmakuData(
+                aid = currentAid,
+                cid = cid,
+                preferApiType = Prefs.apiType
+            ).map {
                 Danmaku(
                     dmid = it.dmid,
                     positionMs = (it.time * 1000).toInt(),
                     text = it.text,
+                    // 文档 §8.1：4 = 底部固定，5 = 顶部固定
                     type = when (it.type) {
-                        4 -> Danmaku.MODE_TOP
-                        5 -> Danmaku.MODE_BOTTOM
+                        4 -> Danmaku.MODE_BOTTOM
+                        5 -> Danmaku.MODE_TOP
                         else -> Danmaku.MODE_SCROLL
                     },
                     textSize = it.size,

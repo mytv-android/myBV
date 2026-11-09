@@ -1,5 +1,6 @@
 package dev.aaa1115910.biliapi.repositories
 
+import dev.aaa1115910.biliapi.http.util.AppRequestContext
 import dev.aaa1115910.biliapi.http.util.WebCookieManager
 import org.koin.core.annotation.Single
 
@@ -28,5 +29,8 @@ class AuthRepository {
         WebCookieManager.uidCkMd5Provider = { dedeUserIDCkMd5.orEmpty() }
         WebCookieManager.sidProvider = { sid.orEmpty() }
         WebCookieManager.appBuvid3Provider = { buvid3 }
+        AppRequestContext.accessKeyProvider = { accessToken }
+        AppRequestContext.midProvider = { mid }
+        AppRequestContext.buvidProvider = { buvid }
     }
 }

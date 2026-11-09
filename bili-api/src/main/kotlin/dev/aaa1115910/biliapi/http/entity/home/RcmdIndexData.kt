@@ -37,6 +37,8 @@ data class RcmdIndexData(
         val historyCacheSize: Int? = null,
         @SerialName("home_transfer_test")
         val homeTransferTest: Int,
+        // 下一页游标；文档 §5.1 要求翻页时回填响应里的 idx
+        val idx: Long? = null,
         @SerialName("inline_sound")
         val inlineSound: Int,
         @SerialName("is_back_to_homepage")
