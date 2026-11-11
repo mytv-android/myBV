@@ -1,6 +1,5 @@
 package com.github.mytv.bv.ui.designsystem.component
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -26,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -211,20 +209,16 @@ fun CardFrame(
     val interaction = interactionSource ?: remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val focus = rememberCardFocus(focused)
-    // 只放大新焦点，旧卡立即还原：两边同时做缩放动画会让行内卡片上下蠕动。
-    val cardScale = remember { Animatable(1f) }
-    val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-    LaunchedEffect(focus.show) {
-        if (focus.show) cardScale.animateTo(1.08f, scaleSpec) else cardScale.snapTo(1f)
-    }
+    // 缩放瞬间切换：只要有过渡动画，换卡时新旧两张卡的边缘就会一起上下移动，行看起来在抖。
+    val cardScale = if (focus.show) 1.08f else 1f
     val touch = LocalDeviceProfile.current.input == BvInputMode.Touch
     Column(
         modifier = modifier
             .then(if (width != null) Modifier.width(width) else Modifier)
             .zIndex(if (focus.show) 1f else 0f)
             .graphicsLayer {
-                scaleX = cardScale.value
-                scaleY = cardScale.value
+                scaleX = cardScale
+                scaleY = cardScale
             }
             .combinedClickable(
                 interactionSource = interaction,
