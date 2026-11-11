@@ -68,51 +68,70 @@ class VideoPlayRepository(
                     fourk = 1,
                     sessData = authRepository.sessionData,
                     dedeUserID = authRepository.mid,
-                    gaiaVtoken = authRepository.gaiaVtoken
+                    gaiaVtoken = authRepository.gaiaVtoken,
+                    // 未登录时网页接口默认只下发 480P，try_look 可拿到 1080P
+                    tryLook = authRepository.sessionData.isNullOrBlank()
                 ).getResponseData()
                 PlayData.fromPlayUrlData(playUrlData)
             }
 
             ApiType.App -> {
-                withContext(Dispatchers.IO) {
-                    val codecTypes = listOf(
-                        CodeType.Code264,
-                        CodeType.Code265,
-                        CodeType.CodeAv1
-                    )
-                    val replies = codecTypes.map { codecType ->
-                        async {
-                            val playUniteReply = runCatching {
-                                playerStub?.playViewUnite(playViewUniteReq {
-                                    vod = videoVod {
-                                        this.aid = aid
-                                        this.cid = cid
-                                        fnval = 4048
-                                        qn = 127
-                                        fnver = 0
-                                        fourk = true
-                                        // 2 = 强制返回 https 地址，部分设备/网络下 http 直连会失败
-                                        forceHost = 2
-                                        preferCodecType = codecType.toPlayerSharedCodeType()
-                                    }
-                                }) ?: throw IllegalStateException("Player stub is not initialized")
-                            }.onFailure {
-                                // dont throw
-                                runCatching { handleGrpcException(it) }
-                                    .onFailure {
-                                        println("get play data failed: [aid=$aid, cid=$cid, preferCodec=$codecType, preferApiType=$preferApiType]")
-                                        it.printStackTrace()
-                                    }
-                            }.getOrNull()
-                            playUniteReply
-                        }
-                    }.awaitAll()
-                    val result = replies.map {
-                        it?.let { PlayData.fromPlayViewUniteReply(it) }
-                    }.reduce { acc, playData ->
-                        acc?.let { playData?.let { acc + playData } ?: acc } ?: playData
-                    } ?: throw IllegalStateException("All codec types are failed to get play data")
-                    result
+                if (authRepository.accessToken.isNullOrBlank()) {
+                    // 未登录时 gRPC 同样只下发 480P，改用 App 规则的 HTTP 接口并带 try_look
+                    val playUrlData = BiliHttpApi.getAppVideoPlayUrl(
+                        av = aid,
+                        cid = cid,
+                        fnval = 4048,
+                        qn = 127,
+                        fnver = 0,
+                        fourk = 1,
+                        sessData = authRepository.sessionData,
+                        dedeUserID = authRepository.mid,
+                        gaiaVtoken = authRepository.gaiaVtoken,
+                        tryLook = true
+                    ).getResponseData()
+                    PlayData.fromPlayUrlData(playUrlData)
+                } else {
+                    withContext(Dispatchers.IO) {
+                        val codecTypes = listOf(
+                            CodeType.Code264,
+                            CodeType.Code265,
+                            CodeType.CodeAv1
+                        )
+                        val replies = codecTypes.map { codecType ->
+                            async {
+                                val playUniteReply = runCatching {
+                                    playerStub?.playViewUnite(playViewUniteReq {
+                                        vod = videoVod {
+                                            this.aid = aid
+                                            this.cid = cid
+                                            fnval = 4048
+                                            qn = 127
+                                            fnver = 0
+                                            fourk = true
+                                            // 2 = 强制返回 https 地址，部分设备/网络下 http 直连会失败
+                                            forceHost = 2
+                                            preferCodecType = codecType.toPlayerSharedCodeType()
+                                        }
+                                    }) ?: throw IllegalStateException("Player stub is not initialized")
+                                }.onFailure {
+                                    // dont throw
+                                    runCatching { handleGrpcException(it) }
+                                        .onFailure {
+                                            println("get play data failed: [aid=$aid, cid=$cid, preferCodec=$codecType, preferApiType=$preferApiType]")
+                                            it.printStackTrace()
+                                        }
+                                }.getOrNull()
+                                playUniteReply
+                            }
+                        }.awaitAll()
+                        val result = replies.map {
+                            it?.let { PlayData.fromPlayViewUniteReply(it) }
+                        }.reduce { acc, playData ->
+                            acc?.let { playData?.let { acc + playData } ?: acc } ?: playData
+                        } ?: throw IllegalStateException("All codec types are failed to get play data")
+                        result
+                    }
                 }
             }
         }

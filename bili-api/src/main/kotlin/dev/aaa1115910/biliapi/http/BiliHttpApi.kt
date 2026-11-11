@@ -306,7 +306,8 @@ object BiliHttpApi {
         platform: String = "oc",
         sessData: String? = null,
         dedeUserID: Long? = null,
-        gaiaVtoken: String? = null
+        gaiaVtoken: String? = null,
+        tryLook: Boolean = false
     ): BiliResponse<PlayUrlData> {
         val bodyText = client.get("/x/player/playurl") {
             require(av != null || bv != null) { "av and bv cannot be null at the same time" }
@@ -321,6 +322,7 @@ object BiliHttpApi {
             parameter("otype", otype)
             parameter("type", type)
             parameter("platform", platform)
+            parameter("try_look", if (tryLook) 1 else null)
             val cookieParts = mutableListOf<String>()
             sessData?.let { cookieParts.add("SESSDATA=$it") }
             dedeUserID?.let { cookieParts.add("DedeUserID=$it") }
@@ -352,7 +354,8 @@ object BiliHttpApi {
         session: String? = null,
         sessData: String? = null,
         dedeUserID: Long? = null,
-        gaiaVtoken: String? = null
+        gaiaVtoken: String? = null,
+        tryLook: Boolean = false
     ): BiliResponse<PlayUrlData> {
         val bodyText = client.get("/x/player/playurl") {
             markAppRequest()
@@ -365,6 +368,7 @@ object BiliHttpApi {
             parameter("fnver", fnver)
             parameter("fourk", fourk)
             parameter("session", session)
+            parameter("try_look", if (tryLook) 1 else null)
             val cookieParts = mutableListOf<String>()
             sessData?.let { cookieParts.add("SESSDATA=$it") }
             dedeUserID?.let { cookieParts.add("DedeUserID=$it") }
