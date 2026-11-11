@@ -1,6 +1,6 @@
 package com.github.mytv.bv.ui.designsystem.component
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -210,17 +212,23 @@ fun CardFrame(
     val interaction = interactionSource ?: remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val focus = rememberCardFocus(focused)
-    val scale by animateFloatAsState(
-        if (focus.show) 1.08f else 1f,
-        MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "cardScale"
-    )
+    // 只放大新焦点，旧卡立即还原：两边同时做缩放动画会让行内卡片上下蠕动。
+    // 缩放锚在卡片顶边，行内卡片的顶线永远不动。
+    val cardScale = remember { Animatable(1f) }
+    val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    LaunchedEffect(focus.show) {
+        if (focus.show) cardScale.animateTo(1.08f, scaleSpec) else cardScale.snapTo(1f)
+    }
     val touch = LocalDeviceProfile.current.input == BvInputMode.Touch
     Column(
         modifier = modifier
             .then(if (width != null) Modifier.width(width) else Modifier)
             .zIndex(if (focus.show) 1f else 0f)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .graphicsLayer {
+                scaleX = cardScale.value
+                scaleY = cardScale.value
+                transformOrigin = TransformOrigin(0.5f, 0f)
+            }
             .combinedClickable(
                 interactionSource = interaction,
                 indication = null,
