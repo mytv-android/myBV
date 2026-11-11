@@ -153,8 +153,9 @@ data class VideoPlayerVideoShotData(
     val videoShot: VideoShot? = null,
 )
 
+/** 调试信息取值函数：调试层按固定间隔调用，拿到的是播放内核的实时状态。 */
 data class VideoPlayerDebugInfoData(
-    val debugInfo: String = "",
+    val debugInfo: () -> String = { "" },
 )
 
 val LocalVideoPlayerSeekData = compositionLocalOf { VideoPlayerSeekData() }

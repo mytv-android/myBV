@@ -83,7 +83,6 @@ import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.mytv.bv.player.entity.LocalVideoPlayerConfigData
-import com.github.mytv.bv.player.entity.LocalVideoPlayerDebugInfoData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerHistoryData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerLogsData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerPaymentData
@@ -98,6 +97,7 @@ import com.github.mytv.bv.player.ui.KeyedSideEffect
 import com.github.mytv.bv.player.ui.PaidRequireTip
 import com.github.mytv.bv.player.ui.PlayErrorTip
 import com.github.mytv.bv.player.ui.PlayerController
+import com.github.mytv.bv.player.ui.PlayerDebugInfoText
 import com.github.mytv.bv.player.ui.PreviewTip
 import com.github.mytv.bv.player.ui.R
 import com.github.mytv.bv.player.ui.SeekPreviewRow
@@ -179,7 +179,6 @@ internal fun TvController(
     val videoShotData = LocalVideoPlayerVideoShotData.current
     val paymentData = LocalVideoPlayerPaymentData.current
     val logsData = LocalVideoPlayerLogsData.current
-    val debugInfoData = LocalVideoPlayerDebugInfoData.current
     val menuState = controller.menuState
     val videoPlayer = controller.videoPlayer
 
@@ -618,11 +617,7 @@ internal fun TvController(
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.3f))
                 ) {
-                    Text(
-                        modifier = Modifier.padding(8.dp),
-                        text = debugInfoData.debugInfo,
-                        style = PlayerType.Meta,
-                    )
+                    PlayerDebugInfoText(modifier = Modifier.padding(8.dp))
                 }
             }
 

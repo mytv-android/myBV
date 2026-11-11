@@ -14,6 +14,7 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.MediaSource
@@ -88,6 +89,9 @@ class ExoMediaPlayer(
 
     private val bufferingDetector = FrequentBufferingDetector()
 
+    /** 已渲染视频帧的实时帧率，仅供调试信息展示 */
+    private val renderFpsTracker = RenderFpsTracker()
+
     // BEHIND_LIVE_WINDOW 恢复状态（直播 HLS 播放窗口滑动过快时触发）
     private var behindLiveWindowWindowStartAtMs = 0L
     private var behindLiveWindowLastRecoverAtMs = 0L
@@ -152,6 +156,15 @@ class ExoMediaPlayer(
 
     private fun initListener() {
         mPlayer?.addListener(this)
+        mPlayer?.addAnalyticsListener(object : AnalyticsListener {
+            override fun onVideoFrameProcessingOffset(
+                eventTime: AnalyticsListener.EventTime,
+                totalProcessingOffsetUs: Long,
+                frameCount: Int,
+            ) {
+                renderFpsTracker.onFrameRendered()
+            }
+        })
     }
 
     @OptIn(UnstableApi::class)
@@ -397,11 +410,19 @@ class ExoMediaPlayer(
 
     override val debugInfo: String
         get() {
+            val fps = renderFpsTracker.fps()
+            val sourceFps = mPlayer?.videoFormat?.frameRate?.takeIf { it > 0f }
+            val fpsLine = if (sourceFps == null) {
+                String.format(Locale.US, "fps: %.1f", fps)
+            } else {
+                String.format(Locale.US, "fps: %.1f (source: %.1f)", fps, sourceFps)
+            }
             return """
                 player: ${androidx.media3.common.MediaLibraryInfo.VERSION_SLASHY}
                 time: ${currentPosition.formatHourMinSec()} / ${duration.formatHourMinSec()}
                 buffered: $bufferedPercentage%
                 resolution: ${mPlayer?.videoSize?.width} x ${mPlayer?.videoSize?.height}
+                $fpsLine
                 audio: ${mPlayer?.audioFormat?.bitrate ?: 0} kbps
                 video codec: ${mPlayer?.videoFormat?.sampleMimeType ?: "null"}
                 audio codec: ${mPlayer?.audioFormat?.sampleMimeType ?: "null"} (${getAudioRendererName()})
@@ -520,6 +541,38 @@ private class ExtXStartStrippingHlsPlaylistParserFactory(
         ExtXStartStrippingParser(
             delegate.createPlaylistParser(multivariantPlaylist, previousMediaPlaylist),
         )
+}
+
+/**
+ * 已渲染视频帧的实时帧率：只保留最近 1 秒的帧时间戳，按窗口内的帧数折算。
+ *
+ * 回调在播放线程、读取在主线程，所以两边都加锁；暂停或缓冲超过 [STALE_NS]
+ * 没有新帧时返回 0，避免调试信息里一直挂着停播前的旧帧率。
+ */
+private class RenderFpsTracker {
+    private companion object {
+        const val WINDOW_NS = 1_000_000_000L
+        const val STALE_NS = 500_000_000L
+    }
+
+    private val frameTimes = ArrayDeque<Long>()
+
+    @Synchronized
+    fun onFrameRendered(nowNs: Long = SystemClock.elapsedRealtimeNanos()) {
+        frameTimes.addLast(nowNs)
+        while (frameTimes.isNotEmpty() && nowNs - frameTimes.first() > WINDOW_NS) {
+            frameTimes.removeFirst()
+        }
+    }
+
+    @Synchronized
+    fun fps(): Float {
+        val newest = frameTimes.lastOrNull() ?: return 0f
+        if (SystemClock.elapsedRealtimeNanos() - newest > STALE_NS) return 0f
+        val spanNs = newest - frameTimes.first()
+        if (frameTimes.size < 2 || spanNs <= 0L) return 0f
+        return (frameTimes.size - 1) * 1_000_000_000f / spanNs
+    }
 }
 
 @OptIn(UnstableApi::class)

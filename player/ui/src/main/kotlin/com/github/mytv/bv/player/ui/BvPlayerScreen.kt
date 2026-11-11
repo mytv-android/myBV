@@ -706,7 +706,7 @@ fun BvPlayerScreen(
             showBackToHistory = showBackToHistory
         ),
         LocalVideoPlayerDebugInfoData provides VideoPlayerDebugInfoData(
-            debugInfo = videoPlayer.debugInfo
+            debugInfo = { videoPlayer.debugInfo }
         ),
         LocalPlayerDpad provides dpad,
         LocalPlayerReduceMotion provides reduceMotion,

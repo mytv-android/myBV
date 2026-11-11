@@ -33,7 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +53,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.mytv.bv.player.entity.LocalVideoPlayerConfigData
-import com.github.mytv.bv.player.entity.LocalVideoPlayerDebugInfoData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerHistoryData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerPaymentData
 import com.github.mytv.bv.player.entity.LocalVideoPlayerSeekData
@@ -68,8 +66,8 @@ import com.github.mytv.bv.player.ui.KeyedSideEffect
 import com.github.mytv.bv.player.ui.PaidRequireTip
 import com.github.mytv.bv.player.ui.PlayErrorTip
 import com.github.mytv.bv.player.ui.PlayerController
+import com.github.mytv.bv.player.ui.PlayerDebugInfoText
 import com.github.mytv.bv.player.ui.PreviewTip
-import com.github.mytv.bv.player.ui.design.PlayerType
 import com.github.mytv.bv.player.ui.R
 import com.github.mytv.bv.player.ui.formatSpeed
 import com.github.mytv.bv.player.ui.nextAfter
@@ -111,7 +109,6 @@ internal fun TouchController(
     val configData = LocalVideoPlayerConfigData.current
     val videoInfoData = LocalVideoPlayerVideoInfoData.current
     val videoShotData = LocalVideoPlayerVideoShotData.current
-    val debugInfoData = LocalVideoPlayerDebugInfoData.current
     val historyData = LocalVideoPlayerHistoryData.current
     val paymentData = LocalVideoPlayerPaymentData.current
     val menuState = controller.menuState
@@ -270,11 +267,7 @@ internal fun TouchController(
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.3f))
                 ) {
-                    Text(
-                        modifier = Modifier.padding(8.dp),
-                        text = debugInfoData.debugInfo,
-                        style = PlayerType.Meta,
-                    )
+                    PlayerDebugInfoText(modifier = Modifier.padding(8.dp))
                 }
             }
 
