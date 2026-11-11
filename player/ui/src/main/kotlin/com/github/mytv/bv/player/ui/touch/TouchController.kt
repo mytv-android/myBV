@@ -83,6 +83,9 @@ private const val TAG = "TouchController"
 /** 控制层无操作后自动淡出的时间（第 9.4 节：3 秒）。 */
 private const val AutoHideMillis = 3000L
 
+/** 调试信息上边距：顶栏从 top 12dp 起、高约 28dp，浮层放在其下方。 */
+private val DebugInfoTop = 56.dp
+
 /**
  * 触摸端控制层：由旧 player/mobile 的 BvPlayerController 改写。
  * - 手势沿用旧版：单击显示/隐藏；双击暂停；长按 2 倍速；横滑快进；左半竖滑亮度、右半竖滑音量；
@@ -263,7 +266,7 @@ internal fun TouchController(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(8.dp)
+                        .padding(start = 8.dp, top = DebugInfoTop)
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.3f))
                 ) {

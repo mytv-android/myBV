@@ -135,6 +135,9 @@ private val SubtitleLineStyle = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
 private val ControlsEndWithPanel = 340.dp
 private val ControlsEnd = 48.dp
 
+/** 调试信息上边距：标题块从 top 27dp 起（标题 26sp + 副标题 16sp，底边约 69dp），再留 11dp。 */
+private val DebugInfoTop = 80.dp
+
 /**
  * 电视端控制层：由旧 player/tv 的 VideoPlayerController 改写。按键表照搬旧版：
  *
@@ -611,7 +614,7 @@ internal fun TvController(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(8.dp)
+                        .padding(start = 8.dp, top = DebugInfoTop)
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.3f))
                 ) {
