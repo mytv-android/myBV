@@ -14,7 +14,6 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
-import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.MediaSource
@@ -156,15 +155,11 @@ class ExoMediaPlayer(
 
     private fun initListener() {
         mPlayer?.addListener(this)
-        mPlayer?.addAnalyticsListener(object : AnalyticsListener {
-            override fun onVideoFrameProcessingOffset(
-                eventTime: AnalyticsListener.EventTime,
-                totalProcessingOffsetUs: Long,
-                frameCount: Int,
-            ) {
-                renderFpsTracker.onFrameRendered()
-            }
-        })
+        // 用逐帧回调统计渲染帧率：AnalyticsListener.onVideoFrameProcessingOffset
+        // 在 media3 1.11 只在渲染器停止时批量上报，拿不到实时帧率。
+        mPlayer?.setVideoFrameMetadataListener { _, _, _, _ ->
+            renderFpsTracker.onFrameRendered()
+        }
     }
 
     @OptIn(UnstableApi::class)
