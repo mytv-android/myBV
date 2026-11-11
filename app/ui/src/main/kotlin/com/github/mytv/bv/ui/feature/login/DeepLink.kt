@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -28,37 +29,34 @@ import com.github.mytv.bv.ui.widget.WidgetStore
 /**
  * 处理外部深链：bugvideo://qrtoken 导入账号，bugvideo://video/{aid} 打开视频，
  * bugvideo://recommend 回首页，bugvideo://toview 打开稍后再看。
- * 每个 Intent 只处理一次（rememberSaveable 记住已处理过）。
+ * 每个 Intent 只处理一次：按 Intent 对象去重。电视桌面推荐的同一张卡可以被反复点击，
+ * launcher 每次送来数据相同、对象不同的 Intent；按 URI 文本去重会把第二次点击误判为已处理。
  */
 @Composable
 fun DeepLinkEffect(intent: Intent?, nav: NavController) {
     val context = LocalContext.current
     var pending by rememberSaveable { mutableStateOf<String?>(null) }
-    var handled by rememberSaveable { mutableStateOf<String?>(null) }
+    var handled by remember { mutableStateOf<Intent?>(null) }
     LaunchedEffect(intent) {
-        val uri = intent?.data ?: return@LaunchedEffect
-        val text = uri.toString()
-        if (handled == text) return@LaunchedEffect
+        if (intent == null || intent === handled) return@LaunchedEffect
+        val uri = intent.data ?: return@LaunchedEffect
+        handled = intent
 
         when (uri.host) {
             BvScheme.Video.HOST -> {
-                handled = text
                 uri.pathSegments.firstOrNull()?.toLongOrNull()
-                    ?.let { nav.navigate(VideoRoute(it)) }
+                    ?.let { nav.navigate(VideoRoute(it)) { launchSingleTop = true } }
             }
 
             BvScheme.Recommend.host -> {
-                handled = text
                 nav.navigateTopLevel(TopLevel.Home)
             }
 
             BvScheme.ToView.host -> {
-                handled = text
                 nav.navigate(ToViewRoute) { launchSingleTop = true }
             }
 
             BvScheme.Shorts.host -> {
-                handled = text
                 val aid = uri.getQueryParameter("aid")?.toLongOrNull()
                 if (aid != null) {
                     WidgetStore.markShortsSeen(context, aid)
@@ -68,33 +66,28 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
             }
 
             BvScheme.Dynamic.host -> {
-                handled = text
                 WidgetStore.markDynamicSeen(context)
                 WidgetRefresher.updateWidgetsSoon(context)
                 nav.navigate(DynamicRoute) { launchSingleTop = true }
             }
 
             BvScheme.Search.host -> {
-                handled = text
                 nav.navigate(SearchRoute(uri.getQueryParameter("q").orEmpty())) {
                     launchSingleTop = true
                 }
             }
 
             BvScheme.Login.host -> {
-                handled = text
                 nav.navigate(LoginRoute) { launchSingleTop = true }
             }
 
             BvScheme.Timeline.host -> {
-                handled = text
                 nav.navigate(
                     PgcTimelineRoute(uri.getQueryParameter("day")?.toIntOrNull())
                 ) { launchSingleTop = true }
             }
 
             BvScheme.Player.host -> {
-                handled = text
                 val aid = uri.getQueryParameter("aid")?.toLongOrNull()
                 if (aid != null) {
                     nav.navigate(
@@ -112,7 +105,6 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
             }
 
             BvScheme.Season.host -> {
-                handled = text
                 val seasonId = uri.getQueryParameter("seasonId")?.toIntOrNull()?.takeIf { it > 0 }
                 val epId = uri.getQueryParameter("epId")?.toIntOrNull()?.takeIf { it > 0 }
                 // Web 端历史可能只有 epId：SeasonScreen 会按 epId 反查季度
@@ -124,8 +116,7 @@ fun DeepLinkEffect(intent: Intent?, nav: NavController) {
             }
 
             BvScheme.QrToken.HOST -> {
-                handled = text
-                pending = text
+                pending = uri.toString()
             }
         }
     }
