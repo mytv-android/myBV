@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -213,7 +212,6 @@ fun CardFrame(
     val focused by interaction.collectIsFocusedAsState()
     val focus = rememberCardFocus(focused)
     // 只放大新焦点，旧卡立即还原：两边同时做缩放动画会让行内卡片上下蠕动。
-    // 缩放锚在卡片顶边，行内卡片的顶线永远不动。
     val cardScale = remember { Animatable(1f) }
     val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
     LaunchedEffect(focus.show) {
@@ -227,7 +225,6 @@ fun CardFrame(
             .graphicsLayer {
                 scaleX = cardScale.value
                 scaleY = cardScale.value
-                transformOrigin = TransformOrigin(0.5f, 0f)
             }
             .combinedClickable(
                 interactionSource = interaction,
