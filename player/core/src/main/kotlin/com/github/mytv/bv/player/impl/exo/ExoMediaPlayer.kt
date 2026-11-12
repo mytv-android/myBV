@@ -1,6 +1,8 @@
 package com.github.mytv.bv.player.impl.exo
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.Surface
 import androidx.annotation.OptIn
@@ -39,6 +41,7 @@ import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.net.URI
 import java.util.Locale
+import kotlin.math.abs
 
 /** 低于该倍速不启用跳过静音：压缩音频时间轴会让作为主时钟的音频位置快进，画面跟着跳帧 */
 private const val SKIP_SILENCE_MIN_SPEED = 2.5f
@@ -59,6 +62,18 @@ private const val MAX_CDN_SWITCHES = 3
 private const val BEHIND_LIVE_WINDOW_WINDOW_MS = 15_000L
 private const val BEHIND_LIVE_WINDOW_MIN_INTERVAL_MS = 1_200L
 private const val BEHIND_LIVE_WINDOW_MAX_RECOVERS = 2
+
+/**
+ * 单次缓冲卡死判定：缓冲中进度 [STALL_TIMEOUT_MS] 没有前进就认为当前地址给不出数据。
+ * ExoPlayer 对读不到数据的应答会一直等待，不会自己报错，界面就停在转圈上。
+ */
+private const val STALL_TIMEOUT_MS = 20_000L
+
+/** 恢复后要真正播过这么久才算「换了一次成功」，否则下一次卡死仍计入同一轮 */
+private const val STALL_RECOVERY_PROGRESS_MS = 10_000L
+
+/** 连续恢复次数上限（换候选 / 重建数据源都计入），用尽后把错误抛给上层 */
+private const val MAX_STALL_RECOVERS = 2
 
 @OptIn(UnstableApi::class)
 class ExoMediaPlayer(
@@ -95,6 +110,21 @@ class ExoMediaPlayer(
     private var behindLiveWindowWindowStartAtMs = 0L
     private var behindLiveWindowLastRecoverAtMs = 0L
     private var behindLiveWindowRecoverCount = 0
+
+    // 缓冲卡死看门狗：缓冲中定期比较进度，长时间不动就重建数据源
+    private val stallHandler = Handler(Looper.getMainLooper())
+    private var stallRecoverCount = 0
+    private var stallRecoveryPosition = C.TIME_UNSET
+    private var stallCheckStarted = false
+    private var stallLastPosition = C.TIME_UNSET
+    private var stallLastBufferedPosition = C.TIME_UNSET
+    private var stallLastProgressAtMs = 0L
+    private val stallCheckRunnable = object : Runnable {
+        override fun run() {
+            checkBufferingStall()
+            if (stallCheckStarted) stallHandler.postDelayed(this, STALL_TIMEOUT_MS / 4)
+        }
+    }
 
     @OptIn(UnstableApi::class)
     private val dataSourceFactory =
@@ -190,6 +220,8 @@ class ExoMediaPlayer(
         audioCandidates = audios
         candidateIndex = 0
         cdnSwitchCount = 0
+        stallRecoverCount = 0
+        stallRecoveryPosition = C.TIME_UNSET
         bufferingDetector.reset()
         mMediaSource = buildMediaSource()
     }
@@ -259,6 +291,7 @@ class ExoMediaPlayer(
     }
 
     override fun release() {
+        stopStallWatchdog()
         mPlayer?.release()
     }
 
@@ -314,9 +347,14 @@ class ExoMediaPlayer(
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         when (playbackState) {
-            Player.STATE_IDLE -> mPlayerEventListener?.onIdle()
+            Player.STATE_IDLE -> {
+                stopStallWatchdog()
+                mPlayerEventListener?.onIdle()
+            }
+
             Player.STATE_BUFFERING -> {
                 mPlayerEventListener?.onBuffering()
+                startStallWatchdog()
                 // 30 秒内缓冲达到 3 次说明当前地址质量差，切到下一个没失败过的候选
                 if (isCdnFailoverActive() &&
                     bufferingDetector.onBufferingStart(SystemClock.elapsedRealtime())
@@ -326,12 +364,93 @@ class ExoMediaPlayer(
             }
 
             Player.STATE_READY -> {
+                stopStallWatchdog()
                 bufferingDetector.onReady()
                 mPlayerEventListener?.onReady()
             }
 
-            Player.STATE_ENDED -> mPlayerEventListener?.onEnd()
+            Player.STATE_ENDED -> {
+                stopStallWatchdog()
+                mPlayerEventListener?.onEnd()
+            }
         }
+    }
+
+    /** 进入缓冲后开始检查进度是否卡死；换源/重试后同样重新开始计时 */
+    private fun startStallWatchdog() {
+        if (stallCheckStarted) return
+        stallCheckStarted = true
+        stallLastPosition = C.TIME_UNSET
+        stallLastBufferedPosition = C.TIME_UNSET
+        stallLastProgressAtMs = SystemClock.elapsedRealtime()
+        stallHandler.postDelayed(stallCheckRunnable, STALL_TIMEOUT_MS / 4)
+    }
+
+    private fun stopStallWatchdog() {
+        stallCheckStarted = false
+        stallHandler.removeCallbacks(stallCheckRunnable)
+        stallLastPosition = C.TIME_UNSET
+    }
+
+    /**
+     * 缓冲中进度长时间不动时的恢复。
+     *
+     * 连接被上游挂住时 ExoPlayer 会一直等下去，既不报错也没有新数据，
+     * 界面就永远转圈；这里按「进度没动」而不是「缓冲次数多」来判断，覆盖单次卡死。
+     */
+    private fun checkBufferingStall() {
+        val player = mPlayer ?: return
+        // 暂停时缓冲本来就不会前进，不能算卡死
+        if (player.playbackState != Player.STATE_BUFFERING || !player.playWhenReady) {
+            stallLastPosition = C.TIME_UNSET
+            stallLastProgressAtMs = SystemClock.elapsedRealtime()
+            return
+        }
+        val position = player.currentPosition
+        // 用缓冲到的毫秒数而不是百分比：百分比在长视频里一格就是几十秒，缓慢但有进展的下载会被误判
+        val buffered = player.bufferedPosition
+        if (stallLastPosition == C.TIME_UNSET ||
+            position != stallLastPosition ||
+            buffered != stallLastBufferedPosition
+        ) {
+            stallLastPosition = position
+            stallLastBufferedPosition = buffered
+            stallLastProgressAtMs = SystemClock.elapsedRealtime()
+            return
+        }
+        if (SystemClock.elapsedRealtime() - stallLastProgressAtMs < STALL_TIMEOUT_MS) return
+        recoverFromStall(position)
+    }
+
+    private fun recoverFromStall(position: Long) {
+        stallLastProgressAtMs = SystemClock.elapsedRealtime()
+        // 恢复之后确实又播了一段，说明上一次救回来了：重新计数。
+        // 用绝对差：用户往回拖之后也可能重新卡住，不能因为方向不同就一直不清零。
+        if (stallRecoveryPosition != C.TIME_UNSET &&
+            abs(position - stallRecoveryPosition) >= STALL_RECOVERY_PROGRESS_MS
+        ) {
+            stallRecoverCount = 0
+            stallRecoveryPosition = C.TIME_UNSET
+        }
+        if (stallRecoverCount >= MAX_STALL_RECOVERS) {
+            logger.warn { "缓冲卡死：已恢复 $stallRecoverCount 次仍无进度，上报错误" }
+            stopStallWatchdog()
+            mPlayerEventListener?.onError(IllegalStateException("播放长时间没有进度，已停止重试"))
+            return
+        }
+        stallRecoverCount++
+        stallRecoveryPosition = position
+        // 先换候选地址：换一个上游通常就能恢复；没有备用地址时原地重建数据源，断开卡住的连接
+        if (trySwitchToNextCdn("缓冲卡死")) return
+        val wasPlaying = mPlayer?.playWhenReady == true
+        val source = runCatching { buildMediaSource() }.getOrNull() ?: return
+        logger.warn { "缓冲卡死：重建数据源（第 $stallRecoverCount/$MAX_STALL_RECOVERS 次）" }
+        mMediaSource = source
+        mPlayer?.setMediaSource(source)
+        mPlayer?.prepare()
+        if (position > 0L) mPlayer?.seekTo(position)
+        if (wasPlaying) mPlayer?.play()
+        bufferingDetector.reset()
     }
 
     /** 是否具备自动切候选的条件：开关打开且确实还有其它候选 */
@@ -372,6 +491,9 @@ class ExoMediaPlayer(
         if (position > 0L) mPlayer?.seekTo(position)
         if (wasPlaying) mPlayer?.play()
         bufferingDetector.reset()
+        // 新地址从头计时，别把切换前那段停滞算到它头上
+        stallLastPosition = C.TIME_UNSET
+        stallLastProgressAtMs = SystemClock.elapsedRealtime()
         val toHost = currentVideoHost()
         logger.warn {
             "CDN $reason，自动切换候选地址: $fromHost -> $toHost（第 $cdnSwitchCount/$MAX_CDN_SWITCHES 次）"

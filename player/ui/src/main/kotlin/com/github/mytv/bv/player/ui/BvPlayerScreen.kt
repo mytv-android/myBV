@@ -7,6 +7,7 @@
 
 package com.github.mytv.bv.player.ui
 
+import android.os.SystemClock
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -235,6 +236,13 @@ fun BvPlayerScreen(
         processedSponsorIndices = emptySet()
     }
 
+    // 自动跳过后的卡死重试状态：跳到推广片段末尾却仍在缓冲时重跳一次；
+    // 用户自己 seek 过之后作废，不能再把人拉回广告末尾
+    val autoSkipState = remember { AutoSkipRetryState() }
+    KeyedSideEffect(configData.currentVideoCid) {
+        autoSkipState.clear()
+    }
+
     var danmakuConfig by remember { mutableStateOf(DanmakuConfig()) }
 
     // ---------------------------------------------------------------- 弹幕配置
@@ -320,6 +328,8 @@ fun BvPlayerScreen(
                 logger.info { "onReady" }
                 isError = false
                 exception = null
+                // 缓冲结束但没接着播时不会有 onPlay，这里必须自己复位，否则转圈和「缓冲中自动跳过」都会一直挂着
+                isBuffering = false
                 initDanmakuConfig()
 
                 if (latestVideoInfo.width <= 0 || latestVideoInfo.height <= 0) {
@@ -414,13 +424,19 @@ fun BvPlayerScreen(
     // 轮询结果写进普通对象（不写 Compose State），界面进度由 PlayerSeekDataProvider 单独提供。
     LaunchedEffect(videoPlayer) {
         while (true) {
+            val now = SystemClock.elapsedRealtime()
             val position = videoPlayer.currentPosition.coerceAtLeast(0L)
             progressSnapshot.position = position
             progressSnapshot.duration = videoPlayer.duration.coerceAtLeast(0L)
 
             val config = latestConfig
             val clips = config.clipInfoList
-            if (config.skipPgcIntroOutro && videoPlayer.isPlaying && !clips.isNullOrEmpty()) {
+
+            // 缓冲中也要判定：片段恰好落在卡顿位置上时 isPlaying 一直是 false，
+            // 只等「恢复播放」就永远等不到，只能停在那里转圈。
+            val canAutoSkip = videoPlayer.isPlaying || isBuffering
+
+            if (config.skipPgcIntroOutro && canAutoSkip && !clips.isNullOrEmpty()) {
                 val positionSeconds = (position / 1000).toInt()
                 val matched = clips.withIndex().firstOrNull { (index, clip) ->
                     index !in processedClipIndices &&
@@ -434,11 +450,12 @@ fun BvPlayerScreen(
                     logger.info { "Skip PGC clip: ${clip.clipType}, $positionSeconds -> ${clip.end}" }
                     videoPlayer.seekTo(target)
                     mDanmakuView?.notifySeek(target)
+                    autoSkipState.onAutoSkip(target, now)
                 }
             }
 
             val sponsorSegments = config.sponsorSegments
-            if (config.skipSponsorSegments && videoPlayer.isPlaying && sponsorSegments.isNotEmpty()) {
+            if (config.skipSponsorSegments && canAutoSkip && sponsorSegments.isNotEmpty()) {
                 val positionSeconds = position / 1000.0
                 val matched = sponsorSegments.withIndex().firstOrNull { (index, segment) ->
                     index !in processedSponsorIndices &&
@@ -454,7 +471,18 @@ fun BvPlayerScreen(
                     }
                     videoPlayer.seekTo(target)
                     mDanmakuView?.notifySeek(target)
+                    autoSkipState.onAutoSkip(target, now)
                 }
+            }
+
+            // 自动跳转后仍卡在原地：seek 可能落到了上游给不出数据的位置，换个时机重跳一次。
+            // 只重跳自己发起的那个目标，用户手动拖进片段区间时不会被强行拉走。
+            autoSkipState.retryTarget(position, isBuffering, now)?.let { (target, attempt) ->
+                logger.info {
+                    "Retry auto skip: ${position / 1000.0}s -> ${target / 1000}s（第 $attempt 次）"
+                }
+                videoPlayer.seekTo(target)
+                mDanmakuView?.notifySeek(target)
             }
 
             delay(100)
@@ -617,6 +645,7 @@ fun BvPlayerScreen(
         },
         seekTo = { position ->
             markManualSeekClip(position)
+            autoSkipState.clear()
             videoPlayer.seekTo(position)
             mDanmakuView?.notifySeek(position)
         },
@@ -624,6 +653,7 @@ fun BvPlayerScreen(
             val time = lastPlayed
             logger.fInfo { "Back to history: ${time.formatHourMinSec()}" }
             markManualSeekClip(time)
+            autoSkipState.clear()
             videoPlayer.seekTo(time)
             mDanmakuView?.notifySeek(time)
             lastPlayed = 0L
@@ -736,6 +766,58 @@ fun BvPlayerScreen(
                 )
             }
         }
+    }
+}
+
+/** 缓冲中重复跳同一区间的间隔：跳到片段末尾仍卡住时，过这么久再试一次 */
+private const val AUTO_SKIP_RETRY_MS = 4_000L
+
+/** 同一个自动跳转目标最多重试几次，避免在上游给不出数据的位置无限 seek */
+private const val MAX_AUTO_SKIP_RETRIES = 3
+
+/**
+ * 自动跳过之后的重试。
+ *
+ * 跳过片段是靠 seek 到片段末尾实现的；如果那个位置上游给不出数据，播放器会一直缓冲，
+ * 界面就停在转圈上、也永远等不到「恢复播放后重新判定」。这里记住自己跳过的目标，
+ * 缓冲中进度迟迟没到目标就重跳一次。只重跳自己发起的跳转：用户手动 seek 过就作废，
+ * 不然用户往回拖进片段区间时会被强行拉走。
+ */
+private class AutoSkipRetryState {
+    private var targetMs = 0L
+    private var skippedAtMs = 0L
+    private var retries = 0
+
+    fun onAutoSkip(target: Long, nowMs: Long) {
+        targetMs = target
+        skippedAtMs = nowMs
+        retries = 0
+    }
+
+    /** 用户自己跳转过（含「回到上次进度」）：不再自动重跳 */
+    fun clear() {
+        targetMs = 0L
+        retries = 0
+    }
+
+    /** 需要重跳时返回 (目标位置, 第几次)，并把计时推后 */
+    fun retryTarget(positionMs: Long, buffering: Boolean, nowMs: Long): Pair<Long, Int>? {
+        if (targetMs <= 0L) return null
+        // 已经播过目标位置：这次跳过生效了，不再管
+        if (positionMs >= targetMs - 1_000L) {
+            clear()
+            return null
+        }
+        // 还在正常播放时不重跳，只有缓冲卡住了才认为是 seek 落空
+        if (!buffering) return null
+        if (nowMs - skippedAtMs < AUTO_SKIP_RETRY_MS) return null
+        if (retries >= MAX_AUTO_SKIP_RETRIES) {
+            clear()
+            return null
+        }
+        retries++
+        skippedAtMs = nowMs
+        return targetMs to retries
     }
 }
 
