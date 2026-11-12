@@ -23,6 +23,7 @@ import com.github.mytv.bv.ui.feature.accounts.UserLockGate
 import com.github.mytv.bv.ui.feature.login.DeepLinkEffect
 import com.github.mytv.bv.ui.feature.migration.LegacyMigrationPrompts
 import com.github.mytv.bv.ui.feature.settings.LaunchUpdatePrompt
+import com.github.mytv.bv.ui.feature.settings.UpdatePromptHost
 import com.github.mytv.bv.ui.navigation.AppShell
 import com.github.mytv.bv.ui.widget.WidgetAuthObserver
 import com.github.mytv.bv.ui.widget.WidgetRefresher
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
                         DeepLinkEffect(deepLinkIntent, nav)
                         LegacyMigrationPrompts()
                         LaunchUpdatePrompt()
+                        UpdatePromptHost()
                     }
                 }
             }

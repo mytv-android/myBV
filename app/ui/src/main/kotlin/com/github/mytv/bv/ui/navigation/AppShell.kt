@@ -44,6 +44,7 @@ import com.github.mytv.bv.ui.designsystem.nav.PhoneNavBar
 import com.github.mytv.bv.ui.designsystem.nav.TabletRail
 import com.github.mytv.bv.ui.designsystem.nav.TvRail
 import com.github.mytv.bv.ui.designsystem.nav.TvRailTarget
+import com.github.mytv.bv.ui.feature.settings.UpdatePillHost
 import com.github.mytv.bv.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -186,6 +187,8 @@ fun AppShell(nav: NavHostController) {
                     },
                 )
             }
+            // 更新下载中的非模态进度条：浮在所有页面之上，不拦截焦点和按键
+            UpdatePillHost(bottomBarPadding = if (showBar) barPadding else 0.dp)
             if (showTvRail) {
                 TvRail(
                     current = if (onSearchPage) TvRailTarget.Search else current?.let { TvRailTarget.Page(it) },

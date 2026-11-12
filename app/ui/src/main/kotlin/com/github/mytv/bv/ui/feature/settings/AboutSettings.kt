@@ -99,7 +99,6 @@ internal fun AboutSettings(onMediaCodec: () -> Unit, container: SettingsContaine
     val context = LocalContext.current
     val view = LocalView.current
     val isTv = LocalDeviceProfile.current.isTv
-    var showUpdate by remember { mutableStateOf(false) }
     val initial = rememberPreferenceSnapshot {
         AboutPreferences(
             updateAlpha = Prefs.updateAlpha,
@@ -141,7 +140,8 @@ internal fun AboutSettings(onMediaCodec: () -> Unit, container: SettingsContaine
                 title = stringResource(R.string.settings_about_version),
                 subtitle = "${BuildConfig.VERSION_NAME}.${BuildConfig.BUILD_TYPE}",
                 value = latestText,
-                onClick = { showUpdate = true },
+                // 弹窗本体由常驻的 UpdatePromptHost 展示，这里只发起一次检查
+                onClick = { UpdateManager.check(context) },
             )
             SettingNavRow(
                 title = stringResource(R.string.settings_about_github),
@@ -231,10 +231,6 @@ internal fun AboutSettings(onMediaCodec: () -> Unit, container: SettingsContaine
                     showChevron = false,
                 )
             }
-        }
-
-        if (showUpdate) {
-            SettingsUpdateDialog(onDismiss = { showUpdate = false })
         }
 
         linkQr?.let { entry ->
