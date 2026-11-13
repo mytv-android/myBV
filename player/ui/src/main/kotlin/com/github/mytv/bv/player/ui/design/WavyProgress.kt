@@ -8,6 +8,7 @@
 package com.github.mytv.bv.player.ui.design
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -30,10 +31,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.mytv.bv.player.entity.LocalVideoPlayerConfigData
 
 private val WavyTrackColor = Color.White.copy(alpha = 0.35f)
+private val SponsorRangeColor = Color(0xFFFFC107)
+
+internal data class SponsorProgressRange(
+    val startFraction: Float,
+    val endFraction: Float,
+)
+
+/** 只展示启用空降助手后实际获取到的推广片段，越界时间钳制到当前视频时长内。 */
+@Composable
+internal fun rememberSponsorProgressRanges(duration: Long): List<SponsorProgressRange> {
+    val config = LocalVideoPlayerConfigData.current
+    val safeDuration = duration.coerceAtLeast(1L)
+    return remember(config.skipSponsorSegments, config.sponsorSegments, safeDuration) {
+        if (!config.skipSponsorSegments) return@remember emptyList()
+        config.sponsorSegments.mapNotNull { segment ->
+            val start = (segment.start * 1000 / safeDuration).toFloat().coerceIn(0f, 1f)
+            val end = (segment.end * 1000 / safeDuration).toFloat().coerceIn(0f, 1f)
+            if (end > start) SponsorProgressRange(start, end) else null
+        }
+    }
+}
 
 /**
  * 第 7.14 节 `WavyProgress`：播放中 `LinearWavyProgressIndicator`（高 12dp），
@@ -46,36 +72,63 @@ internal fun WavyProgress(
     waving: Boolean,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
+    sponsorRanges: List<SponsorProgressRange> = emptyList(),
 ) {
-    Crossfade(
-        targetState = waving,
-        modifier = modifier.fillMaxWidth(),
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "wavyProgress",
-    ) { wavy ->
-        if (wavy) {
-            LinearWavyProgressIndicator(
-                progress = progress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp),
-                color = color,
-                trackColor = WavyTrackColor,
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                LinearProgressIndicator(
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Crossfade(
+            targetState = waving,
+            modifier = Modifier.fillMaxWidth(),
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "wavyProgress",
+        ) { wavy ->
+            if (wavy) {
+                LinearWavyProgressIndicator(
                     progress = progress,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp),
                     color = color,
                     trackColor = WavyTrackColor,
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LinearProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = color,
+                        trackColor = WavyTrackColor,
+                    )
+                }
             }
+        }
+        SponsorProgressRanges(sponsorRanges)
+    }
+}
+
+@Composable
+private fun SponsorProgressRanges(ranges: List<SponsorProgressRange>) {
+    if (ranges.isEmpty()) return
+    Canvas(modifier = Modifier.fillMaxWidth().height(12.dp)) {
+        val markerHeight = 6.dp.toPx()
+        ranges.forEach { range ->
+            val startX = size.width * range.startFraction
+            val endX = size.width * range.endFraction
+            drawRoundRect(
+                color = SponsorRangeColor,
+                topLeft = Offset(startX, (size.height - markerHeight) / 2),
+                size = Size(endX - startX, markerHeight),
+                cornerRadius = CornerRadius(markerHeight / 2),
+            )
         }
     }
 }
@@ -96,6 +149,7 @@ internal fun DraggableWavyProgress(
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
+    sponsorRanges: List<SponsorProgressRange> = emptyList(),
 ) {
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val currentOnDrag by rememberUpdatedState(onDrag)
@@ -112,6 +166,7 @@ internal fun DraggableWavyProgress(
             progress = { dragFraction ?: progress.coerceIn(0f, 1f) },
             waving = waving && dragFraction == null,
             color = color,
+            sponsorRanges = sponsorRanges,
         )
         Slider(
             value = shown,

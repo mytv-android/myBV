@@ -109,6 +109,7 @@ import com.github.mytv.bv.player.ui.design.WavyProgress
 import com.github.mytv.bv.player.ui.design.bvFocus
 import com.github.mytv.bv.player.ui.design.onBvKey
 import com.github.mytv.bv.player.ui.design.onBvKeyUp
+import com.github.mytv.bv.player.ui.design.rememberSponsorProgressRanges
 import com.github.mytv.bv.player.ui.nextAfter
 import com.github.mytv.bv.player.ui.rememberPartLabel
 import com.github.mytv.bv.util.fInfo
@@ -671,6 +672,7 @@ internal fun TvController(
                 // 进度只在控制层可见时读取，隐藏时不跟随 100ms 轮询重组
                 val shownPosition = if (seeking) goTime else seekData.position
                 val safeDuration = seekData.duration.coerceAtLeast(1L)
+                val sponsorRanges = rememberSponsorProgressRanges(seekData.duration)
                 Box(modifier = Modifier.fillMaxSize()) {
                     CinemaScrim()
 
@@ -723,6 +725,7 @@ internal fun TvController(
                         WavyProgress(
                             progress = { shownPosition / safeDuration.toFloat() },
                             waving = stateData.isPlaying && !seeking,
+                            sponsorRanges = sponsorRanges,
                         )
                         Row(
                             modifier = Modifier

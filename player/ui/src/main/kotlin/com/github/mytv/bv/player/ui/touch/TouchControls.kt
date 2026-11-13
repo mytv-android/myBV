@@ -69,6 +69,7 @@ import com.github.mytv.bv.player.ui.design.PlayerChip
 import com.github.mytv.bv.player.ui.design.PlayerType
 import com.github.mytv.bv.player.ui.design.animatedPillShape
 import com.github.mytv.bv.player.ui.design.bvFocus
+import com.github.mytv.bv.player.ui.design.rememberSponsorProgressRanges
 import com.github.mytv.bv.util.formatHourMinSec
 
 /** 控制栏上吞掉点击，避免点到按钮之间的空白处时切换控制层（旧版 noRippleClickable {} 的作用）。 */
@@ -136,6 +137,7 @@ internal fun FullscreenControls(
     val metrics = if (isTablet) TabletMetrics else PhoneMetrics
     val safeDuration = duration.coerceAtLeast(1L)
     val shownPosition = dragFraction?.let { (it * safeDuration).toLong() } ?: position
+    val sponsorRanges = rememberSponsorProgressRanges(duration)
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -217,6 +219,7 @@ internal fun FullscreenControls(
                 DraggableWavyProgress(
                     progress = position / safeDuration.toFloat(),
                     waving = isPlaying,
+                    sponsorRanges = sponsorRanges,
                     onDrag = onDragFractionChange,
                     onSeek = { onSeek((it * safeDuration).toLong()) },
                 )
@@ -340,6 +343,7 @@ internal fun EmbeddedControls(
 ) {
     val safeDuration = duration.coerceAtLeast(1L)
     val shownPosition = dragFraction?.let { (it * safeDuration).toLong() } ?: position
+    val sponsorRanges = rememberSponsorProgressRanges(duration)
     val iconSize = if (isTablet) 24.dp else 20.dp
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
@@ -399,6 +403,7 @@ internal fun EmbeddedControls(
                     progress = position / safeDuration.toFloat(),
                     waving = isPlaying,
                     color = MaterialTheme.colorScheme.inversePrimary,
+                    sponsorRanges = sponsorRanges,
                     onDrag = onDragFractionChange,
                     onSeek = { onSeek((it * safeDuration).toLong()) },
                 )
