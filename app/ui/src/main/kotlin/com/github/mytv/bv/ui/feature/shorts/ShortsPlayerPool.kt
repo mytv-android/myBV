@@ -213,7 +213,9 @@ internal class ShortsPlayerPool(
             },
             enableFfmpegAudioRenderer = Prefs.enableFfmpegAudioRenderer,
             enableSkipSilence = Prefs.playerSkipSilence,
-            audioBalanceLevel = Prefs.playerAudioBalanceLevel
+            audioBalanceLevel = Prefs.playerAudioBalanceLevel,
+            spatialAudioMode = Prefs.playerSpatialAudioMode,
+            stereoUpmixSettings = Prefs.playerUpmixSettings,
         )
     }
 

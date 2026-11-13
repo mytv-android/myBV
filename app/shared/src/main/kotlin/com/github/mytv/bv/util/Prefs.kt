@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlin.math.roundToInt
 import com.materialkolor.PaletteStyle
 import de.schnettler.datastore.manager.PreferenceRequest
 import dev.aaa1115910.biliapi.entity.ApiType
@@ -28,6 +29,8 @@ import com.github.mytv.bv.entity.ThemeType
 import com.github.mytv.bv.player.danmaku.DanmakuLaneDensity
 import com.github.mytv.bv.player.entity.Audio
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
+import com.github.mytv.bv.player.entity.SpatialAudioMode
+import com.github.mytv.bv.player.entity.StereoUpmixSettings
 import com.github.mytv.bv.player.entity.DanmakuType
 import com.github.mytv.bv.player.entity.PlayMode
 import com.github.mytv.bv.player.entity.PlayerLongPressAction
@@ -527,6 +530,29 @@ object Prefs {
             dsm.editPreference(PrefKeys.prefPlayerAudioBalanceLevelKey, value.ordinal)
         }
 
+    var playerSpatialAudioMode: SpatialAudioMode
+        get() = runBlocking {
+            val name = dsm.getPreferenceFlow(PrefKeys.prefUpmixModeRequest).first()
+            SpatialAudioMode.entries.firstOrNull { it.name == name } ?: SpatialAudioMode.Off
+        }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefUpmixModeKey, value.name) }
+
+    var playerUpmixSettings: StereoUpmixSettings
+        get() = runBlocking {
+            StereoUpmixSettings(
+                centre = dsm.getPreferenceFlow(PrefKeys.prefUpmixCentreRequest).first().coerceIn(0, 75) / 100.0,
+                surround = dsm.getPreferenceFlow(PrefKeys.prefUpmixSurroundRequest).first().coerceIn(0, 60) / 100.0,
+                decorrelation = dsm.getPreferenceFlow(PrefKeys.prefUpmixDecorrelationRequest).first().coerceIn(0, 100) / 100.0,
+                trimDb = dsm.getPreferenceFlow(PrefKeys.prefUpmixTrimRequest).first().coerceIn(-12, 6).toDouble(),
+            )
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefUpmixCentreKey, (value.centre * 100).roundToInt())
+            dsm.editPreference(PrefKeys.prefUpmixSurroundKey, (value.surround * 100).roundToInt())
+            dsm.editPreference(PrefKeys.prefUpmixDecorrelationKey, (value.decorrelation * 100).roundToInt())
+            dsm.editPreference(PrefKeys.prefUpmixTrimKey, value.trimDb.roundToInt())
+        }
+
     /** 跳过静音段，默认关闭；只在新播放器创建时读取（2.5 倍速及以上才真正生效） */
     var playerSkipSilence: Boolean
         get() = runBlocking {
@@ -723,6 +749,11 @@ object PrefKeys {
     val prefDefaultDanmakuMask = booleanPreferencesKey("prefer_enable_webmark")
     val prefEnableFfmpegAudioRenderer = booleanPreferencesKey("enable_ffmpeg_audio_renderer")
     val prefPlayerAudioBalanceLevelKey = intPreferencesKey("player_audio_balance_level")
+    val prefUpmixModeKey = stringPreferencesKey("stereo_upmix_mode")
+    val prefUpmixCentreKey = intPreferencesKey("stereo_upmix_centre")
+    val prefUpmixSurroundKey = intPreferencesKey("stereo_upmix_surround")
+    val prefUpmixDecorrelationKey = intPreferencesKey("stereo_upmix_decorrelation")
+    val prefUpmixTrimKey = intPreferencesKey("stereo_upmix_trim")
     val prefPlayerSkipSilenceKey = booleanPreferencesKey("player_skip_silence")
     val prefSkipPgcIntroOutroKey = booleanPreferencesKey("skip_pgc_intro_outro")
     val prefShowPlayerLogsKey = booleanPreferencesKey("show_player_logs")
@@ -817,6 +848,11 @@ object PrefKeys {
     val prefEnableFfmpegEndererRequest = PreferenceRequest(prefEnableFfmpegAudioRenderer, false)
     val prefPlayerAudioBalanceLevelRequest =
         PreferenceRequest(prefPlayerAudioBalanceLevelKey, AudioBalanceLevel.Off.ordinal)
+    val prefUpmixModeRequest = PreferenceRequest(prefUpmixModeKey, SpatialAudioMode.Off.name)
+    val prefUpmixCentreRequest = PreferenceRequest(prefUpmixCentreKey, 45)
+    val prefUpmixSurroundRequest = PreferenceRequest(prefUpmixSurroundKey, 30)
+    val prefUpmixDecorrelationRequest = PreferenceRequest(prefUpmixDecorrelationKey, 65)
+    val prefUpmixTrimRequest = PreferenceRequest(prefUpmixTrimKey, -3)
     val prefPlayerSkipSilenceRequest = PreferenceRequest(prefPlayerSkipSilenceKey, false)
     val prefSkipPgcIntroOutroRequest = PreferenceRequest(prefSkipPgcIntroOutroKey, false)
     val prefShowPlayerLogsRequest = PreferenceRequest(prefShowPlayerLogsKey, true)
