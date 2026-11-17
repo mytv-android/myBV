@@ -1,10 +1,11 @@
-<!-- Material Symbols Rounded (filled), from fonts.google.com/icons. -->
+<!-- Material Symbols Rounded (FILL 1), official Android export.
+     Source: fonts.google.com/icons -> Android tab. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="960"
-    android:viewportHeight="960">
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
         android:fillColor="#FF000000"
-        android:pathData="M 346 800 H 240 q-33 0-56.5-23.5 T 160 720 v-106 l-77-78 q-11-12-17-26.5 T 60 480 q 0-15 6-29.5 T 83 424 l 77-78 v-106 q 0-33 23.5-56.5 T 240 160 h 106 l 78-77 q 12-11 26.5-17 t 29.5-6 q 15 0 29.5 6 t 26.5 17 l 78 77 h 106 q 33 0 56.5 23.5 T 800 240 v 106 l 77 78 q 11 12 17 26.5 t 6 29.5 q 0 15-6 29.5 T 877 536 l-77 78 v 106 q 0 33-23.5 56.5 T 720 800 H 614 l-78 77 q-12 11-26.5 17 T 480 900 q-15 0-29.5-6 T 424 877 l-78-77 Z m 275.5-178.5 Q 680 563 680 480 t-58.5-141.5 Q 563 280 480 280 t-141.5 58.5 Q 280 397 280 480 t 58.5 141.5 Q 397 680 480 680 t 141.5-58.5 Z M 380 720 l 100 100 l 100-100 h 140 v-140 l 100-100 l-100-100 v-140 H 580 L 480 140 L 380 240 H 240 v 140 L 140 480 l 100 100 v 140 h 140 Z" />
+        android:pathData="M8.65,20H6q-0.82,0-1.41-0.59T4,18V15.35L2.08,13.4Q1.8,13.1 1.65,12.74Q1.5,12.38 1.5,12t0.15-0.74T2.08,10.6L4,8.65V6Q4,5.18 4.59,4.59T6,4H8.65L10.6,2.07q0.3-0.28 0.66-0.43T12,1.5t0.74,0.15T13.4,2.07L15.35,4H18q0.82,0 1.41,0.59Q20,5.18 20,6V8.65l1.93,1.95q0.28,0.3 0.43,0.66T22.5,12t-0.15,0.74T21.93,13.4L20,15.35V18q0,0.82-0.59,1.41T18,20H15.35L13.4,21.93q-0.3,0.27-0.66,0.43T12,22.5t-0.74-0.15T10.6,21.93L8.65,20Zm6.89-4.46Q17,14.08 17,12q0-2.08-1.46-3.54T12,7Q9.93,7 8.46,8.46T7,12t1.46,3.54T12,17t3.54-1.46ZM9.5,18L12,20.5L14.5,18H18V14.5L20.5,12L18,9.5V6H14.5L12,3.5L9.5,6H6V9.5L3.5,12L6,14.5V18H9.5Z" />
 </vector>

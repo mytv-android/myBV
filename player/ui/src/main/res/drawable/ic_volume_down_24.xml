@@ -1,10 +1,11 @@
-<!-- Material Symbols Rounded (filled), from fonts.google.com/icons. -->
+<!-- Material Symbols Rounded (FILL 1), official Android export.
+     Source: fonts.google.com/icons -> Android tab. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="960"
-    android:viewportHeight="960" android:autoMirrored="true">
+    android:viewportWidth="24"
+    android:viewportHeight="24" android:autoMirrored="true">
     <path
         android:fillColor="#FF000000"
-        android:pathData="M 360 600 H 240 q-17 0-28.5-11.5 T 200 560 v-160 q 0-17 11.5-28.5 T 240 360 h 120 l 132-132 q 19-19 43.5-8.5 T 560 257 v 446 q 0 27-24.5 37.5 T 492 732 L 360 600 Z m 380-120 q 0 42-19 79.5 T 671 621 q-10 6-20.5 0.5 T 640 604 v-250 q 0-12 10.5-17.5 t 20.5 0.5 q 31 25 50 63 t 19 80 Z" />
+        android:pathData="M9,15H6q-0.42,0-0.71-0.29T5,14V10Q5,9.57 5.29,9.29T6,9H9l3.3-3.3q0.47-0.48 1.09-0.21T14,6.43V17.58q0,0.68-0.61,0.94T12.3,18.3L9,15Zm9.5-3q0,1.05-0.47,1.99t-1.25,1.54q-0.25,0.15-0.51,0.01T16,15.1V8.85q0-0.3 0.26-0.44q0.26-0.14 0.51,0.01Q17.55,9.05 18.03,10t0.47,2Z" />
 </vector>
