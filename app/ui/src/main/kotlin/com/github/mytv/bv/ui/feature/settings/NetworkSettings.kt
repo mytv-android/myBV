@@ -34,6 +34,7 @@ import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.player.PlayerHttpClient
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.theme.BvType
+import com.github.mytv.bv.network.GithubMirror
 import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.ui.PreferenceWrites
 import org.koin.compose.koinInject
@@ -55,6 +56,7 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
             preferOfficialCdn = Prefs.preferOfficialCdn,
             apiType = Prefs.apiType,
             ipv4Only = Prefs.ipv4Only,
+            githubMirror = Prefs.githubMirror,
         )
     } ?: return
     var enableProxy by remember { mutableStateOf(initial.enableProxy) }
@@ -63,6 +65,8 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
     var proxyGrpcServer by remember { mutableStateOf(initial.proxyGrpcServer) }
     var preferOfficialCdn by remember { mutableStateOf(initial.preferOfficialCdn) }
     var apiType by remember { mutableStateOf(initial.apiType) }
+    var githubMirror by remember { mutableStateOf(initial.githubMirror) }
+    var pickingMirror by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProxyField?>(null) }
     val emptyText = stringResource(R.string.settings_net_proxy_empty)
 
@@ -147,9 +151,32 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
 
         SettingRows(stringResource(R.string.settings_net_tools)) {
             SettingNavRow(
+                title = stringResource(R.string.settings_net_github_mirror),
+                subtitle = when (githubMirror) {
+                    GithubMirror.Auto -> stringResource(R.string.settings_net_github_mirror_auto)
+                    GithubMirror.Direct -> stringResource(R.string.settings_net_github_mirror_direct)
+                    else -> stringResource(R.string.settings_net_github_mirror_pinned, githubMirror.label)
+                },
+                value = githubMirror.label,
+                onClick = { pickingMirror = true },
+            )
+            SettingNavRow(
                 title = stringResource(R.string.settings_net_speed_test),
                 subtitle = stringResource(R.string.settings_net_speed_test_desc),
                 onClick = onSpeedTest,
+            )
+        }
+
+        if (pickingMirror) {
+            GithubMirrorDialog(
+                title = stringResource(R.string.settings_net_github_mirror_pick),
+                selected = githubMirror,
+                onDismiss = { pickingMirror = false },
+                onPick = { mirror ->
+                    pickingMirror = false
+                    githubMirror = mirror
+                    PreferenceWrites.enqueue { Prefs.githubMirror = mirror }
+                },
             )
         }
 
@@ -259,4 +286,53 @@ private data class NetworkPreferences(
     val preferOfficialCdn: Boolean,
     val apiType: ApiType,
     val ipv4Only: Boolean,
+    val githubMirror: GithubMirror,
 )
+
+/**
+ * 更新线路选择：每条线路后跟一句限制说明，避免用户以为「不代理 API」的线路
+ * 也能用于检查更新——那几条只加速安装包下载。
+ */
+@Composable
+private fun GithubMirrorDialog(
+    title: String,
+    selected: GithubMirror,
+    onDismiss: () -> Unit,
+    onPick: (GithubMirror) -> Unit,
+) {
+    val firstRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        runCatching { firstRequester.requestFocus() }
+    }
+    SettingsDialog(onDismiss) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        SettingRows("") {
+            GithubMirror.entries.forEachIndexed { index, mirror ->
+                val summary = when (mirror) {
+                    GithubMirror.Auto -> stringResource(R.string.settings_net_github_mirror_auto)
+                    GithubMirror.Direct -> stringResource(R.string.settings_net_github_mirror_direct)
+                    GithubMirror.ProxyOrg, GithubMirror.ProxyCom -> "更新检查与下载都可用"
+                    else -> "只加速安装包下载，检查更新仍走其它线路"
+                }
+                SettingNavRow(
+                    title = if (mirror == selected) "${mirror.label} · 当前" else mirror.label,
+                    subtitle = summary,
+                    showChevron = false,
+                    modifier = if (index == 0) Modifier.focusRequester(firstRequester) else Modifier,
+                    onClick = { onPick(mirror) },
+                )
+            }
+        }
+        SettingsDialogActions(
+            confirm = stringResource(R.string.settings_net_github_mirror_close),
+            onConfirm = onDismiss,
+            dismiss = null,
+            onDismiss = onDismiss,
+        )
+    }
+}

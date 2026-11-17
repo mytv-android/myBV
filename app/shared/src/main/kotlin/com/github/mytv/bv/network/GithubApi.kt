@@ -197,9 +197,13 @@ object GithubApi {
 
     /** 命中 5 分钟缓存就直接用，否则并发测速所有线路并按耗时排序。 */
     private suspend fun routeOrder(target: String, cache: ProbeCache): List<String> {
-        cache.get()?.let { return it }
-        val order = GithubRoutes.probeOrder(target) { probeReachable(it) }
-        cache.put(order)
+        val selected = Prefs.githubMirror
+        cache.get(selected)?.let { return it }
+        val order = GithubRoutes.applyPinned(
+            GithubRoutes.probeOrder(target) { probeReachable(it) },
+            selected,
+        )
+        cache.put(selected, order)
         return order
     }
 
@@ -217,10 +221,16 @@ object GithubApi {
         @Volatile
         private var order: List<String>? = null
 
-        fun get(): List<String>? = order?.takeIf { System.currentTimeMillis() < expiresAt }
+        /** 这份顺序对应的线路选择；用户换了线路，旧结果立刻作废。 */
+        @Volatile
+        private var mirror: GithubMirror? = null
 
-        fun put(value: List<String>) {
+        fun get(selected: GithubMirror): List<String>? =
+            order?.takeIf { System.currentTimeMillis() < expiresAt && mirror == selected }
+
+        fun put(selected: GithubMirror, value: List<String>) {
             order = value
+            mirror = selected
             expiresAt = System.currentTimeMillis() + PROBE_TTL_MS
         }
 

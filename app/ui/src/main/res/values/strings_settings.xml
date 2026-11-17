@@ -130,6 +130,12 @@
     <string name="settings_net_tools">工具</string>
     <string name="settings_net_speed_test">网络测试</string>
     <string name="settings_net_speed_test_desc">打开哔哩哔哩视频诊断页测试网络</string>
+    <string name="settings_net_github_mirror">GitHub 镜像源</string>
+    <string name="settings_net_github_mirror_auto">自动测速，选最快的线路</string>
+    <string name="settings_net_github_mirror_direct">直连 github.com</string>
+    <string name="settings_net_github_mirror_pinned">优先 %1$s，失败按顺序回退</string>
+    <string name="settings_net_github_mirror_pick">选择线路</string>
+    <string name="settings_net_github_mirror_close">完成</string>
 
     <!-- 账号与安全 -->
     <string name="settings_account_group">账号</string>

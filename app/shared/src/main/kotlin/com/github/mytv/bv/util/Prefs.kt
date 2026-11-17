@@ -25,6 +25,7 @@ import com.github.mytv.bv.entity.PlayerType
 import com.github.mytv.bv.entity.ThemePrefs
 import com.github.mytv.bv.entity.ThemeSource
 import com.github.mytv.bv.entity.ThemeType
+import com.github.mytv.bv.network.GithubMirror
 import com.github.mytv.bv.player.danmaku.DanmakuLaneDensity
 import com.github.mytv.bv.player.entity.Audio
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
@@ -489,6 +490,11 @@ object Prefs {
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefPreferOfficialCdnRequest).first() }
         set(value) = runBlocking { dsm.editPreference(PrefKeys.prefPreferOfficialCdn, value) }
 
+    /** GitHub 更新线路（检查更新与下载），见 [GithubMirror]。 */
+    var githubMirror: GithubMirror
+        get() = runBlocking { GithubMirror.fromName(dsm.getPreferenceFlow(PrefKeys.prefGithubMirrorRequest).first()) }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefGithubMirrorKey, value.name) }
+
     /** 起播时对候选 CDN 地址测速并按吞吐排序；默认关闭 */
     var autoSelectCdn: Boolean
         get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefAutoSelectCdnRequest).first() }
@@ -715,6 +721,8 @@ object PrefKeys {
     val prefIpv4OnlyKey = booleanPreferencesKey("ipv4_only")
     val prefProxyHttpServerKey = stringPreferencesKey("proxy_http_server")
     val prefProxyGRPCServerKey = stringPreferencesKey("proxy_grpc_server")
+    val prefGithubMirrorKey = stringPreferencesKey("github_mirror")
+    val prefGithubMirrorRequest = PreferenceRequest(prefGithubMirrorKey, "")
     val prefLastVersionCodeKey = intPreferencesKey("last_version_code")
     val prefShowedRemoteControllerPanelDemoKey = booleanPreferencesKey("showed_rcpd")
     val prefPreferOfficialCdn = booleanPreferencesKey("prefer_official_cdn")
