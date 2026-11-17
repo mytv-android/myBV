@@ -33,6 +33,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -50,7 +51,6 @@ import com.github.mytv.bv.ui.designsystem.component.BvAvatar
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.toComposeShape
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.navigation.DynamicDetailRoute
 import com.github.mytv.bv.ui.navigation.SeasonRoute
@@ -479,7 +479,7 @@ private fun UpAvatarItem(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        BvIcons.Dynamic,
+                        painterResource(R.drawable.ic_dynamic_24),
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,

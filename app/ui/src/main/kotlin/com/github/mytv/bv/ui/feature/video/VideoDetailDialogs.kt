@@ -22,11 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.WatchLater
-import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -45,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -128,7 +124,7 @@ internal fun CoinDialog(vm: VideoActionsViewModel, onDismiss: () -> Unit) {
                 text = stringResource(R.string.video_detail_coin_also_like),
                 selected = alsoLike,
                 onClick = { alsoLike = !alsoLike },
-                icon = if (alsoLike) Icons.Rounded.Done else null,
+                icon = if (alsoLike) painterResource(R.drawable.ic_done_24) else null,
             )
         }
     }
@@ -169,7 +165,7 @@ internal fun FavoriteDialog(vm: VideoActionsViewModel, onDismiss: () -> Unit) {
                     BvChip(
                         text = folder.title,
                         selected = selected,
-                        icon = if (selected) Icons.Rounded.Done else null,
+                        icon = if (selected) painterResource(R.drawable.ic_done_24) else null,
                         onClick = {
                             val ids = vm.favoriteFolders.filter { it.videoInThisFav }.map { it.id }
                             vm.updateFavoriteFolders(if (selected) ids - folder.id else ids + folder.id)
@@ -252,7 +248,7 @@ internal fun EpisodeSheet(
                     BvListItem(
                         title = ep.label,
                         selected = playing,
-                        icon = if (playing) Icons.Filled.PlayArrow else null,
+                        icon = if (playing) painterResource(R.drawable.ic_play_arrow_24) else null,
                         iconContainerColor = MaterialTheme.colorScheme.primary,
                         iconContentColor = MaterialTheme.colorScheme.onPrimary,
                         onClick = {
@@ -300,7 +296,7 @@ internal fun DetailMoreSheet(
         ) {
             BvListItem(
                 title = stringResource(R.string.video_detail_to_view),
-                icon = Icons.Outlined.WatchLater,
+                icon = painterResource(R.drawable.ic_watch_later_outlined_24),
                 selected = vm.inToView,
                 onClick = {
                     vm.toggleToView()
@@ -309,7 +305,7 @@ internal fun DetailMoreSheet(
             )
             BvListItem(
                 title = stringResource(R.string.video_detail_share),
-                icon = Icons.Outlined.Share,
+                icon = painterResource(R.drawable.ic_share_outlined_24),
                 onClick = {
                     onShare()
                     onDismiss()

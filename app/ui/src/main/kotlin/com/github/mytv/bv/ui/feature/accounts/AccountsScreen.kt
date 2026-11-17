@@ -17,16 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Backspace
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +35,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -226,7 +217,7 @@ internal fun AccountsContent(
                                 .widthIn(max = 720.dp)
                                 .focusRequester(addRequester),
                             subtitle = stringResource(R.string.accounts_list_add_sub),
-                            icon = Icons.Rounded.PersonAdd,
+                            icon = painterResource(R.drawable.ic_person_add_24),
                             onClick = onAdd,
                         )
                     }
@@ -235,7 +226,7 @@ internal fun AccountsContent(
                             title = stringResource(R.string.accounts_list_lock),
                             modifier = Modifier.widthIn(max = 720.dp),
                             subtitle = stringResource(R.string.accounts_list_lock_sub),
-                            icon = Icons.Rounded.Lock,
+                            icon = painterResource(R.drawable.ic_lock_24),
                             onClick = onUserLock,
                         )
                     }
@@ -323,7 +314,7 @@ private fun AccountRow(
             leading = { BvAvatar(url = user.avatar.ifBlank { null }, size = 40.dp, fallbackText = user.username) },
         )
         BvIconButton(
-            icon = Icons.Rounded.DeleteOutline,
+            icon = painterResource(R.drawable.ic_delete_outline_24),
             contentDescription = stringResource(R.string.accounts_list_delete),
             onClick = onDelete,
         )
@@ -484,7 +475,7 @@ private fun NumberPad(onDigit: (Char) -> Unit, onDelete: () -> Unit, firstReques
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BvIconButton(
-                icon = Icons.AutoMirrored.Rounded.Backspace,
+                icon = painterResource(R.drawable.ic_backspace_24),
                 contentDescription = stringResource(R.string.accounts_unlock_delete),
                 onClick = onDelete,
                 style = BvIconButtonStyle.Standard,
@@ -515,7 +506,7 @@ private fun ArrowPad(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         BvIconButton(
-            icon = Icons.Rounded.KeyboardArrowUp,
+            icon = painterResource(R.drawable.ic_keyboard_arrow_up_24),
             contentDescription = null,
             onClick = { onKey('u') },
             modifier = Modifier.focusRequester(firstRequester),
@@ -524,21 +515,21 @@ private fun ArrowPad(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BvIconButton(
-                icon = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
+                icon = painterResource(R.drawable.ic_keyboard_arrow_left_24),
                 contentDescription = null,
                 onClick = { onKey('l') },
                 style = BvIconButtonStyle.Tonal,
                 size = 48.dp,
             )
             BvIconButton(
-                icon = Icons.Rounded.Check,
+                icon = painterResource(R.drawable.ic_check_24),
                 contentDescription = stringResource(R.string.accounts_unlock_confirm),
                 onClick = onConfirm,
                 style = BvIconButtonStyle.Filled,
                 size = 48.dp,
             )
             BvIconButton(
-                icon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                icon = painterResource(R.drawable.ic_keyboard_arrow_right_24),
                 contentDescription = null,
                 onClick = { onKey('r') },
                 style = BvIconButtonStyle.Tonal,
@@ -547,14 +538,14 @@ private fun ArrowPad(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BvIconButton(
-                icon = Icons.Rounded.KeyboardArrowDown,
+                icon = painterResource(R.drawable.ic_keyboard_arrow_down_24),
                 contentDescription = null,
                 onClick = { onKey('d') },
                 style = BvIconButtonStyle.Tonal,
                 size = 48.dp,
             )
             BvIconButton(
-                icon = Icons.AutoMirrored.Rounded.Backspace,
+                icon = painterResource(R.drawable.ic_backspace_24),
                 contentDescription = stringResource(R.string.accounts_unlock_delete),
                 onClick = onDelete,
                 size = 48.dp,

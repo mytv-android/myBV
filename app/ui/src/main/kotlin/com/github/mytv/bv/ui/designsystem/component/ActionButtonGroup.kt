@@ -20,7 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -31,7 +31,7 @@ import com.github.mytv.bv.ui.designsystem.focus.focusContentColor
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 
 data class ActionItem(
-    val icon: ImageVector,
+    val icon: Painter,
     val label: String,
     val checked: Boolean = false,
     val onClick: () -> Unit,

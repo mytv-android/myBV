@@ -21,11 +21,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -160,7 +156,7 @@ private fun TabletopInfoPane(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BvIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                icon = painterResource(R.drawable.ic_arrow_back_24),
                 contentDescription = stringResource(R.string.video_detail_back),
                 onClick = callbacks.onBack,
             )
@@ -265,7 +261,7 @@ private fun TabletopControlBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BvIconButton(
-            icon = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            icon = if (playing) painterResource(R.drawable.ic_pause_24) else painterResource(R.drawable.ic_play_arrow_24),
             contentDescription = stringResource(
                 if (playing) R.string.video_detail_pause else R.string.video_detail_play
             ),
@@ -295,7 +291,7 @@ private fun TabletopControlBar(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         BvIconButton(
-            icon = Icons.Filled.Fullscreen,
+            icon = painterResource(R.drawable.ic_fullscreen_24),
             contentDescription = stringResource(R.string.video_detail_fullscreen),
             onClick = onEnterFullScreen,
         )

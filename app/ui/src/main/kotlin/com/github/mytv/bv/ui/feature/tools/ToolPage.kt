@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,6 +28,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -86,7 +85,7 @@ private fun PhoneToolPage(
                 title = { Text(title) },
                 navigationIcon = {
                     BvIconButton(
-                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        icon = painterResource(R.drawable.ic_arrow_back_24),
                         contentDescription = stringResource(R.string.ds_back),
                         onClick = onBack,
                     )
@@ -131,7 +130,7 @@ private fun TabletToolPage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BvIconButton(
-                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                icon = painterResource(R.drawable.ic_arrow_back_24),
                 contentDescription = stringResource(R.string.ds_back),
                 onClick = onBack,
             )

@@ -27,14 +27,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -67,7 +60,6 @@ import com.github.mytv.bv.ui.designsystem.component.BvIconButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvTabRow
 import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
 import com.github.mytv.bv.ui.designsystem.component.VideoRow
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvTheme
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
@@ -190,25 +182,25 @@ private fun TabletVideoArea(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             BvIconButton(
-                                icon = Icons.Filled.ThumbUp,
+                                icon = painterResource(R.drawable.ic_thumb_up_24),
                                 contentDescription = stringResource(R.string.shorts_like),
                                 onClick = { actions.like(current) },
                                 style = if (state.liked) BvIconButtonStyle.Filled else BvIconButtonStyle.Standard,
                             )
                             BvIconButton(
-                                icon = BvIcons.Coin,
+                                icon = painterResource(R.drawable.ic_coin_24),
                                 contentDescription = stringResource(R.string.shorts_coin),
                                 onClick = { actions.coin(current) },
                                 style = if (state.coinCount > 0) BvIconButtonStyle.Filled else BvIconButtonStyle.Standard,
                             )
                             BvIconButton(
-                                icon = Icons.Filled.Star,
+                                icon = painterResource(R.drawable.ic_star_24),
                                 contentDescription = stringResource(R.string.shorts_favorite),
                                 onClick = { actions.favorite(current) },
                                 style = if (state.favoured) BvIconButtonStyle.Filled else BvIconButtonStyle.Standard,
                             )
                             BvIconButton(
-                                icon = Icons.Filled.Share,
+                                icon = painterResource(R.drawable.ic_share_24),
                                 contentDescription = stringResource(R.string.shorts_share),
                                 onClick = { actions.share(current) },
                             )
@@ -234,13 +226,13 @@ private fun TabletVideoArea(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         val page = pagerState.currentPage
                         BvIconButton(
-                            icon = Icons.Filled.KeyboardArrowUp,
+                            icon = painterResource(R.drawable.ic_keyboard_arrow_up_24),
                             contentDescription = stringResource(R.string.shorts_prev),
                             onClick = { scope.launch { pagerState.animateScrollToPage(page - 1, animationSpec = pageSpec) } },
                             enabled = page > 0,
                         )
                         BvIconButton(
-                            icon = Icons.Filled.KeyboardArrowDown,
+                            icon = painterResource(R.drawable.ic_keyboard_arrow_down_24),
                             contentDescription = stringResource(R.string.shorts_next),
                             onClick = { scope.launch { pagerState.animateScrollToPage(page + 1, animationSpec = pageSpec) } },
                             enabled = page < items.lastIndex,
@@ -373,7 +365,7 @@ private fun TabletInfoPanel(
                     text = stringResource(if (following) R.string.shorts_followed else R.string.shorts_follow),
                     onClick = { actions.follow(item) },
                     style = if (following) BvButtonStyle.Tonal else BvButtonStyle.Filled,
-                    icon = if (following) Icons.Filled.Check else Icons.Filled.Add,
+                    icon = if (following) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
                     height = 36.dp,
                     horizontalPadding = 16.dp,
                 )

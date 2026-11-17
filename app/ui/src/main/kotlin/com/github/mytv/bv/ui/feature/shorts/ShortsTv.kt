@@ -30,13 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,7 +56,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -94,7 +89,6 @@ import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.focus.focusRing
 import com.github.mytv.bv.ui.designsystem.focus.onBvKey
 import com.github.mytv.bv.ui.designsystem.focus.toBvKey
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
@@ -648,7 +642,7 @@ private fun TvInfo(
                     text = stringResource(if (following) R.string.shorts_followed else R.string.shorts_follow),
                     onClick = { actions.follow(item) },
                     style = BvButtonStyle.Tonal,
-                    icon = if (following) Icons.Filled.Check else Icons.Filled.Add,
+                    icon = if (following) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
                     height = 34.dp,
                     horizontalPadding = 14.dp,
                 )
@@ -678,31 +672,31 @@ private fun TvInfo(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             TvActionButton(
-                icon = Icons.Filled.ThumbUp,
+                icon = painterResource(R.drawable.ic_thumb_up_24),
                 description = stringResource(R.string.shorts_like),
                 active = state.liked,
                 onClick = { actions.like(item) },
             )
             TvActionButton(
-                icon = BvIcons.Coin,
+                icon = painterResource(R.drawable.ic_coin_24),
                 description = stringResource(R.string.shorts_coin),
                 active = state.coinCount > 0,
                 onClick = { actions.coin(item) },
             )
             TvActionButton(
-                icon = Icons.Filled.Star,
+                icon = painterResource(R.drawable.ic_star_24),
                 description = stringResource(R.string.shorts_favorite),
                 active = state.favoured,
                 onClick = { actions.favorite(item) },
             )
             TvActionButton(
-                icon = Icons.Filled.ChatBubble,
+                icon = painterResource(R.drawable.ic_chat_bubble_24),
                 description = stringResource(R.string.shorts_comment),
                 active = false,
                 onClick = onOpenComments,
             )
             TvActionButton(
-                icon = Icons.Filled.Info,
+                icon = painterResource(R.drawable.ic_info_24),
                 description = stringResource(R.string.shorts_detail),
                 active = false,
                 onClick = { actions.openVideo(item) },
@@ -796,7 +790,7 @@ private fun TvLandscapeInfo(
                                 onClick = { actions.follow(item) },
                                 modifier = Modifier.focusProperties { left = frameRequester },
                                 style = BvButtonStyle.Tonal,
-                                icon = if (following) Icons.Filled.Check else Icons.Filled.Add,
+                                icon = if (following) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
                                 height = 34.dp,
                                 horizontalPadding = 14.dp,
                             )
@@ -821,7 +815,7 @@ private fun TvLandscapeInfo(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     LandscapeAction(
-                        icon = Icons.Filled.ThumbUp,
+                        icon = painterResource(R.drawable.ic_thumb_up_24),
                         description = stringResource(R.string.shorts_like),
                         label = likeLabel,
                         active = state.liked,
@@ -831,28 +825,28 @@ private fun TvLandscapeInfo(
                             .focusProperties { left = frameRequester },
                     )
                     LandscapeAction(
-                        icon = BvIcons.Coin,
+                        icon = painterResource(R.drawable.ic_coin_24),
                         description = stringResource(R.string.shorts_coin),
                         label = stringResource(R.string.shorts_coin),
                         active = state.coinCount > 0,
                         onClick = { actions.coin(item) },
                     )
                     LandscapeAction(
-                        icon = Icons.Filled.Star,
+                        icon = painterResource(R.drawable.ic_star_24),
                         description = stringResource(R.string.shorts_favorite),
                         label = favoriteLabel,
                         active = state.favoured,
                         onClick = { actions.favorite(item) },
                     )
                     LandscapeAction(
-                        icon = Icons.Filled.ChatBubble,
+                        icon = painterResource(R.drawable.ic_chat_bubble_24),
                         description = stringResource(R.string.shorts_comment),
                         label = commentLabel,
                         active = false,
                         onClick = onOpenComments,
                     )
                     LandscapeAction(
-                        icon = Icons.Filled.Info,
+                        icon = painterResource(R.drawable.ic_info_24),
                         description = stringResource(R.string.shorts_detail),
                         label = stringResource(R.string.shorts_detail),
                         active = false,
@@ -874,7 +868,7 @@ private fun TvLandscapeInfo(
 /** 横屏信息层的操作按钮：图标 + 下方计数 / 文案。 */
 @Composable
 private fun LandscapeAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: Painter,
     description: String,
     label: String,
     active: Boolean,
@@ -918,7 +912,7 @@ private fun ShortsItem.metaLine(): String {
 /** 40dp 图标按钮：选中时 primary 背景 + 圆角 16（圆形 → 方形，fastSpatialSpec） */
 @Composable
 private fun TvActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: Painter,
     description: String,
     active: Boolean,
     onClick: () -> Unit,

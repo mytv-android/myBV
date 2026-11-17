@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -61,7 +60,7 @@ internal fun SubPagePhone(
             title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
             navigationIcon = {
                 BvIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    icon = painterResource(R.drawable.ic_arrow_back_24),
                     contentDescription = stringResource(R.string.ds_back),
                     onClick = onBack,
                     modifier = Modifier.padding(start = 4.dp),
@@ -101,7 +100,7 @@ internal fun SubPageTabletHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BvIconButton(
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
+            icon = painterResource(R.drawable.ic_arrow_back_24),
             contentDescription = stringResource(R.string.ds_back),
             onClick = onBack,
         )

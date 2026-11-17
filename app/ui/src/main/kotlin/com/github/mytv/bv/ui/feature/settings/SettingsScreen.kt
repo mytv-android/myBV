@@ -1,17 +1,9 @@
 package com.github.mytv.bv.ui.feature.settings
 
 import androidx.annotation.StringRes
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ChatBubble
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Storage
-import androidx.compose.material.icons.rounded.Subtitles
-import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
@@ -26,17 +18,17 @@ internal enum class SettingsCategory(
     val id: String,
     @param:StringRes val title: Int,
     @param:StringRes val subtitle: Int,
-    val icon: () -> ImageVector,
+    val icon: @Composable () -> Painter,
     val role: CategoryRole,
 ) {
-    Appearance("appearance", R.string.settings_cat_appearance, R.string.settings_cat_appearance_desc, { Icons.Rounded.Palette }, CategoryRole.Primary),
-    Play("play", R.string.settings_cat_play, R.string.settings_cat_play_desc, { Icons.Rounded.PlayArrow }, CategoryRole.Tertiary),
-    Danmaku("danmaku", R.string.settings_cat_danmaku, R.string.settings_cat_danmaku_desc, { Icons.Rounded.ChatBubble }, CategoryRole.Secondary),
-    Subtitle("subtitle", R.string.settings_cat_subtitle, R.string.settings_cat_subtitle_desc, { Icons.Rounded.Subtitles }, CategoryRole.Primary),
-    Network("network", R.string.settings_cat_network, R.string.settings_cat_network_desc, { Icons.Rounded.Wifi }, CategoryRole.Tertiary),
-    Account("account", R.string.settings_cat_account, R.string.settings_cat_account_desc, { Icons.Rounded.Shield }, CategoryRole.Secondary),
-    Storage("storage", R.string.settings_cat_storage, R.string.settings_cat_storage_desc, { Icons.Rounded.Storage }, CategoryRole.Primary),
-    About("about", R.string.settings_cat_about, R.string.settings_cat_about_desc, { Icons.Rounded.Info }, CategoryRole.Tertiary);
+    Appearance("appearance", R.string.settings_cat_appearance, R.string.settings_cat_appearance_desc, { painterResource(R.drawable.ic_palette_24) }, CategoryRole.Primary),
+    Play("play", R.string.settings_cat_play, R.string.settings_cat_play_desc, { painterResource(R.drawable.ic_play_arrow_24) }, CategoryRole.Tertiary),
+    Danmaku("danmaku", R.string.settings_cat_danmaku, R.string.settings_cat_danmaku_desc, { painterResource(R.drawable.ic_chat_bubble_24) }, CategoryRole.Secondary),
+    Subtitle("subtitle", R.string.settings_cat_subtitle, R.string.settings_cat_subtitle_desc, { painterResource(R.drawable.ic_subtitles_24) }, CategoryRole.Primary),
+    Network("network", R.string.settings_cat_network, R.string.settings_cat_network_desc, { painterResource(R.drawable.ic_wifi_24) }, CategoryRole.Tertiary),
+    Account("account", R.string.settings_cat_account, R.string.settings_cat_account_desc, { painterResource(R.drawable.ic_shield_24) }, CategoryRole.Secondary),
+    Storage("storage", R.string.settings_cat_storage, R.string.settings_cat_storage_desc, { painterResource(R.drawable.ic_storage_24) }, CategoryRole.Primary),
+    About("about", R.string.settings_cat_about, R.string.settings_cat_about_desc, { painterResource(R.drawable.ic_info_24) }, CategoryRole.Tertiary);
 
     companion object {
         fun of(id: String): SettingsCategory? = entries.firstOrNull { it.id == id }

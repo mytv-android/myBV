@@ -31,8 +31,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -66,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -87,7 +86,6 @@ import com.github.mytv.bv.ui.designsystem.component.PageMessage
 import com.github.mytv.bv.ui.designsystem.component.WavyProgress
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.navigation.SearchRoute
 import com.github.mytv.bv.ui.navigation.SpaceRoute
@@ -467,7 +465,7 @@ internal fun ShortsCommentList(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         BvIconButton(
-                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            icon = painterResource(R.drawable.ic_arrow_back_24),
                             contentDescription = stringResource(R.string.ds_back),
                             onClick = { replyRoot = null },
                             modifier = Modifier.focusRequester(replyBackRequester),
@@ -607,7 +605,7 @@ private fun HeartPopItem(pop: HeartPop, onDone: () -> Unit) {
     val half = with(density) { 48.dp.toPx() }
     val rise = with(density) { 60.dp.toPx() }
     Icon(
-        BvIcons.Heart,
+        painterResource(R.drawable.ic_heart_24),
         contentDescription = null,
         tint = MaterialTheme.colorScheme.primary,
         modifier = Modifier

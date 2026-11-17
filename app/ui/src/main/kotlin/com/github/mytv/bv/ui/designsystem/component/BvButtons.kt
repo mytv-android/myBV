@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -46,7 +46,7 @@ fun BvButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     style: BvButtonStyle = BvButtonStyle.Filled,
-    icon: ImageVector? = null,
+    icon: Painter? = null,
     large: Boolean = false,
     height: Dp = if (large) 52.dp else 40.dp,
     horizontalPadding: Dp = if (large) 28.dp else 20.dp,
@@ -104,7 +104,7 @@ enum class BvIconButtonStyle { Standard, Tonal, Filled, SecondaryTonal }
  */
 @Composable
 fun BvIconButton(
-    icon: ImageVector,
+    icon: Painter,
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

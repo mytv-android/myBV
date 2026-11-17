@@ -19,10 +19,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +37,7 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -352,14 +349,14 @@ private fun TvInfoBlock(
                 text = watchLabel(extra),
                 onClick = { nav.openFeatured(item) },
                 modifier = Modifier.focusRequester(playRequester),
-                icon = Icons.Filled.PlayArrow,
+                icon = painterResource(R.drawable.ic_play_arrow_24),
                 large = true,
             )
             BvButton(
                 text = stringResource(if (followed) R.string.pgc_followed else R.string.pgc_follow),
                 onClick = { state.follow.toggle(item, extra) },
                 style = BvButtonStyle.Tonal,
-                icon = if (followed) Icons.Filled.Check else Icons.Filled.Add,
+                icon = if (followed) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
                 large = true,
             )
         }

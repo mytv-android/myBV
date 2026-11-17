@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +34,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -156,7 +155,7 @@ fun PgcIndexScreen(nav: NavController, route: PgcIndexRoute) {
             onBack = { nav.popBackStack() },
             actions = {
                 BvIconButton(
-                    icon = Icons.Filled.Tune,
+                    icon = painterResource(R.drawable.ic_tune_24),
                     contentDescription = stringResource(R.string.pgcindex_filter),
                     onClick = { showFilter = true },
                 )
@@ -180,7 +179,7 @@ fun PgcIndexScreen(nav: NavController, route: PgcIndexRoute) {
                     text = stringResource(R.string.pgcindex_filter),
                     onClick = { showFilter = true },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Filled.Tune,
+                    icon = painterResource(R.drawable.ic_tune_24),
                 )
             }
             Box(
@@ -317,7 +316,7 @@ private fun PgcIndexTv(title: String, content: PgcIndexContent) {
                 onClick = content.onOpenFilter,
                 modifier = Modifier.focusRequester(filterRequester),
                 style = BvButtonStyle.Tonal,
-                icon = Icons.Filled.Tune,
+                icon = painterResource(R.drawable.ic_tune_24),
             )
         }
         Box(

@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,7 +52,7 @@ import kotlinx.coroutines.delay
 /** 电视详情的图标按钮（48dp）：点赞 / 投币 / 收藏 / 稍后再看 / UP 主（番剧为追番）。 */
 @Immutable
 internal data class TvDetailAction(
-    val icon: ImageVector,
+    val icon: Painter,
     val contentDescription: String,
     val checked: Boolean,
     val onClick: () -> Unit,
@@ -183,7 +182,7 @@ internal fun VideoDetailTv(
                     text = playLabel,
                     onClick = onPlayDefault,
                     modifier = Modifier.focusRequester(playRequester),
-                    icon = Icons.Filled.PlayArrow,
+                    icon = painterResource(R.drawable.ic_play_arrow_24),
                     large = true,
                 )
                 actions.forEach { action ->

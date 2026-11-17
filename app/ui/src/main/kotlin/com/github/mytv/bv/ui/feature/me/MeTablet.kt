@@ -117,7 +117,7 @@ internal fun MeTablet(nav: NavController, state: MeState, foldPanes: FoldPanes? 
                     BvListItem(
                         title = stringResource(entry.title),
                         subtitle = state.subtitle(entry, tablet = true).ifEmpty { null },
-                        icon = entry.icon,
+                        icon = entry.icon(),
                         iconContainerColor = if (selected) scheme.primary else scheme.surfaceContainerHigh,
                         iconContentColor = if (selected) scheme.onPrimary else scheme.onSurface,
                         selected = selected,

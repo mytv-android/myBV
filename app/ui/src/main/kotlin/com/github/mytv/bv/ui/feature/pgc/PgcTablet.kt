@@ -30,12 +30,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -143,13 +138,13 @@ private fun PgcFlat(nav: NavController, state: PgcUiState) {
                 text = stringResource(R.string.pgc_index),
                 onClick = { nav.navigate(PgcIndexRoute(state.type.ordinal)) },
                 style = BvButtonStyle.Tonal,
-                icon = Icons.Filled.Tune,
+                icon = painterResource(R.drawable.ic_tune_24),
             )
             BvButton(
                 text = stringResource(R.string.pgc_my_following),
                 onClick = { nav.navigate(FollowingSeasonRoute) },
                 style = BvButtonStyle.Tonal,
-                icon = Icons.Filled.Star,
+                icon = painterResource(R.drawable.ic_star_24),
             )
         }
 
@@ -279,13 +274,13 @@ private fun PgcFold(nav: NavController, state: PgcUiState, panes: FoldPanes) {
                     text = stringResource(R.string.pgc_index),
                     onClick = { nav.navigate(PgcIndexRoute(state.type.ordinal)) },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Filled.Tune,
+                    icon = painterResource(R.drawable.ic_tune_24),
                 )
                 BvButton(
                     text = stringResource(R.string.pgc_my_following),
                     onClick = { nav.navigate(FollowingSeasonRoute) },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Filled.Star,
+                    icon = painterResource(R.drawable.ic_star_24),
                 )
             }
             if (filter != null) {
@@ -427,13 +422,13 @@ private fun TabletBannerPage(item: CarouselData.CarouselItem, state: PgcUiState,
                 BvButton(
                     text = watchLabel(extra),
                     onClick = { nav.openFeatured(item) },
-                    icon = Icons.Filled.PlayArrow,
+                    icon = painterResource(R.drawable.ic_play_arrow_24),
                 )
                 BvButton(
                     text = stringResource(if (followed) R.string.pgc_followed else R.string.pgc_follow),
                     onClick = { state.follow.toggle(item, extra) },
                     style = BvButtonStyle.Tonal,
-                    icon = if (followed) Icons.Filled.Check else Icons.Filled.Add,
+                    icon = if (followed) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
                 )
             }
         }

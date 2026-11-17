@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +48,7 @@ fun BvListItem(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    icon: ImageVector? = null,
+    icon: Painter? = null,
     iconContainerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     iconContentColor: Color = MaterialTheme.colorScheme.onSurface,
     iconShape: Shape = RoundedCornerShape(12.dp),

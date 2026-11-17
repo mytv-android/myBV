@@ -30,9 +30,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -54,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -414,13 +412,13 @@ private fun TabletHeroText(item: UgcItem, state: HomeState, onOpen: () -> Unit) 
                 BvButton(
                     text = stringResource(R.string.home_play),
                     onClick = onOpen,
-                    icon = Icons.Filled.PlayArrow,
+                    icon = painterResource(R.drawable.ic_play_arrow_24),
                 )
                 BvButton(
                     text = stringResource(R.string.home_watch_later),
                     onClick = { state.addToView(item.aid) },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Filled.WatchLater,
+                    icon = painterResource(R.drawable.ic_watch_later_24),
                 )
             }
         }

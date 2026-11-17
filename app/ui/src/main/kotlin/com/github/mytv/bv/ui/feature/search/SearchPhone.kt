@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +43,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -167,7 +166,7 @@ internal fun SearchPhone(nav: NavController, state: SearchUiState, follow: Follo
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 BvIconButton(
-                    icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                    icon = painterResource(R.drawable.ic_arrow_back_24),
                     contentDescription = stringResource(R.string.search_back),
                     onClick = back,
                 )

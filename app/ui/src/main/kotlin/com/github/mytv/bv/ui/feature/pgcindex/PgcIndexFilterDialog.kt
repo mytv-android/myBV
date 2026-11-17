@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +29,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -227,7 +226,7 @@ private fun <T : PgcIndexParam> FilterChipRow(
                     selected = isSelected,
                     onClick = { onSelect(option) },
                     modifier = if (requester != null && index == selectedIndex) Modifier.focusRequester(requester) else Modifier,
-                    icon = if (isSelected) Icons.Filled.Check else null,
+                    icon = if (isSelected) painterResource(R.drawable.ic_check_24) else null,
                 )
             }
         }

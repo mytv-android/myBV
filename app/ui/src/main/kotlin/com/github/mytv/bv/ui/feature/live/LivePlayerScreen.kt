@@ -31,14 +31,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Fullscreen
-import androidx.compose.material.icons.rounded.FullscreenExit
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Subtitles
-import androidx.compose.material.icons.rounded.SubtitlesOff
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -69,6 +61,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -687,7 +680,7 @@ private fun LiveInfoBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BvIconButton(
-            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+            icon = painterResource(R.drawable.ic_arrow_back_24),
             contentDescription = stringResource(R.string.live_player_back),
             onClick = { nav.popBackStack() },
         )
@@ -747,20 +740,20 @@ private fun LiveTouchBottomBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BvIconButton(
-            icon = Icons.Rounded.Refresh,
+            icon = painterResource(R.drawable.ic_refresh_24),
             contentDescription = stringResource(R.string.live_player_refresh),
             onClick = onRefresh,
         )
         BvChip(text = liveQualityLabel(vm), selected = false, onClick = onOpenMenu)
         BvChip(text = liveLineLabel(vm), selected = false, onClick = onOpenMenu)
         BvIconButton(
-            icon = if (danmakuEnabled) Icons.Rounded.Subtitles else Icons.Rounded.SubtitlesOff,
+            icon = if (danmakuEnabled) painterResource(R.drawable.ic_subtitles_24) else painterResource(R.drawable.ic_subtitles_off_24),
             contentDescription = stringResource(R.string.live_player_menu_danmaku),
             onClick = onDanmakuToggle,
         )
         Spacer(Modifier.weight(1f))
         BvIconButton(
-            icon = if (barsVisible) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+            icon = if (barsVisible) painterResource(R.drawable.ic_fullscreen_exit_24) else painterResource(R.drawable.ic_fullscreen_24),
             contentDescription = stringResource(R.string.live_player_fullscreen),
             onClick = onToggleBars,
         )
@@ -788,7 +781,7 @@ private fun LiveTvBottomBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BvIconButton(
-            icon = Icons.Rounded.Refresh,
+            icon = painterResource(R.drawable.ic_refresh_24),
             contentDescription = stringResource(R.string.live_player_refresh),
             onClick = onRefresh,
             modifier = Modifier.focusRequester(buttonFocusRequester),
@@ -796,7 +789,7 @@ private fun LiveTvBottomBar(
         BvChip(text = liveQualityLabel(vm), selected = false, onClick = onOpenMenu)
         BvChip(text = liveLineLabel(vm), selected = false, onClick = onOpenMenu)
         BvIconButton(
-            icon = if (danmakuEnabled) Icons.Rounded.Subtitles else Icons.Rounded.SubtitlesOff,
+            icon = if (danmakuEnabled) painterResource(R.drawable.ic_subtitles_24) else painterResource(R.drawable.ic_subtitles_off_24),
             contentDescription = stringResource(R.string.live_player_menu_danmaku),
             onClick = onDanmakuToggle,
         )
@@ -875,7 +868,7 @@ private fun LiveMenuPanel(
                             modifier = Modifier.weight(1f),
                         )
                         BvIconButton(
-                            icon = Icons.Rounded.Close,
+                            icon = painterResource(R.drawable.ic_close_24),
                             contentDescription = stringResource(R.string.live_player_menu_close),
                             onClick = onClose,
                         )
@@ -1022,7 +1015,7 @@ private fun LiveCenterTips(
                     BvButton(
                         text = stringResource(R.string.live_player_retry),
                         onClick = onRetryStream,
-                        icon = Icons.Rounded.Refresh,
+                        icon = painterResource(R.drawable.ic_refresh_24),
                     )
                 }
             }

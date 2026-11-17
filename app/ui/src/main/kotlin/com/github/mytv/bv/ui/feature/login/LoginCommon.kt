@@ -21,8 +21,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +52,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -331,7 +330,7 @@ internal fun LoginQrCode(qr: AppQrLoginViewModel, size: Dp, modifier: Modifier =
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Rounded.Check, contentDescription = null, tint = QrInk, modifier = Modifier.size(40.dp))
+                Icon(painterResource(R.drawable.ic_check_24), contentDescription = null, tint = QrInk, modifier = Modifier.size(40.dp))
                 Text(
                     stringResource(if (state == QrLoginState.Success) R.string.login_done else R.string.login_qr_scanned),
                     style = BvType.BodyBold,

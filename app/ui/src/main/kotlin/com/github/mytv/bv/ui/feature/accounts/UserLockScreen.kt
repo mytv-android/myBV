@@ -25,14 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Backspace
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -55,8 +47,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -305,7 +298,7 @@ fun UserLockScreen(nav: NavController) {
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            Icons.Rounded.Lock,
+                            painterResource(R.drawable.ic_lock_24),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(28.dp),
@@ -491,7 +484,7 @@ private fun LockUserItem(
                             .background(scheme.primary),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Rounded.Lock, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(14.dp))
+                        Icon(painterResource(R.drawable.ic_lock_24), contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -528,7 +521,7 @@ private fun LockPadKey(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
-    icon: ImageVector? = null,
+    icon: Painter? = null,
     text: String? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -587,7 +580,7 @@ private fun LockNumericPad(onDigit: (Char) -> Unit, onDelete: () -> Unit, firstR
             LockPadKey(
                 onClick = onDelete,
                 modifier = Modifier.weight(1f),
-                icon = Icons.AutoMirrored.Rounded.Backspace,
+                icon = painterResource(R.drawable.ic_backspace_24),
                 contentDescription = stringResource(R.string.accounts_lock_delete),
             )
         }
@@ -616,28 +609,28 @@ private fun LockDirectionPad(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(firstRequester),
-                icon = Icons.Rounded.KeyboardArrowUp,
+                icon = painterResource(R.drawable.ic_keyboard_arrow_up_24),
             )
             Spacer(Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            LockPadKey(onClick = { onKey('l') }, modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Rounded.KeyboardArrowLeft)
+            LockPadKey(onClick = { onKey('l') }, modifier = Modifier.weight(1f), icon = painterResource(R.drawable.ic_keyboard_arrow_left_24))
             LockPadKey(
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
-                icon = Icons.Rounded.Check,
+                icon = painterResource(R.drawable.ic_check_24),
                 contentDescription = stringResource(R.string.accounts_lock_confirm),
             )
-            LockPadKey(onClick = { onKey('r') }, modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Rounded.KeyboardArrowRight)
+            LockPadKey(onClick = { onKey('r') }, modifier = Modifier.weight(1f), icon = painterResource(R.drawable.ic_keyboard_arrow_right_24))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             LockPadKey(
                 onClick = onDelete,
                 modifier = Modifier.weight(1f),
-                icon = Icons.AutoMirrored.Rounded.Backspace,
+                icon = painterResource(R.drawable.ic_backspace_24),
                 contentDescription = stringResource(R.string.accounts_lock_delete),
             )
-            LockPadKey(onClick = { onKey('d') }, modifier = Modifier.weight(1f), icon = Icons.Rounded.KeyboardArrowDown)
+            LockPadKey(onClick = { onKey('d') }, modifier = Modifier.weight(1f), icon = painterResource(R.drawable.ic_keyboard_arrow_down_24))
             Spacer(Modifier.weight(1f))
         }
     }

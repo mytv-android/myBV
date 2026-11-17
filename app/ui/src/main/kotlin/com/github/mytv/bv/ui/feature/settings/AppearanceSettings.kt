@@ -14,14 +14,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -210,7 +209,7 @@ internal fun AppearanceSettings(gapColor: Color) {
                 )
             }
             BvIconButton(
-                icon = Icons.Rounded.Add,
+                icon = painterResource(R.drawable.ic_add_24),
                 contentDescription = stringResource(R.string.settings_appearance_seed_custom),
                 onClick = { showCustomSeed = true },
                 style = BvIconButtonStyle.Tonal,

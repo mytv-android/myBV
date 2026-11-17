@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
@@ -39,6 +37,7 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.PreferenceWrites
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
@@ -388,7 +388,7 @@ internal fun SettingNavRow(
                     )
                 }
                 if (showChevron) {
-                    Icon(Icons.Rounded.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(painterResource(R.drawable.ic_chevron_right_24), contentDescription = null, modifier = Modifier.size(20.dp))
                 }
             }
         },

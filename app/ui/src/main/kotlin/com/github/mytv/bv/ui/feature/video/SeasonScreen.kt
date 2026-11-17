@@ -2,9 +2,6 @@ package com.github.mytv.bv.ui.feature.video
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -241,7 +239,7 @@ fun SeasonScreen(nav: NavController, route: SeasonRoute) {
         tvPlayLabel = tvPlayLabel,
         onTvPlay = { season?.let(playDefault) },
         tvLastAction = TvDetailAction(
-            icon = if (seasonVm.isFollowing) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            icon = if (seasonVm.isFollowing) painterResource(R.drawable.ic_favorite_24) else painterResource(R.drawable.ic_favorite_outlined_24),
             contentDescription = stringResource(R.string.video_detail_follow_season),
             checked = seasonVm.isFollowing,
             onClick = { handlers.onFollowClick() },

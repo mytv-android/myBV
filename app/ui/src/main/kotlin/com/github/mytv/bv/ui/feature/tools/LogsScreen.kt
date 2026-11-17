@@ -29,10 +29,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BugReport
-import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,6 +50,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -351,7 +348,7 @@ private fun LogList(
                     title = stringResource(R.string.tools_logs_save),
                     modifier = Modifier.focusRequester(firstRequester),
                     subtitle = stringResource(R.string.tools_logs_save_desc),
-                    icon = Icons.Rounded.Save,
+                    icon = painterResource(R.drawable.ic_save_24),
                     iconContainerColor = scheme.primaryContainer,
                     iconContentColor = scheme.onPrimaryContainer,
                     onClick = onSave,
@@ -384,7 +381,7 @@ private fun LogList(
                         stringResource(if (manual) R.string.tools_logs_manual else R.string.tools_logs_crash),
                         entry.sizeKb,
                     ),
-                    icon = if (manual) Icons.Rounded.Description else Icons.Rounded.BugReport,
+                    icon = if (manual) painterResource(R.drawable.ic_description_24) else painterResource(R.drawable.ic_bug_report_24),
                     iconContainerColor = if (manual) scheme.secondaryContainer else scheme.tertiaryContainer,
                     iconContentColor = if (manual) scheme.onSecondaryContainer else scheme.onTertiaryContainer,
                     selected = entry.file == selected,

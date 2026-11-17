@@ -23,10 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.rounded.Menu
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -85,7 +82,7 @@ fun TabletRail(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             BvIconButton(
-                icon = Icons.Rounded.Menu,
+                icon = painterResource(R.drawable.ic_menu_24),
                 contentDescription = stringResource(R.string.nav_menu),
                 onClick = { scope.launch { modalState.expand() } },
             )
@@ -100,7 +97,7 @@ fun TabletRail(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.nav_search))
+                    Icon(painterResource(R.drawable.ic_search_24), contentDescription = stringResource(R.string.nav_search))
                 }
             }
             TopLevel.entries.forEach { item ->
@@ -113,7 +110,7 @@ fun TabletRail(
             }
             Spacer(Modifier.weight(1f))
             CollapsedRailItem(
-                icon = Icons.Outlined.Settings,
+                icon = painterResource(R.drawable.ic_settings_outlined_24),
                 label = stringResource(R.string.nav_settings),
                 selected = false,
                 onClick = onSettings,
@@ -165,7 +162,7 @@ private fun RailExpandedContent(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Rounded.Search, contentDescription = null)
+                Icon(painterResource(R.drawable.ic_search_24), contentDescription = null)
                 Text(
                     stringResource(R.string.nav_search),
                     style = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
@@ -182,7 +179,7 @@ private fun RailExpandedContent(
         }
         Spacer(Modifier.weight(1f))
         ExpandedRailItem(
-            icon = Icons.Outlined.Settings,
+            icon = painterResource(R.drawable.ic_settings_outlined_24),
             label = stringResource(R.string.nav_settings),
             selected = false,
             onClick = onSettings,
@@ -192,7 +189,7 @@ private fun RailExpandedContent(
 
 @Composable
 private fun ColumnScope.CollapsedRailItem(
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
@@ -242,7 +239,7 @@ private fun ColumnScope.CollapsedRailItem(
 
 @Composable
 private fun ExpandedRailItem(
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     selected: Boolean,
     onClick: () -> Unit,

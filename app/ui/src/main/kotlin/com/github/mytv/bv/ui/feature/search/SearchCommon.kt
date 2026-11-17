@@ -21,14 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -50,7 +42,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -92,7 +85,7 @@ private fun highlight(text: String, keyword: String): AnnotatedString = buildAnn
 
 /** 联想项（原型 `.m-li` padding 10×16）：搜索图标 + 文字（匹配部分加粗）。 */
 @Composable
-private fun SuggestionRow(text: String, keyword: String, icon: ImageVector, onClick: () -> Unit) {
+private fun SuggestionRow(text: String, keyword: String, icon: Painter, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier
@@ -136,14 +129,14 @@ internal fun SuggestionList(
             key = { "h$it" },
             contentType = { "history" },
         ) { text ->
-            SuggestionRow(text, keyword, Icons.Rounded.History) { onPick(text) }
+            SuggestionRow(text, keyword, painterResource(R.drawable.ic_history_24)) { onPick(text) }
         }
         items(
             items = suggests,
             key = { "s$it" },
             contentType = { "suggest" },
         ) { text ->
-            SuggestionRow(text, keyword, Icons.Rounded.Search) { onPick(text) }
+            SuggestionRow(text, keyword, painterResource(R.drawable.ic_search_24)) { onPick(text) }
         }
     }
 }
@@ -396,7 +389,7 @@ private fun SearchFilterGroups(
                 selected = selected,
                 onClick = { state.setOrder(order) },
                 modifier = if (selected && firstRequester != null) Modifier.focusRequester(firstRequester) else Modifier,
-                icon = if (selected) Icons.Rounded.Check else null,
+                icon = if (selected) painterResource(R.drawable.ic_check_24) else null,
             )
         }
     }
@@ -414,7 +407,7 @@ private fun SearchFilterGroups(
                 text = stringResource(duration.labelRes()),
                 selected = selected,
                 onClick = { state.setDuration(duration) },
-                icon = if (selected) Icons.Rounded.Check else null,
+                icon = if (selected) painterResource(R.drawable.ic_check_24) else null,
                 enabled = full,
             )
         }
@@ -431,7 +424,7 @@ private fun SearchFilterGroups(
             text = stringResource(R.string.search_partition_all),
             selected = selectedPartition == null,
             onClick = { state.setPartition(null) },
-            icon = if (selectedPartition == null) Icons.Rounded.Check else null,
+            icon = if (selectedPartition == null) painterResource(R.drawable.ic_check_24) else null,
             enabled = full,
         )
         shown.forEach { partition ->
@@ -440,7 +433,7 @@ private fun SearchFilterGroups(
                 text = partition.strRes,
                 selected = selected,
                 onClick = { state.setPartition(partition) },
-                icon = if (selected) Icons.Rounded.Check else null,
+                icon = if (selected) painterResource(R.drawable.ic_check_24) else null,
                 enabled = full,
             )
         }
@@ -456,7 +449,7 @@ private fun SearchFilterGroups(
                 enabled = full,
                 trailing = {
                     Icon(
-                        if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                        if (expanded) painterResource(R.drawable.ic_keyboard_arrow_up_24) else painterResource(R.drawable.ic_keyboard_arrow_down_24),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                     )
@@ -473,7 +466,7 @@ private fun SearchFilterGroups(
                     text = child.strRes,
                     selected = selected,
                     onClick = { state.setChildPartition(child) },
-                    icon = if (selected) Icons.Rounded.Check else null,
+                    icon = if (selected) painterResource(R.drawable.ic_check_24) else null,
                 )
             }
         }
@@ -508,7 +501,7 @@ private fun FilterDropChip(text: String, changed: Boolean, onClick: () -> Unit) 
         selected = changed,
         onClick = onClick,
         contentPadding = PaddingValues(start = 14.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-        trailing = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        trailing = { Icon(painterResource(R.drawable.ic_arrow_drop_down_24), contentDescription = null, modifier = Modifier.size(18.dp)) },
     )
 }
 
@@ -532,7 +525,7 @@ internal fun SearchFilterBar(state: SearchUiState, onOpen: () -> Unit, modifier:
             text = stringResource(R.string.search_filter_title),
             selected = false,
             onClick = onOpen,
-            icon = Icons.Rounded.Tune,
+            icon = painterResource(R.drawable.ic_tune_24),
             contentPadding = PaddingValues(start = 10.dp, end = if (count > 0) 8.dp else 14.dp, top = 6.dp, bottom = 6.dp),
             trailing = if (count > 0) {
                 {

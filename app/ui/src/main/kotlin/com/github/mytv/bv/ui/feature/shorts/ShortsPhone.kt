@@ -30,12 +30,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -56,9 +50,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.constrainHeight
 import kotlin.math.roundToInt
@@ -84,7 +79,6 @@ import com.github.mytv.bv.ui.designsystem.component.Ambient
 import com.github.mytv.bv.ui.designsystem.component.BvAvatar
 import com.github.mytv.bv.ui.designsystem.component.BvIconButton
 import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
@@ -242,7 +236,7 @@ private fun PhonePage(
         ) {
             Text(stringResource(R.string.shorts_title), style = BvType.PanelTitle, color = Color.White)
             BvIconButton(
-                icon = Icons.Rounded.Search,
+                icon = painterResource(R.drawable.ic_search_24),
                 contentDescription = stringResource(R.string.shorts_search),
                 onClick = actions::openSearch,
                 contentColor = Color.White,
@@ -331,35 +325,35 @@ private fun PhoneActionColumn(
             ) { actions.openSpace(item.author.mid) },
         )
         SideActionButton(
-            icon = Icons.Filled.ThumbUp,
+            icon = painterResource(R.drawable.ic_thumb_up_24),
             label = countOrLabel(item.likeCount, R.string.shorts_like),
             contentDescription = stringResource(R.string.shorts_like),
             active = state.liked,
             onClick = { actions.like(item) },
         )
         SideActionButton(
-            icon = BvIcons.Coin,
+            icon = painterResource(R.drawable.ic_coin_24),
             label = stringResource(R.string.shorts_coin),
             contentDescription = stringResource(R.string.shorts_coin),
             active = state.coinCount > 0,
             onClick = { actions.coin(item) },
         )
         SideActionButton(
-            icon = Icons.Filled.Star,
+            icon = painterResource(R.drawable.ic_star_24),
             label = countOrLabel(item.favoriteCount, R.string.shorts_favorite),
             contentDescription = stringResource(R.string.shorts_favorite),
             active = state.favoured,
             onClick = { actions.favorite(item) },
         )
         SideActionButton(
-            icon = Icons.Filled.ChatBubble,
+            icon = painterResource(R.drawable.ic_chat_bubble_24),
             label = countOrLabel(item.replyCount, R.string.shorts_comment),
             contentDescription = stringResource(R.string.shorts_comment),
             active = false,
             onClick = onComments,
         )
         SideActionButton(
-            icon = Icons.Filled.Share,
+            icon = painterResource(R.drawable.ic_share_24),
             label = stringResource(R.string.shorts_share),
             contentDescription = stringResource(R.string.shorts_share),
             active = false,
@@ -374,7 +368,7 @@ private fun PhoneActionColumn(
  */
 @Composable
 private fun SideActionButton(
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     contentDescription: String,
     active: Boolean,

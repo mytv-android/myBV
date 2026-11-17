@@ -22,9 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,13 +42,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -199,7 +197,7 @@ fun TvRail(
         )
         Spacer(Modifier.height(10.dp))
         RailEntry(
-            icon = Icons.Rounded.Search,
+            icon = painterResource(R.drawable.ic_search_24),
             label = stringResource(R.string.nav_search),
             selected = current == TvRailTarget.Search,
             open = open,
@@ -219,7 +217,7 @@ fun TvRail(
         }
         Spacer(Modifier.weight(1f))
         RailEntry(
-            icon = Icons.Outlined.Settings,
+            icon = painterResource(R.drawable.ic_settings_outlined_24),
             label = stringResource(R.string.nav_settings),
             selected = false,
             open = open,
@@ -230,7 +228,7 @@ fun TvRail(
 
 @Composable
 private fun RailEntry(
-    icon: ImageVector?,
+    icon: Painter?,
     label: String,
     selected: Boolean,
     open: Boolean,

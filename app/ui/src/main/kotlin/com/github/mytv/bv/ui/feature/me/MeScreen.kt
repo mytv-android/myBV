@@ -1,19 +1,13 @@
 package com.github.mytv.bv.ui.feature.me
 
 import androidx.annotation.StringRes
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.WatchLater
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,16 +37,16 @@ import com.github.mytv.bv.repository.UserRepository as BvUserRepository
 /** 「我的」的入口（手机彩色卡片、平板左侧列表）。 */
 internal enum class MeEntry(
     @param:StringRes val title: Int,
-    val icon: ImageVector,
+    val icon: @Composable () -> Painter,
     val role: TileRole,
     val route: Any,
 ) {
-    History(R.string.me_history, Icons.Rounded.History, TileRole.Primary, HistoryRoute),
-    Favorite(R.string.me_favorite, Icons.Rounded.Star, TileRole.Tertiary, FavoriteRoute),
-    ToView(R.string.me_toview, Icons.Rounded.WatchLater, TileRole.Secondary, ToViewRoute),
-    Seasons(R.string.me_seasons, Icons.Rounded.Movie, TileRole.Primary, FollowingSeasonRoute),
-    Following(R.string.me_following, Icons.Rounded.Person, TileRole.Primary, FollowingRoute),
-    Accounts(R.string.me_accounts, Icons.Rounded.Shield, TileRole.Primary, AccountsRoute);
+    History(R.string.me_history, { painterResource(R.drawable.ic_history_24) }, TileRole.Primary, HistoryRoute),
+    Favorite(R.string.me_favorite, { painterResource(R.drawable.ic_star_24) }, TileRole.Tertiary, FavoriteRoute),
+    ToView(R.string.me_toview, { painterResource(R.drawable.ic_watch_later_24) }, TileRole.Secondary, ToViewRoute),
+    Seasons(R.string.me_seasons, { painterResource(R.drawable.ic_movie_24) }, TileRole.Primary, FollowingSeasonRoute),
+    Following(R.string.me_following, { painterResource(R.drawable.ic_person_24) }, TileRole.Primary, FollowingRoute),
+    Accounts(R.string.me_accounts, { painterResource(R.drawable.ic_shield_24) }, TileRole.Primary, AccountsRoute);
 
     companion object {
         /** 四个彩色入口卡（手机 2×2、电视一行 4 个）。 */

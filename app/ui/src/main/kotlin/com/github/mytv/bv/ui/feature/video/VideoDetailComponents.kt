@@ -17,16 +17,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.WatchLater
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.material.icons.outlined.WatchLater
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +45,6 @@ import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CardFrame
 import com.github.mytv.bv.ui.designsystem.component.DurationBadge
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.viewmodel.video.VideoActionsViewModel
 
@@ -111,31 +101,31 @@ internal fun rememberDetailActionItems(
     val shareLabel = stringResource(R.string.video_detail_share)
     return listOf(
         ActionItem(
-            icon = if (vm.liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+            icon = if (vm.liked) painterResource(R.drawable.ic_thumb_up_24) else painterResource(R.drawable.ic_thumb_up_outlined_24),
             label = likeLabel,
             checked = vm.liked,
             onClick = { vm.toggleLike() },
         ),
         ActionItem(
-            icon = BvIcons.Coin,
+            icon = painterResource(R.drawable.ic_coin_24),
             label = coinLabel,
             checked = vm.coinCount > 0,
             onClick = { onCoinClick(vm, dialogs) },
         ),
         ActionItem(
-            icon = if (vm.favoured) Icons.Filled.Star else Icons.Outlined.StarBorder,
+            icon = if (vm.favoured) painterResource(R.drawable.ic_star_24) else painterResource(R.drawable.ic_star_outlined_24),
             label = favoriteLabel,
             checked = vm.favoured,
             onClick = { onFavoriteClick(vm, dialogs) },
         ),
         ActionItem(
-            icon = if (vm.inToView) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
+            icon = if (vm.inToView) painterResource(R.drawable.ic_watch_later_24) else painterResource(R.drawable.ic_watch_later_outlined_24),
             label = laterLabel,
             checked = vm.inToView,
             onClick = { vm.toggleToView() },
         ),
         ActionItem(
-            icon = Icons.Outlined.Share,
+            icon = painterResource(R.drawable.ic_share_outlined_24),
             label = shareLabel,
             checked = false,
             onClick = onShare,
@@ -152,7 +142,7 @@ internal fun DetailFollowButton(follow: DetailFollow, onClick: () -> Unit, modif
         onClick = onClick,
         modifier = modifier,
         style = if (followed) BvButtonStyle.Tonal else BvButtonStyle.Filled,
-        icon = if (followed) Icons.Rounded.Check else Icons.Rounded.Add,
+        icon = if (followed) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
         height = 36.dp,
         horizontalPadding = 16.dp,
     )

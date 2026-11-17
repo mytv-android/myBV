@@ -1,8 +1,6 @@
 package com.github.mytv.bv.ui.feature.video
 
 import android.content.Context
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,6 +8,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -242,7 +241,7 @@ fun VideoDetailScreen(nav: NavController, route: VideoRoute) {
         tvPlayLabel = tvPlayLabel,
         onTvPlay = onTvPlay,
         tvLastAction = TvDetailAction(
-            icon = Icons.Outlined.Person,
+            icon = painterResource(R.drawable.ic_person_outlined_24),
             contentDescription = stringResource(R.string.video_detail_up),
             checked = false,
             onClick = { handlers.onUpClick() },

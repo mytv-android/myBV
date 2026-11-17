@@ -1,0 +1,10 @@
+<!-- Material Symbols Rounded (filled), from fonts.google.com/icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 442 580 l 166-106 q 18-12 18-34 t-18-34 L 442 300 q-20-13-41-2 t-21 35 v 214 q 0 24 21 35 t 41-2 Z M 160 760 q-33 0-56.5-23.5 T 80 680 v-480 q 0-33 23.5-56.5 T 160 120 h 640 q 33 0 56.5 23.5 T 880 200 v 480 q 0 33-23.5 56.5 T 800 760 H 640 v 40 q 0 17-11.5 28.5 T 600 840 H 360 q-17 0-28.5-11.5 T 320 800 v-40 H 160 Z m 0-80 h 640 v-480 H 160 v 480 Z m 0 0 v-480 v 480 Z" />
+</vector>

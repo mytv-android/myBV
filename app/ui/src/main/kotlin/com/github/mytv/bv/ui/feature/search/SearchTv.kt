@@ -28,11 +28,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -55,9 +50,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -282,13 +278,13 @@ private fun SearchTvInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (voiceAvailable) Modifier else downToResults),
-            icon = Icons.Rounded.Search,
+            icon = painterResource(R.drawable.ic_search_24),
             large = true,
             enabled = keyword.isNotBlank(),
         )
         if (voiceAvailable) {
             TvWideButton(
-                icon = Icons.Rounded.Mic,
+                icon = painterResource(R.drawable.ic_mic_24),
                 text = stringResource(R.string.search_tv_voice),
                 modifier = downToResults,
                 onClick = {
@@ -353,7 +349,7 @@ private fun SearchTvInput(
                 titleStyle = BvType.CardTitle,
                 leading = {
                     Icon(
-                        Icons.Rounded.DeleteSweep,
+                        painterResource(R.drawable.ic_delete_sweep_24),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error,
@@ -533,7 +529,7 @@ private fun SearchTvFull(
                 text = stringResource(R.string.search_filter_title),
                 onClick = onFilter,
                 style = BvButtonStyle.Tonal,
-                icon = Icons.Rounded.Tune,
+                icon = painterResource(R.drawable.ic_tune_24),
                 height = 44.dp,
             )
         }
@@ -580,7 +576,7 @@ private fun TvQueryField(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                Icons.Rounded.Search,
+                painterResource(R.drawable.ic_search_24),
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
                 tint = scheme.onSurfaceVariant,
@@ -651,7 +647,7 @@ private fun TvKey(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
 
 /** 语音按钮（原型 `.m-btn.t`，内容左对齐）：高 40，全圆角，secondaryContainer，Mic 20 + 14sp SemiBold。 */
 @Composable
-private fun TvWideButton(icon: ImageVector, text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun TvWideButton(icon: Painter, text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val container by focusContainerColor(focused, MaterialTheme.colorScheme.secondaryContainer)

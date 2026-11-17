@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -97,7 +96,7 @@ internal fun InteractiveOptionDialog(
                             modifier = requesterModifier.fillMaxWidth(),
                             title = label,
                             selected = option.isCurrent || option.cid == currentCid,
-                            icon = if (option.isCurrent || option.cid == currentCid) Icons.Filled.PlayArrow else null,
+                            icon = if (option.isCurrent || option.cid == currentCid) painterResource(R.drawable.ic_play_arrow_24) else null,
                             iconContainerColor = MaterialTheme.colorScheme.primary,
                             iconContentColor = MaterialTheme.colorScheme.onPrimary,
                             onClick = { onSelectOption(option) },

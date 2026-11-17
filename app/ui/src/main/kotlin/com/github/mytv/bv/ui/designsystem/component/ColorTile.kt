@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,7 +36,7 @@ enum class TileRole { Primary, Secondary, Tertiary }
 fun ColorTile(
     title: String,
     subtitle: String,
-    icon: ImageVector,
+    icon: Painter,
     role: TileRole,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

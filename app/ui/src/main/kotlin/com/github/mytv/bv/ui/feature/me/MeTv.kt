@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -81,13 +79,13 @@ internal fun MeTv(nav: NavController, state: MeState) {
                     text = stringResource(R.string.me_switch_account),
                     onClick = { nav.navigate(AccountsRoute) },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Rounded.Person,
+                    icon = painterResource(R.drawable.ic_person_24),
                 )
                 BvButton(
                     text = stringResource(R.string.me_user_lock),
                     onClick = { nav.navigate(UserLockRoute) },
                     style = BvButtonStyle.Tonal,
-                    icon = Icons.Rounded.Shield,
+                    icon = painterResource(R.drawable.ic_shield_24),
                 )
             }
         }
@@ -104,7 +102,7 @@ internal fun MeTv(nav: NavController, state: MeState) {
                 ColorTile(
                     title = stringResource(entry.title),
                     subtitle = state.subtitle(entry),
-                    icon = entry.icon,
+                    icon = entry.icon(),
                     role = entry.role,
                     onClick = { nav.navigate(entry.route) },
                     modifier = Modifier

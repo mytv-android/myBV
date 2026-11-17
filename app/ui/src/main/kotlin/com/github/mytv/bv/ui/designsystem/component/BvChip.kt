@@ -22,7 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,7 +43,7 @@ fun BvChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    icon: Painter? = null,
     selectOnFocus: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
     textStyle: TextStyle = BvType.Small.copy(fontWeight = FontWeight.Medium),

@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PhoneAndroid
-import androidx.compose.material.icons.rounded.QrCode
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,6 +36,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -178,7 +175,7 @@ internal fun LoginWide(
                         onClick = { smsMode = true },
                         modifier = Modifier.focusRequester(smsRequester),
                         style = BvButtonStyle.Tonal,
-                        icon = Icons.Rounded.PhoneAndroid,
+                        icon = painterResource(R.drawable.ic_phone_android_24),
                     )
                 } else {
                     BvButton(
@@ -188,14 +185,14 @@ internal fun LoginWide(
                             smsMode = false
                         },
                         style = BvButtonStyle.Tonal,
-                        icon = Icons.Rounded.QrCode,
+                        icon = painterResource(R.drawable.ic_qr_code_24),
                     )
                 }
                 BvButton(
                     text = stringResource(R.string.login_switch_account),
                     onClick = onSwitchAccount,
                     style = BvButtonStyle.Outlined,
-                    icon = Icons.Rounded.Person,
+                    icon = painterResource(R.drawable.ic_person_24),
                 )
             }
         }

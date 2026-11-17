@@ -27,10 +27,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -56,6 +52,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -514,18 +511,18 @@ private fun TvFeaturedBlock(
                 text = stringResource(R.string.home_play),
                 onClick = onOpen,
                 modifier = Modifier.focusRequester(playRequester),
-                icon = Icons.Filled.PlayArrow,
+                icon = painterResource(R.drawable.ic_play_arrow_24),
                 large = true,
             )
             BvButton(
                 text = stringResource(R.string.home_watch_later),
                 onClick = { state.addToView(item.aid) },
                 style = BvButtonStyle.Tonal,
-                icon = Icons.Filled.WatchLater,
+                icon = painterResource(R.drawable.ic_watch_later_24),
                 large = true,
             )
             BvIconButton(
-                icon = Icons.Filled.ThumbUp,
+                icon = painterResource(R.drawable.ic_thumb_up_24),
                 contentDescription = stringResource(R.string.home_like),
                 onClick = { state.toggleLike(item.aid) },
                 style = if (state.isLiked(item.aid)) BvIconButtonStyle.Filled else BvIconButtonStyle.Tonal,

@@ -1,13 +1,6 @@
 package com.github.mytv.bv.ui.feature.video
 
 import android.widget.Toast
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.WatchLater
-import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.aaa1115910.biliapi.repositories.VideoDetailRepository
@@ -28,7 +22,6 @@ import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
-import com.github.mytv.bv.ui.designsystem.icon.BvIcons
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.feature.player.PlayRequest
 import com.github.mytv.bv.viewmodel.CommentViewModel
@@ -128,25 +121,25 @@ internal fun DetailPage(
                         onPlayDefault = onTvPlay,
                         actions = listOf(
                             TvDetailAction(
-                                icon = if (actionsVm.liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                                icon = if (actionsVm.liked) painterResource(R.drawable.ic_thumb_up_24) else painterResource(R.drawable.ic_thumb_up_outlined_24),
                                 contentDescription = likeLabel,
                                 checked = actionsVm.liked,
                                 onClick = { actionsVm.toggleLike() },
                             ),
                             TvDetailAction(
-                                icon = BvIcons.Coin,
+                                icon = painterResource(R.drawable.ic_coin_24),
                                 contentDescription = coinLabel,
                                 checked = actionsVm.coinCount > 0,
                                 onClick = { onCoinClick(actionsVm, dialogs) },
                             ),
                             TvDetailAction(
-                                icon = if (actionsVm.favoured) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                icon = if (actionsVm.favoured) painterResource(R.drawable.ic_star_24) else painterResource(R.drawable.ic_star_outlined_24),
                                 contentDescription = favoriteLabel,
                                 checked = actionsVm.favoured,
                                 onClick = { onFavoriteClick(actionsVm, dialogs) },
                             ),
                             TvDetailAction(
-                                icon = if (actionsVm.inToView) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
+                                icon = if (actionsVm.inToView) painterResource(R.drawable.ic_watch_later_24) else painterResource(R.drawable.ic_watch_later_outlined_24),
                                 contentDescription = toViewLabel,
                                 checked = actionsVm.inToView,
                                 onClick = { actionsVm.toggleToView() },

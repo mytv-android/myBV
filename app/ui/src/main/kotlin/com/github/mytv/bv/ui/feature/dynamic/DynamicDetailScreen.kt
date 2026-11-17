@@ -19,8 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +40,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -368,7 +367,7 @@ private fun DetailMedia(item: DynamicItem, onOpen: () -> Unit, modifier: Modifie
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Filled.PlayArrow,
+                    painterResource(R.drawable.ic_play_arrow_24),
                     contentDescription = stringResource(R.string.dynamic_play),
                     modifier = Modifier.size(32.dp),
                     tint = MaterialTheme.colorScheme.onPrimary,

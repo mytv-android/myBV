@@ -15,10 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Comment
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,8 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -447,14 +444,14 @@ internal fun DynamicFooter(footer: DynamicItem.DynamicFooterModule, modifier: Mo
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FooterStat(Icons.Outlined.Share, stringResource(R.string.dynamic_forward))
-        FooterStat(Icons.AutoMirrored.Outlined.Comment, formatCount(footer.comment))
-        FooterStat(Icons.Outlined.ThumbUp, formatCount(footer.like))
+        FooterStat(painterResource(R.drawable.ic_share_outlined_24), stringResource(R.string.dynamic_forward))
+        FooterStat(painterResource(R.drawable.ic_comment_outlined_24), formatCount(footer.comment))
+        FooterStat(painterResource(R.drawable.ic_thumb_up_outlined_24), formatCount(footer.like))
     }
 }
 
 @Composable
-private fun FooterStat(icon: ImageVector, text: String) {
+private fun FooterStat(icon: Painter, text: String) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,

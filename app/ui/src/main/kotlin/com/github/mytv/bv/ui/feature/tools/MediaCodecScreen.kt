@@ -22,9 +22,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Audiotrack
-import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,6 +41,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -306,7 +304,7 @@ private fun CodecList(
                             CodecMode.Software -> R.string.tools_codec_hs_software
                         }
                     ),
-                    icon = if (video) Icons.Rounded.Videocam else Icons.Rounded.Audiotrack,
+                    icon = if (video) painterResource(R.drawable.ic_videocam_24) else painterResource(R.drawable.ic_audiotrack_24),
                     iconContainerColor = if (video) scheme.primaryContainer else scheme.tertiaryContainer,
                     iconContentColor = if (video) scheme.onPrimaryContainer else scheme.onTertiaryContainer,
                     selected = isSelected,

@@ -63,7 +63,6 @@ dependencies {
     implementation(androidx.core.ktx)
     implementation(androidx.compose.constraintlayout)
     implementation(androidx.compose.material)
-    implementation(androidx.compose.material.icons)
     implementation(androidx.compose.material3)
     implementation(androidx.compose.ui)
     implementation(androidx.compose.ui.tooling.preview)

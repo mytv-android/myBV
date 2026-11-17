@@ -16,14 +16,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -67,7 +64,7 @@ internal fun MePhone(nav: NavController, state: MeState) {
                         ColorTile(
                             title = stringResource(entry.title),
                             subtitle = state.subtitle(entry),
-                            icon = entry.icon,
+                            icon = entry.icon(),
                             role = entry.role,
                             onClick = { nav.navigate(entry.route) },
                             modifier = Modifier.weight(1f),
@@ -115,21 +112,21 @@ internal fun MePhone(nav: NavController, state: MeState) {
             BvListItem(
                 title = stringResource(R.string.me_following_ups),
                 subtitle = state.subtitle(MeEntry.Following).ifEmpty { null },
-                icon = Icons.Rounded.Person,
+                icon = painterResource(R.drawable.ic_person_24),
                 iconContainerColor = iconContainer,
                 onClick = { nav.navigate(FollowingRoute) },
             )
             BvListItem(
                 title = stringResource(R.string.me_accounts),
                 subtitle = state.subtitle(MeEntry.Accounts),
-                icon = Icons.Rounded.Shield,
+                icon = painterResource(R.drawable.ic_shield_24),
                 iconContainerColor = iconContainer,
                 onClick = { nav.navigate(AccountsRoute) },
             )
             BvListItem(
                 title = stringResource(R.string.me_settings),
                 subtitle = stringResource(R.string.me_settings_sub),
-                icon = Icons.Rounded.Settings,
+                icon = painterResource(R.drawable.ic_settings_24),
                 iconContainerColor = iconContainer,
                 onClick = { nav.navigate(SettingsRoute()) },
             )

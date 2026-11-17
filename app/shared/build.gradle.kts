@@ -95,7 +95,6 @@ dependencies {
     api(androidx.compose.ui)
     api(androidx.compose.ui.util)
     api(androidx.compose.ui.tooling.preview)
-    api(androidx.compose.material.icons)
     api(androidx.compose.material)
     api(androidx.compose.material3)
     api(libs.material.kolor)

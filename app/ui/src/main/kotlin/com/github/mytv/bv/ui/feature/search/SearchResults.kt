@@ -19,10 +19,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -174,7 +171,7 @@ internal fun PgcWideCard(item: PgcItem, onOpen: () -> Unit, modifier: Modifier =
                 text = stringResource(R.string.search_watch_now),
                 onClick = onOpen,
                 modifier = Modifier.padding(top = 8.dp),
-                icon = Icons.Rounded.PlayArrow,
+                icon = painterResource(R.drawable.ic_play_arrow_24),
                 height = 34.dp,
             )
         }
@@ -192,7 +189,7 @@ internal fun FollowButton(mid: Long, follow: FollowState, modifier: Modifier = M
         onClick = { follow.toggle(mid) },
         modifier = modifier,
         style = if (followed) BvButtonStyle.Tonal else BvButtonStyle.Filled,
-        icon = if (followed) Icons.Rounded.Check else Icons.Rounded.Add,
+        icon = if (followed) painterResource(R.drawable.ic_check_24) else painterResource(R.drawable.ic_add_24),
     )
 }
 
