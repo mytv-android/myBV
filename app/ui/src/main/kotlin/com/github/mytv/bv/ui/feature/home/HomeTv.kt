@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -25,12 +26,14 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -50,9 +53,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,6 +81,7 @@ import com.github.mytv.bv.ui.designsystem.component.VideoCard
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
+import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.focus.onBvKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.navigation.openVideo
@@ -96,7 +103,7 @@ private val TvContentTop = 74.dp
 
 /**
  * 电视首页（原型 homeTv）：TvBackdrop(当前精选封面) + 顶栏标签（聚焦即选中）与时钟 + 内容。
- * 「推荐」：精选信息区（固定 266dp，「播放」为初始焦点，每 8 秒切换）+ 为你推荐 / 热门 / 前 5 个分区各一行。
+ * 「推荐」：精选信息区（固定 292dp，「播放」为初始焦点，每 8 秒切换，圆点支持左右切换）+ 为你推荐 / 热门 / 前 5 个分区各一行。
  * 「热门」「关注」：4 列网格；「分区」：31 个分区各一行（原型未画，照旧电视版：热门/动态为网格，分区按分区浏览）。
  */
 @Composable
@@ -358,7 +365,7 @@ private fun TvRecommendContent(
     }
 
     // 精选每 8 秒切到下一条；焦点在精选区时不切换
-    LaunchedEffect(focusInFeatured, featured.size) {
+    LaunchedEffect(focusInFeatured, featuredIndex, featured.size) {
         if (focusInFeatured || featured.size < 2) return@LaunchedEffect
         var index = featuredIndex
         while (true) {
@@ -415,6 +422,9 @@ private fun TvRecommendContent(
                         state = state,
                         playRequester = playRequester,
                         onOpen = { nav.openVideo(current.toCard()) },
+                        featuredCount = featured.size,
+                        featuredIndex = featuredIndex % featured.size,
+                        onFeaturedIndex = onFeaturedIndex,
                         modifier = Modifier.onFocusChanged {
                             focusInFeatured = it.hasFocus
                             if (it.hasFocus) savedRow = 0
@@ -464,8 +474,8 @@ private fun TvRecommendContent(
 }
 
 /**
- * 精选信息区：Column(start 96, width 430, spacedBy 8)，整块高 266。
- * 「今日精选 · 分区」、标题（Display，2 行）、「播放 · 时长 · UP」、简介（按需取，取不到隐藏）、按钮行。
+ * 精选信息区：Column(start 96, width 430, spacedBy 8)，整块高 292。
+ * 「今日精选 · 分区」、标题（Display，2 行）、「播放 · 时长 · UP」、简介（按需取，取不到隐藏）、按钮行与轮播圆点。
  */
 @Composable
 private fun TvFeaturedBlock(
@@ -473,6 +483,9 @@ private fun TvFeaturedBlock(
     state: HomeState,
     playRequester: FocusRequester,
     onOpen: () -> Unit,
+    featuredCount: Int,
+    featuredIndex: Int,
+    onFeaturedIndex: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(item.aid) { state.loadFeaturedExtra(item.aid) }
@@ -480,7 +493,7 @@ private fun TvFeaturedBlock(
         modifier
             .padding(start = 96.dp)
             .width(430.dp)
-            .height(266.dp),
+            .height(292.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Crossfade(
@@ -517,6 +530,14 @@ private fun TvFeaturedBlock(
                 onClick = { state.toggleLike(item.aid) },
                 style = if (state.isLiked(item.aid)) BvIconButtonStyle.Filled else BvIconButtonStyle.Tonal,
                 size = 52.dp,
+            )
+        }
+        if (featuredCount > 1) {
+            TvFeaturedIndicator(
+                count = featuredCount,
+                selectedIndex = featuredIndex,
+                onSelect = onFeaturedIndex,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
     }
@@ -564,6 +585,61 @@ private fun TvFeaturedText(item: UgcItem, state: HomeState) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+/** 单个焦点项，左右键与确认键循环切换；不会占用精选按钮行的左右导航。 */
+@Composable
+private fun TvFeaturedIndicator(
+    count: Int,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.home_featured_page, selectedIndex + 1, count)
+    Surface(
+        onClick = { onSelect((selectedIndex + 1) % count) },
+        modifier = modifier
+            .semantics { contentDescription = description }
+            .onBvKey { key ->
+                when (key) {
+                    BvKey.Left -> {
+                        onSelect((selectedIndex - 1 + count) % count)
+                        true
+                    }
+
+                    BvKey.Right -> {
+                        onSelect((selectedIndex + 1) % count)
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+            .bvFocus(scale = 1f, glow = 6.dp),
+        shape = CircleShape,
+        color = Color.Transparent,
+    ) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            repeat(count) { index ->
+                val selected = index == selectedIndex
+                Box(Modifier.size(8.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier
+                            .size(if (selected) 8.dp else 6.dp)
+                            .background(
+                                color = if (selected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                shape = CircleShape,
+                            )
+                    )
+                }
+            }
         }
     }
 }
