@@ -58,7 +58,6 @@ dependencies {
     api(project(":utils"))
     api(project(":bili-api"))
     api(project(":bili-subtitle"))
-    api(project(":symbols"))
     implementation(androidx.activity.compose)
     implementation(androidx.core.ktx)
     implementation(androidx.compose.constraintlayout)

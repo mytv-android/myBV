@@ -19,7 +19,6 @@ ktor-jsoup = "2.3.0"
 logging = "7.0.7"
 lottie = "6.6.7"
 material = "1.12.0"
-material-symbols-compose = "1.0.1"
 materialKolor = "4.1.1"
 protobuf = "4.31.1"
 qrcode = "4.5.0"
@@ -107,10 +106,6 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 
 # https://github.com/jordond/MaterialKolor
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
-
-# https://github.com/1552980358/material-symbols-compose
-material-symbols-compose-annotation = { module = "com.github.1552980358.material-symbols-compose:annotation", version.ref = "material-symbols-compose" }
-material-symbols-compose-ksp = { module = "com.github.1552980358.material-symbols-compose:ksp", version.ref = "material-symbols-compose" }
 
 # https://github.com/g0dkar/qrcode-kotlin
 qrcode = { module = "io.github.g0dkar:qrcode-kotlin-android", version.ref = "qrcode" }
