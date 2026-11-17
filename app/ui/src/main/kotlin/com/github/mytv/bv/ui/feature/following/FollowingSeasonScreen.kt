@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -202,7 +203,7 @@ internal fun FollowingSeasonContent(
                 if (deleteMode) {
                     BvButton(
                         text = stringResource(R.string.ds_delete),
-                        icon = Icons.Default.Delete,
+                        icon = painterResource(R.drawable.ic_delete_24),
                         onClick = { deleteTarget = season },
                         style = BvButtonStyle.Filled,
                         containerColor = MaterialTheme.colorScheme.error,
