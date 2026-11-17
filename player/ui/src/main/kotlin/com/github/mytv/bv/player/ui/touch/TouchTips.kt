@@ -19,13 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.VolumeDown
-import androidx.compose.material.icons.automirrored.rounded.VolumeOff
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
-import androidx.compose.material.icons.rounded.BrightnessHigh
-import androidx.compose.material.icons.rounded.BrightnessLow
-import androidx.compose.material.icons.rounded.BrightnessMedium
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -43,7 +36,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.mytv.bv.player.ui.R
@@ -117,7 +111,7 @@ internal fun QuickDoubleSpeedPlaybackTip(
 private fun LevelTip(
     show: Boolean,
     progress: Float,
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     modifier: Modifier = Modifier,
 ) {
@@ -146,7 +140,7 @@ private fun LevelTip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color.White)
+            Icon(painter = icon, contentDescription = null, tint = Color.White)
             LinearProgressIndicator(
                 modifier = Modifier.width(100.dp),
                 progress = { displayProgress },
@@ -168,9 +162,9 @@ internal fun BrightnessTip(
         show = show,
         progress = progress,
         icon = when {
-            progress < 1 / 3f -> Icons.Rounded.BrightnessLow
-            progress < 2 / 3f -> Icons.Rounded.BrightnessMedium
-            else -> Icons.Rounded.BrightnessHigh
+            progress < 1 / 3f -> painterResource(R.drawable.ic_brightness_low_24)
+            progress < 2 / 3f -> painterResource(R.drawable.ic_brightness_medium_24)
+            else -> painterResource(R.drawable.ic_brightness_high_24)
         },
         label = "BrightnessTipProgress",
     )
@@ -187,9 +181,9 @@ internal fun VolumeTip(
         show = show,
         progress = progress,
         icon = when {
-            progress == 0f -> Icons.AutoMirrored.Rounded.VolumeOff
-            progress < 0.5f -> Icons.AutoMirrored.Rounded.VolumeDown
-            else -> Icons.AutoMirrored.Rounded.VolumeUp
+            progress == 0f -> painterResource(R.drawable.ic_volume_off_24)
+            progress < 0.5f -> painterResource(R.drawable.ic_volume_down_24)
+            else -> painterResource(R.drawable.ic_volume_up_24)
         },
         label = "VolumeTipProgress",
     )

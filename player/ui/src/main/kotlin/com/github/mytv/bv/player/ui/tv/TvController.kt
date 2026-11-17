@@ -32,14 +32,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Subscriptions
-import androidx.compose.material.icons.filled.Subtitles
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -68,7 +60,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -737,38 +730,41 @@ internal fun TvController(
                         ) {
                             TvControlButton(
                                 modifier = Modifier.focusRequester(playPauseFocusRequester),
-                                icon = if (stateData.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                icon = painterResource(
+                                    if (stateData.isPlaying) R.drawable.ic_pause_24
+                                    else R.drawable.ic_play_arrow_24
+                                ),
                                 contentDescription = stringResource(
                                     if (stateData.isPlaying) R.string.player_ui_cd_pause else R.string.player_ui_cd_play
                                 ),
                                 onClick = togglePlay,
                             )
                             TvControlButton(
-                                icon = Icons.Filled.SkipNext,
+                                icon = painterResource(R.drawable.ic_skip_next_24),
                                 contentDescription = stringResource(R.string.player_ui_cd_next),
                                 enabled = nextItem != null,
                                 onClick = { nextItem?.let { controller.playNewVideo(it) } },
                             )
                             TvControlButton(
-                                icon = Icons.Filled.Subscriptions,
+                                icon = painterResource(R.drawable.ic_subscriptions_24),
                                 contentDescription = stringResource(R.string.player_ui_episodes),
                                 enabled = configData.availableVideoList.isNotEmpty(),
                                 onClick = openList,
                             )
                             if (onOpenComments != null) {
                                 TvControlButton(
-                                    icon = Icons.Filled.ChatBubble,
+                                    icon = painterResource(R.drawable.ic_chat_bubble_24),
                                     contentDescription = stringResource(R.string.player_ui_cd_comments),
                                     onClick = onOpenComments,
                                 )
                             }
                             TvControlButton(
-                                icon = Icons.Filled.Subtitles,
+                                icon = painterResource(R.drawable.ic_subtitles_24),
                                 contentDescription = stringResource(R.string.player_ui_cd_subtitle),
                                 onClick = { openMenu(TvMenuCategory.Subtitle) },
                             )
                             TvControlButton(
-                                icon = Icons.Filled.Tune,
+                                icon = painterResource(R.drawable.ic_tune_24),
                                 contentDescription = stringResource(R.string.player_ui_cd_settings),
                                 onClick = { openMenu(TvMenuCategory.Picture) },
                             )
@@ -857,7 +853,7 @@ private fun Modifier.controlsPadding(
  */
 @Composable
 private fun TvControlButton(
-    icon: ImageVector,
+    icon: Painter,
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -893,6 +889,6 @@ private fun TvControlButton(
         ),
         interactionSource = interactionSource,
     ) {
-        Icon(imageVector = icon, contentDescription = contentDescription)
+        Icon(painter = icon, contentDescription = contentDescription)
     }
 }

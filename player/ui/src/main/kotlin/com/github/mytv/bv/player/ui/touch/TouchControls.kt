@@ -23,15 +23,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -48,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -155,7 +147,7 @@ internal fun FullscreenControls(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     PlainIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = painterResource(R.drawable.ic_arrow_back_24),
                         contentDescription = stringResource(R.string.player_ui_cd_back),
                         onClick = onBack,
                     )
@@ -167,7 +159,7 @@ internal fun FullscreenControls(
                         overflow = TextOverflow.Ellipsis,
                     )
                     PlainIconButton(
-                        icon = Icons.Filled.Subtitles,
+                        icon = painterResource(R.drawable.ic_subtitles_24),
                         contentDescription = stringResource(R.string.player_ui_cd_subtitle),
                         onClick = onOpenSubtitle,
                     )
@@ -183,7 +175,7 @@ internal fun FullscreenControls(
                         unselectedBorderColor = Color.White.copy(alpha = 0.4f),
                     )
                     PlainIconButton(
-                        icon = Icons.Filled.MoreVert,
+                        icon = painterResource(R.drawable.ic_more_vert_24),
                         contentDescription = stringResource(R.string.player_ui_cd_more),
                         onClick = onOpenMore,
                     )
@@ -228,14 +220,16 @@ internal fun FullscreenControls(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     PlainIconButton(
-                        icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        icon = painterResource(
+                            if (isPlaying) R.drawable.ic_pause_24 else R.drawable.ic_play_arrow_24
+                        ),
                         contentDescription = stringResource(
                             if (isPlaying) R.string.player_ui_cd_pause else R.string.player_ui_cd_play
                         ),
                         onClick = onPlayPause,
                     )
                     PlainIconButton(
-                        icon = Icons.Filled.SkipNext,
+                        icon = painterResource(R.drawable.ic_skip_next_24),
                         contentDescription = stringResource(R.string.player_ui_cd_next),
                         onClick = onNext,
                         enabled = hasNext,
@@ -261,7 +255,7 @@ internal fun FullscreenControls(
                         textStyle = CompactChipText,
                     )
                     PlainIconButton(
-                        icon = Icons.Filled.FullscreenExit,
+                        icon = painterResource(R.drawable.ic_fullscreen_exit_24),
                         contentDescription = stringResource(R.string.player_ui_cd_exit_fullscreen),
                         onClick = onExitFullScreen,
                     )
@@ -313,7 +307,7 @@ private fun CenterPlayButton(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            painter = painterResource(if (isPlaying) R.drawable.ic_pause_24 else R.drawable.ic_play_arrow_24),
             contentDescription = stringResource(if (isPlaying) R.string.player_ui_cd_pause else R.string.player_ui_cd_play),
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
         )
@@ -357,7 +351,7 @@ internal fun EmbeddedControls(
                 contentAlignment = Alignment.Center,
             ) {
                 PlainIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    icon = painterResource(R.drawable.ic_arrow_back_24),
                     contentDescription = stringResource(R.string.player_ui_cd_back),
                     onClick = onBack,
                 )
@@ -371,7 +365,7 @@ internal fun EmbeddedControls(
                     contentAlignment = Alignment.Center,
                 ) {
                     PlainIconButton(
-                        icon = Icons.Filled.MoreVert,
+                        icon = painterResource(R.drawable.ic_more_vert_24),
                         contentDescription = stringResource(R.string.player_ui_cd_more),
                         onClick = onMore,
                     )
@@ -391,7 +385,9 @@ internal fun EmbeddedControls(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PlainIconButton(
-                    icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    icon = painterResource(
+                        if (isPlaying) R.drawable.ic_pause_24 else R.drawable.ic_play_arrow_24
+                    ),
                     contentDescription = stringResource(
                         if (isPlaying) R.string.player_ui_cd_pause else R.string.player_ui_cd_play
                     ),
@@ -420,7 +416,7 @@ internal fun EmbeddedControls(
                     style = TabularTime.copy(fontSize = if (isTablet) 12.sp else 11.sp),
                 )
                 PlainIconButton(
-                    icon = Icons.Filled.Fullscreen,
+                    icon = painterResource(R.drawable.ic_fullscreen_24),
                     contentDescription = stringResource(R.string.player_ui_cd_fullscreen),
                     onClick = onEnterFullScreen,
                     size = iconSize,

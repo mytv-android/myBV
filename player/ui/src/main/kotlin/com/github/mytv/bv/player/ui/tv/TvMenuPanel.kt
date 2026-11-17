@@ -27,8 +27,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -47,6 +45,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -149,7 +148,7 @@ private fun OptionItem(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         if (selected) {
-            Icon(imageVector = Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(24.dp))
+            Icon(painter = painterResource(R.drawable.ic_check_24), contentDescription = null, modifier = Modifier.size(24.dp))
         } else {
             Spacer(modifier = Modifier.size(24.dp))
         }
