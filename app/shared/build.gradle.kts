@@ -159,6 +159,9 @@ dependencies {
     api(project(mapOf("path" to ":utils")))
     testImplementation(androidx.room.testing)
     testImplementation(libs.kotlin.test)
+    // kotlin-test 单独用解析不到 kotlin.test.Test（jar 里没有 Test.class），
+    // 必须配 kotlin-test-junit 才能把 kotlin.test.Test 别名到 org.junit.Test。
+    testImplementation(libs.kotlin.test.junit)
     androidTestImplementation(androidx.compose.ui.test.junit4)
     debugApi(androidx.compose.ui.test.manifest)
     debugApi(androidx.compose.ui.tooling)

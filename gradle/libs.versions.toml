@@ -73,7 +73,10 @@ koin-compose-navigation = { module = "io.insert-koin:koin-androidx-compose-navig
 koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotations" }
 
 # https://kotlinlang.org/docs/jvm-test-using-junit.html
+# 单独的 kotlin-test 只带 kotlin-stdlib，jar 里没有 kotlin/test/Test.class，
+# kotlin.test.Test 解析不了；要配合 kotlin-test-junit（JUnit4）或 kotlin-test-junit5。
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit" }
 
 # https://github.com/Kotlin/kotlinx.coroutines
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
