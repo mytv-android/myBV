@@ -111,7 +111,6 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
         // 记忆播放：played 是上次的播放进度，起播即接着播；起播后提示可确认从头播放
         startPlayback(
             playerVm = playerVm,
-            videoPlayer = videoPlayer,
             request = request,
             videoDetailRepository = videoDetailRepository,
         )

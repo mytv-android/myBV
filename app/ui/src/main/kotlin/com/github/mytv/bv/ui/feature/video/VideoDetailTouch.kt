@@ -291,7 +291,6 @@ private fun DetailEmbeddedPlayer(
         } else request
         startPlayback(
             playerVm = playerVm,
-            videoPlayer = videoPlayer,
             request = resumed,
             videoDetailRepository = videoDetailRepository,
             resumeMs = holder.lastPositionMs,

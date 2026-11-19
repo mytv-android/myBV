@@ -3,7 +3,6 @@ package com.github.mytv.bv.ui.feature.player
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.compose.runtime.snapshotFlow
 import dev.aaa1115910.biliapi.entity.ApiType
 import dev.aaa1115910.biliapi.http.BiliHttpApi
 import dev.aaa1115910.biliapi.repositories.VideoDetailRepository
@@ -15,9 +14,7 @@ import com.github.mytv.bv.util.Prefs
 import com.github.mytv.bv.viewmodel.VideoPlayerV3ViewModel
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import com.github.mytv.bv.R as BvR
 
 private val logger = KotlinLogging.logger("PlayerSupport")
@@ -114,7 +111,6 @@ internal suspend fun resolveAidCid(
  */
 internal suspend fun startPlayback(
     playerVm: VideoPlayerV3ViewModel,
-    videoPlayer: AbstractVideoPlayer,
     request: PlayRequest,
     videoDetailRepository: VideoDetailRepository,
     resumeMs: Long = request.startMs,
@@ -131,20 +127,13 @@ internal suspend fun startPlayback(
     // 续播起点（毫秒）：播放器起播后据此提示「确认从头播放」，提示结束或用户确认后清空
     playerVm.lastPlayed = if (resume > 0L) resume.toInt() else 0
     playerVm.showBuffering = false
+    // 续播位置交给 ViewModel 在 prepare() 之后落到新媒体上（pendingInitialSeekPositionMs），
+    // 与互动分支切换走同一条路径：不用先起播再从 0 跳到续播点
     playerVm.loadPlayUrl(
         avid = aid,
         cid = cid,
         epid = request.epid?.takeIf { it != 0 },
         seasonId = request.seasonId?.takeIf { it != 0 },
+        initialSeekPositionMs = resume.takeIf { it > 0L },
     )
-    if (resume <= 0L) return
-    // ViewModel 在主线程 prepare() 之后立即把 showBuffering 置为 true，此时跳转对新的媒体生效
-    val prepared = withTimeoutOrNull(20_000L) {
-        snapshotFlow { playerVm.showBuffering }.first { it }
-    }
-    if (prepared == null || playerVm.videoPlayer !== videoPlayer) return
-    videoPlayer.seekTo(resume)
-    runCatching {
-        playerVm.danmakuView?.notifySeek(resume)
-    }
 }
