@@ -106,7 +106,8 @@ class VideoPlayRepository(
                                             this.aid = aid
                                             this.cid = cid
                                             fnval = 4048
-                                            qn = REQUEST_TOP_QN
+                                            // proto 的 qn 是 uint64
+                                            qn = REQUEST_TOP_QN.toLong()
                                             fnver = 0
                                             fourk = true
                                             // 2 = 强制返回 https 地址，部分设备/网络下 http 直连会失败
@@ -190,7 +191,8 @@ class VideoPlayRepository(
                         val req = playViewReq {
                             this.epid = epid.toLong()
                             cid?.let { this.cid = it }
-                            qn = REQUEST_TOP_QN
+                            // proto 的 qn 是 uint64
+                            qn = REQUEST_TOP_QN.toLong()
                             fnver = 0
                             fnval = 4048
                             fourk = true
@@ -362,6 +364,8 @@ class VideoPlayRepository(
          * 清晰度码越大档位越高，129 > 127 > 126 > 125，只有把顶档报上去，
          * 账号/设备有权限时接口才会把 HDR Vivid 片源一起下发。
          * 请求一个片源不存在的档位不会报错，服务端按实际可给的档位返回。
+         *
+         * HTTP 的 qn 参数是 Int，gRPC 的 proto 字段是 uint64，用到的地方各自转换。
          */
         const val REQUEST_TOP_QN = 129
 
