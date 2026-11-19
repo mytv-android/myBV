@@ -142,11 +142,19 @@ internal fun NetworkSettings(onSpeedTest: () -> Unit, container: SettingsContain
             label = stringResource(R.string.settings_net_api),
             options = ApiType.entries.toList(),
             isSelected = { it == apiType },
-            optionLabel = { it.name },
+            optionLabel = {
+                when (it) {
+                    ApiType.Web -> stringResource(R.string.settings_net_api_web)
+                    ApiType.App -> stringResource(R.string.settings_net_api_app)
+                }
+            },
             onSelect = {
                 apiType = it
                 PreferenceWrites.enqueue { Prefs.apiType = it }
             },
+            // HDR Vivid（129）只有 App 端的 gRPC 接口会下发，网页端接口的 fnval
+            // 一超过 4048 就 -400，结构上拿不到；这条说明是用户能找到的唯一线索
+            description = stringResource(R.string.settings_net_api_desc),
         )
 
         SettingRows(stringResource(R.string.settings_net_tools)) {

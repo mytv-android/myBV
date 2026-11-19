@@ -127,6 +127,9 @@
     <string name="settings_net_ipv4_only">仅使用 IPv4</string>
     <string name="settings_net_ipv4_only_desc">接口、图片与视频连接只走 IPv4 地址；IPv6 路由异常（能登录但加载不出内容）时打开</string>
     <string name="settings_net_api">接口偏好</string>
+    <string name="settings_net_api_web">网页端</string>
+    <string name="settings_net_api_app">App 端</string>
+    <string name="settings_net_api_desc">网页端走 B 站网页播放接口，兼容性最好，最高到 HDR 真彩（125）；App 端走 App 的 gRPC 接口，才能拿到 HDR Vivid（129）等更高清晰度，但需要先用「App 扫码登录」登录大会员账号，未登录时只能试看到 480P</string>
     <string name="settings_net_tools">工具</string>
     <string name="settings_net_speed_test">网络测试</string>
     <string name="settings_net_speed_test_desc">打开哔哩哔哩视频诊断页测试网络</string>

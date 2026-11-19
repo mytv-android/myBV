@@ -205,6 +205,7 @@ internal fun <T> SettingChoiceGroup(
     isSelected: (T) -> Boolean,
     optionLabel: @Composable (T) -> String,
     onSelect: (T) -> Unit,
+    description: String? = null,
 ) {
     SettingGroup(label) {
         FlowRow(
@@ -222,6 +223,10 @@ internal fun <T> SettingChoiceGroup(
                     onClick = { onSelect(option) },
                 )
             }
+        }
+        // 选这项的代价写在选项下方，避免用户只看标签做决定
+        if (description != null) {
+            Text(description, style = BvType.Meta, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

@@ -6,6 +6,7 @@ import dev.aaa1115910.biliapi.repositories.ChannelRepository
 import dev.aaa1115910.biliapi.repositories.VideoPlayRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * HDR Vivid 契约（B 站清晰度码 129）：
@@ -13,6 +14,10 @@ import kotlin.test.assertEquals
  * 否则 HDR Vivid 片源会被识别成普通 HDR，用户在清晰度里选不到它。
  *
  * 档位从高到低：129 HDR Vivid > 127 8K > 126 杜比视界 > 125 HDR 真彩 > 120 4K > …
+ *
+ * 光「认识 129」+「把 qn 报成 129」还不够：fnval 里必须带 16384 这一位，
+ * 且必须走 gRPC（HTTP 播放接口对 fnval >= 4096 一律 -400）。
+ * 详细实测见 docs/hdr-vivid-quality.md。
  */
 class PlayUrlResolverQualityTest {
 
@@ -95,5 +100,43 @@ class PlayUrlResolverQualityTest {
                 maxQuality = Resolution.R720P
             )
         )
+    }
+
+    // ---- fnval 契约：光把 qn 报成 129 不够，fnval 里必须有 HDR Vivid 那一位 ----
+
+    @Test
+    fun `grpc fnval carries the hdr vivid bit`() {
+        assertTrue(
+            VideoPlayRepository.GRPC_FNVAL and 16384 != 0,
+            "gRPC 的 fnval 必须带 16384（HDR Vivid 位），否则 stream_list 最高只到 125（HDR 真彩）"
+        )
+    }
+
+    @Test
+    fun `http fnval stays under the hard 4096 ceiling`() {
+        assertTrue(
+            VideoPlayRepository.HTTP_FNVAL < 4096,
+            "HTTP 播放接口对 fnval >= 4096 一律回 -400 请求错误，实测 web / app 签名、带不带 access_key 都一样"
+        )
+    }
+
+    @Test
+    fun `grpc fnval is a strict superset of the http one`() {
+        assertEquals(
+            VideoPlayRepository.HTTP_FNVAL,
+            VideoPlayRepository.GRPC_FNVAL and VideoPlayRepository.HTTP_FNVAL,
+            "gRPC 要在 HTTP 的全部能力之上只加 HDR Vivid 那一位，不能弄丢 DASH / HDR / 4K / 杜比 / AV1"
+        )
+        assertTrue(VideoPlayRepository.GRPC_FNVAL > VideoPlayRepository.HTTP_FNVAL)
+    }
+
+    @Test
+    fun `requested top qn is hdr vivid`() {
+        assertEquals(
+            129,
+            VideoPlayRepository.REQUEST_TOP_QN,
+            "请求的顶档必须是 129；报 127（8K）等于声明「最高只要 8K」，服务端就不会把 HDR Vivid 一起下发"
+        )
+        assertTrue(VideoPlayRepository.REQUEST_TOP_QN > 127, "顶档必须高于 8K（127）")
     }
 }

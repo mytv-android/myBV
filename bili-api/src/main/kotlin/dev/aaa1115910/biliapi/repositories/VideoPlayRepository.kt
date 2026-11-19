@@ -62,7 +62,7 @@ class VideoPlayRepository(
                 val playUrlData = BiliHttpApi.getVideoPlayUrl(
                     av = aid,
                     cid = cid,
-                    fnval = 4048,
+                    fnval = HTTP_FNVAL,
                     qn = REQUEST_TOP_QN,
                     fnver = 0,
                     fourk = 1,
@@ -81,7 +81,7 @@ class VideoPlayRepository(
                     val playUrlData = BiliHttpApi.getAppVideoPlayUrl(
                         av = aid,
                         cid = cid,
-                        fnval = 4048,
+                        fnval = HTTP_FNVAL,
                         qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
@@ -105,7 +105,7 @@ class VideoPlayRepository(
                                         vod = videoVod {
                                             this.aid = aid
                                             this.cid = cid
-                                            fnval = 4048
+                                            fnval = GRPC_FNVAL
                                             // proto 的 qn 是 uint64
                                             qn = REQUEST_TOP_QN.toLong()
                                             fnver = 0
@@ -155,7 +155,7 @@ class VideoPlayRepository(
                         av = aid,
                         cid = cid,
                         epid = epid,
-                        fnval = 4048,
+                        fnval = HTTP_FNVAL,
                         qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
@@ -167,7 +167,7 @@ class VideoPlayRepository(
                     BiliHttpApi.getPgcVideoPlayUrl(
                         av = aid,
                         cid = cid,
-                        fnval = 4048,
+                        fnval = HTTP_FNVAL,
                         qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
@@ -194,7 +194,7 @@ class VideoPlayRepository(
                             // proto 的 qn 是 uint64
                             qn = REQUEST_TOP_QN.toLong()
                             fnver = 0
-                            fnval = 4048
+                            fnval = GRPC_FNVAL
                             fourk = true
                             forceHost = 0
                             download = 0
@@ -358,7 +358,28 @@ class VideoPlayRepository(
         }
     }
 
-    private companion object {
+    companion object {
+        /**
+         * HTTP 播放接口（`/x/player/playurl` 及 pgc 变体）的 fnval：
+         * 16 DASH | 64 HDR | 128 4K | 256 杜比音频 | 512 杜比视界 | 1024 AV1 | 2048。
+         *
+         * 实测（2026-11，BV1FykdYzELQ，web 签名 / 5 组 appkey 的 app 签名、
+         * 带不带 access_key 结果一致）：`fnval >= 4096` 一律回 `-400 请求错误`，
+         * 可用位只有 1/2/16/64/128/256/512/1024/2048。所以 **HTTP 通道拿不到 HDR Vivid**，
+         * 与账号是不是大会员无关，换 appkey、加 access_key 都没用。
+         */
+        const val HTTP_FNVAL = 4048
+
+        /**
+         * gRPC（`PlayViewUnite` / pgc `playView`）的 fnval，在 [HTTP_FNVAL] 之上加 16384。
+         *
+         * 16384 就是 HDR Vivid（qn 129）的开关：只报 4048 时
+         * `vod_info.stream_list` 最高只到 125（HDR 真彩）；加上 16384 才会出现
+         * `quality=129 / format="hdflv2" / description="HDR Vivid"`。
+         * 这个值拿到 HTTP 通道上会直接 -400，所以两条通道必须分开配。
+         */
+        const val GRPC_FNVAL = 20432
+
         /**
          * 请求的最高清晰度档位。取 129（HDR Vivid）而不是 127（8K）：
          * 清晰度码越大档位越高，129 > 127 > 126 > 125，只有把顶档报上去，
@@ -370,7 +391,7 @@ class VideoPlayRepository(
         const val REQUEST_TOP_QN = 129
 
         /** 6 分钟一段，最多取 2 小时，避免异常视频无限翻页。 */
-        const val MAX_DANMAKU_SEGMENTS = 20
+        private const val MAX_DANMAKU_SEGMENTS = 20
     }
 
     suspend fun getDanmakuMask(

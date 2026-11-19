@@ -8,7 +8,10 @@
 | --- | --- |
 | 清晰度枚举 | [player/shared/.../player/entity/Resolution.kt](../player/shared/src/main/kotlin/com/github/mytv/bv/player/entity/Resolution.kt) |
 | bili-api 侧的清晰度枚举 | [bili-api/.../http/entity/video/PlayUrlResponse.kt](../bili-api/src/main/kotlin/dev/aaa1115910/biliapi/http/entity/video/PlayUrlResponse.kt)（`VideoQuality`） |
-| playurl 请求的最高档位 | [bili-api/.../repositories/VideoPlayRepository.kt](../bili-api/src/main/kotlin/dev/aaa1115910/biliapi/repositories/VideoPlayRepository.kt)（`REQUEST_TOP_QN`） |
+| HTTP 通道的 fnval | [bili-api/.../repositories/VideoPlayRepository.kt](../bili-api/src/main/kotlin/dev/aaa1115910/biliapi/repositories/VideoPlayRepository.kt)（`HTTP_FNVAL`） |
+| gRPC 通道的 fnval | 同上（`GRPC_FNVAL`，比 `HTTP_FNVAL` 多 16384） |
+| playurl 请求的最高档位 | 同上（`REQUEST_TOP_QN`） |
+| 数据源（Web / App）设置 | [app/ui/.../feature/settings/NetworkSettings.kt](../app/ui/src/main/kotlin/com/github/mytv/bv/ui/feature/settings/NetworkSettings.kt)（`settings_net_api`） |
 | 清晰度选择 / 回退 | [app/shared/.../repository/PlayUrlResolver.kt](../app/shared/src/main/kotlin/com/github/mytv/bv/repository/PlayUrlResolver.kt)（`getAvailableQualities` / `selectQuality`） |
 | 回归测试 | [app/shared/src/test/.../repository/PlayUrlResolverQualityTest.kt](../app/shared/src/test/kotlin/com/github/mytv/bv/repository/PlayUrlResolverQualityTest.kt) |
 
@@ -31,34 +34,47 @@
 | 127 | 8K 超高清 | |
 | **129** | **HDR Vivid** | 菁彩 HDR（CUVA 标准），**档位高于 8K** |
 
-`fnval = 4048` 已经覆盖全部格式位（DASH / HDR / 4K / 杜比 / 8K / AV1），
-HDR Vivid 不占额外的 fnval 位；网页播放器（`player/main/core.*.js`）的
-`VIDEO_QN` 枚举里根本没有 129，所以网页端从来不出这个档位。
+## 三个必须同时成立的条件
 
-## 两个必须同时成立的条件
+1. **识别**：`Resolution.fromCode(129)` 必须返回独立档位。129 不在枚举里时会走
+   `getOrDefault(R1080P)` 被当成 1080P，用户在清晰度列表里看不到 HDR Vivid。
+2. **请求顶档**：playurl 的 `qn` 要报 129。档位码越大越高，报 127 等于声明
+   「我最高只要 8K」，服务端就不会把 HDR Vivid 片源一起下发。
+3. **fnval 带 HDR Vivid 位**：`fnval` 必须含 **16384**。只报 `4048` 时接口
+   `vod_info.stream_list` / `accept_quality` 最高只到 125（HDR 真彩），
+   报 `4048 | 16384 = 20432` 才会出现
+   `quality=129 / format="hdflv2" / description="HDR Vivid"`。
 
-1. **识别**：`Resolution.fromCode(129)` 必须返回独立档位。原来 129 不在枚举里，
-   会走 `getOrDefault(R1080P)` 被当成 1080P，用户在清晰度列表里看不到 HDR Vivid。
-2. **请求**：playurl 的 `qn` 要报顶档 129。档位码越大越高，报 127 等于声明
-   「我最高只要 8K」，服务端就不会把 HDR Vivid 片源一起下发，只会给 HDR 真彩。
+前两条在 1cc9a84c 里就做了，但第三条漏了 —— 这就是「设置里能选 HDR Vivid、
+播放时却切不过去」的原因：识别和请求都对，接口侧就是不下发 129。
 
-官方 App 的行为可以佐证第 2 点：BiliRoamingX/BiliRoamingX#759 记录，
-在播放器里固定清晰度后会丢掉 HDR Vivid 选项、降级成 HDR 真彩 ——
-即客户端没有按顶档请求时，服务端自动兜底降级。
+另外，满足这三条还不够：**数据源必须是「App 端」**（设置 → 网络 → 接口偏好）。
+网页端走的 HTTP 接口在 fnval 上就被卡死，见下节。
 
-## 实测记录（2026-11-19，未登录账号）
+## 通道：HTTP 拿不到 HDR Vivid，只有 gRPC 能
 
-`GET https://api.bilibili.com/x/player/playurl?avid=113707162011107&cid=27507229004&fnval=4048&fnver=0&fourk=1`
+实测（2026-11-19，`BV1FykdYzELQ`，avid `113707162011107` / cid `27507229004`）：
 
-- `fnval` 逐位试：`0/1/64/128/256/512/1024/2048` 都只给 mp4 720P/360P；
-  `16` 给 DASH 但不含 125；`4048` 才出现 125（HDR 真彩）。
-  `fnval >= 4096` 直接 `-400 请求错误`。
-- 请求的 `qn`（0/32/64/80/125/126/127/129/130）**不影响** `accept_quality`
-  和 `dash.video` 列表，只影响返回的 `quality` 字段。
-- 未登录时 `support_formats` 只有 `125,120,116,80,64,32,16`，
-  `dash.video` 只有 `80,64,32,16`（125 列了但不发流）。
-  129 / 126 / 127 都需要登录（大概率还要大会员 + 设备支持）才出现，
-  所以这一条只能在有权限的账号上复验。
+- **HTTP 播放接口对 fnval 有硬上限。** `fnval >= 4096` 一律回 `-400 请求错误`。
+  逐位试过：合法位只有 `1/2/16/64/128/256/512/1024/2048`，
+  `4`、`8`、`32` 和一切 `>= 4096` 的组合都是 `-400`。
+  换成 app 签名（5 组 appkey：android / android_hd / android_tv_yst / 4409e2ce8ffd12b8 /
+  bb3101000e232e27）、加 access_key、换 `/x/player/wbi/playurl`、`/x/tv/playurl`、
+  `/pgc/player/web/v2/playurl`、`/pgc/player/api/playurl`，结果完全一样。
+  **结论：HTTP 通道结构上不可能下发 129，与账号是不是大会员无关。**
+- **gRPC `PlayViewUnite` 带 16384 就能拿到。** 请求
+  `POST https://grpc.biliapi.net/bilibili.app.playerunite.v1.Player/PlayViewUnite`
+  （`content-type: application/grpc+proto`），`vod.fnval = 20432` 时
+  `vod_info.stream_list[0]` 即 `quality=129 / format="hdflv2" / description="HDR Vivid"`；
+  `fnval = 4048` 时最高是 125。多次重试结果稳定，与 `qn` 取 129/80/64 无关。
+- **gRPC 只认 access_key，不认 cookie。** 鉴权头是 `authorization: identify_v1 $accessKey`
+  加 `x-bili-metadata-bin`。实测在同一个调用上加 `cookie` / `Cookie` 头（完整网页 cookie
+  或只带 `SESSDATA`），返回与匿名完全一致，cookie 被忽略。
+  所以要用 HDR Vivid，必须在设置里把**数据源切到「App 端」并用「App 扫码登录」登录**。
+- **匿名 gRPC 只发 480P。** 换 buvid3 / buvid4 / 随机 buvid、带不带 `x-bili-mid`、
+  `qn` 报多少，实际返回的 `quality` 都是 32。但 `stream_list` 仍然给出完整档位表
+  （含 129）—— 即「看得到选不了」。这也是 App 源未登录时仍要回落到 HTTP
+  （`try_look` 能拿 1080P）的原因。
 
 ## 播放侧
 
