@@ -189,9 +189,9 @@ internal fun VolumeTip(
     )
 }
 
-/** 「上次看到 xx，点击跳转」：左下角，点击跳回上次进度。 */
+/** 「已从 xx 续播，点击从头播放」：左下角的临时按钮，不点就继续接着播。 */
 @Composable
-internal fun BackToHistoryTip(
+internal fun ResumeTip(
     time: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -204,7 +204,7 @@ internal fun BackToHistoryTip(
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Text(
-            text = stringResource(R.string.player_ui_back_to_history_touch, time),
+            text = stringResource(R.string.player_ui_resume_tip_touch, time),
             style = PlayerType.BodyBold,
             color = MaterialTheme.colorScheme.onSurface,
         )

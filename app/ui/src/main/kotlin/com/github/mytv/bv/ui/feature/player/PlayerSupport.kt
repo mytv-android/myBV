@@ -72,6 +72,19 @@ internal data class PlayRequest(
 )
 
 /**
+ * 续播起点（毫秒）：[playedSec] 是接口记录的播放进度（秒），[durationSec] 是这一 P / 这一集的时长（秒）。
+ *
+ * 进度已经到片尾时（看完，接口可能给 -1，也可能给时长本身）返回 0：默认续播的话，
+ * 一打开就会判定播完直接连播下一集。时长未知时同样不续播，避免把未知进度当成有效进度。
+ */
+internal fun resumeStartMs(playedSec: Int, durationSec: Int): Long =
+    if (playedSec > 0 && durationSec > 0 && playedSec < durationSec) {
+        playedSec * 1000L
+    } else {
+        0L
+    }
+
+/**
  * cid 未知（0）时补全 aid / cid：番剧用 epid 查（旧手机 VideoPlayerActivity），
  * 普通视频取详情的第一个分 P（旧电视 SeasonInfo 跳回 VideoInfo 取 cid 的做法）。
  */
@@ -95,8 +108,9 @@ internal suspend fun resolveAidCid(
 }
 
 /**
- * 让 [VideoPlayerV3ViewModel] 播放 [request]（照抄旧 VideoPlayerV3Activity.getParamsFromIntent），
- * [resumeMs] > 0 时在新媒体准备后跳到该位置（同步弹幕）。必须在主线程调用。
+ * 让 [VideoPlayerV3ViewModel] 播放 [request]（照抄旧 VideoPlayerV3Activity.getParamsFromIntent）。
+ * [resumeMs] > 0 时记忆播放：新媒体准备后直接跳到该位置（同步弹幕），
+ * 播放器起播后给出「已续播，确认从头播放」的临时提示。必须在主线程调用。
  */
 internal suspend fun startPlayback(
     playerVm: VideoPlayerV3ViewModel,
@@ -104,18 +118,18 @@ internal suspend fun startPlayback(
     request: PlayRequest,
     videoDetailRepository: VideoDetailRepository,
     resumeMs: Long = request.startMs,
-    useHistoryTip: Boolean = false,
 ) {
     val (aid, cid) = resolveAidCid(request.aid, request.cid, request.epid, videoDetailRepository)
-    logger.info { "Start playback: [aid=$aid, cid=$cid, epid=${request.epid}, resume=$resumeMs]" }
+    val resume = resumeMs.coerceAtLeast(0L)
+    logger.info { "Start playback: [aid=$aid, cid=$cid, epid=${request.epid}, resume=$resume]" }
     playerVm.title = request.title
     playerVm.partTitle = request.partTitle
     playerVm.fromSeason = request.fromSeason
     playerVm.subType = request.subType
     playerVm.playerIconIdle = request.playerIconIdle
     playerVm.playerIconMoving = request.playerIconMoving
-    // 电视沿用旧版「回到上次进度」提示；触摸端内嵌播放器直接跳到上次进度
-    playerVm.lastPlayed = if (useHistoryTip) resumeMs.toInt() else 0
+    // 续播起点（毫秒）：播放器起播后据此提示「确认从头播放」，提示结束或用户确认后清空
+    playerVm.lastPlayed = if (resume > 0L) resume.toInt() else 0
     playerVm.showBuffering = false
     playerVm.loadPlayUrl(
         avid = aid,
@@ -123,14 +137,14 @@ internal suspend fun startPlayback(
         epid = request.epid?.takeIf { it != 0 },
         seasonId = request.seasonId?.takeIf { it != 0 },
     )
-    if (useHistoryTip || resumeMs <= 0L) return
+    if (resume <= 0L) return
     // ViewModel 在主线程 prepare() 之后立即把 showBuffering 置为 true，此时跳转对新的媒体生效
     val prepared = withTimeoutOrNull(20_000L) {
         snapshotFlow { playerVm.showBuffering }.first { it }
     }
     if (prepared == null || playerVm.videoPlayer !== videoPlayer) return
-    videoPlayer.seekTo(resumeMs)
+    videoPlayer.seekTo(resume)
     runCatching {
-        playerVm.danmakuView?.notifySeek(resumeMs)
+        playerVm.danmakuView?.notifySeek(resume)
     }
 }

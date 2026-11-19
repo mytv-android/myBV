@@ -25,6 +25,7 @@ import com.github.mytv.bv.repository.VideoInfoRepository
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.feature.player.PlayRequest
 import com.github.mytv.bv.ui.feature.player.PlayerLaunchExtras
+import com.github.mytv.bv.ui.feature.player.resumeStartMs
 import com.github.mytv.bv.ui.navigation.PlayerRoute
 import com.github.mytv.bv.ui.navigation.SeasonRoute
 import com.github.mytv.bv.ui.navigation.SpaceRoute
@@ -110,8 +111,10 @@ fun VideoDetailScreen(nav: NavController, route: VideoRoute) {
         if (!profile.isTv && holder.request == null) {
             val page = d.pages.firstOrNull { it.cid == d.history.lastPlayedCid } ?: d.pages.firstOrNull()
             if (page != null) {
-                val start = if (page.cid == d.history.lastPlayedCid) d.history.progress * 1000L else 0L
-                holder.play(pageRequest(d, page, start.coerceAtLeast(0L)))
+                val start = if (page.cid == d.history.lastPlayedCid) {
+                    resumeStartMs(d.history.progress, page.duration)
+                } else 0L
+                holder.play(pageRequest(d, page, start))
             }
         }
     }
@@ -174,7 +177,9 @@ fun VideoDetailScreen(nav: NavController, route: VideoRoute) {
                 // 互动分支从节点起始位置播；其余保持历史记录 / 从头播
                 val nodeStartMs = d.interactiveNodes
                     .firstOrNull { it.cid == episode.cid }?.startPos?.times(1000L)
-                val start = if (episode.cid == holder.lastPlayedCid) holder.lastPlayedTimeSec * 1000L else nodeStartMs ?: 0L
+                val start = if (episode.cid == holder.lastPlayedCid) {
+                    resumeStartMs(holder.lastPlayedTimeSec, (episode.durationMs / 1000).toInt())
+                } else nodeStartMs ?: 0L
                 val request = PlayRequest(
                     aid = episode.aid,
                     cid = episode.cid,
@@ -197,11 +202,15 @@ fun VideoDetailScreen(nav: NavController, route: VideoRoute) {
     val lastPageIndex = remember(detail, holder.lastPlayedCid) {
         detail?.pages?.indexOfFirst { it.cid == holder.lastPlayedCid } ?: -1
     }
-    val tvPlayLabel = if (lastPageIndex >= 0 && holder.lastPlayedTimeSec > 0) {
+    val lastPageProgressSec = remember(detail, lastPageIndex, holder.lastPlayedTimeSec) {
+        val page = detail?.pages?.getOrNull(lastPageIndex)
+        if (page != null) (resumeStartMs(holder.lastPlayedTimeSec, page.duration) / 1000).toInt() else 0
+    }
+    val tvPlayLabel = if (lastPageIndex >= 0 && lastPageProgressSec > 0) {
         stringResource(
             R.string.video_detail_continue,
             stringResource(R.string.video_detail_part_short, lastPageIndex + 1),
-            formatDuration(holder.lastPlayedTimeSec * 1000L),
+            formatDuration(lastPageProgressSec * 1000L),
         )
     } else {
         stringResource(R.string.video_detail_play)
@@ -211,8 +220,10 @@ fun VideoDetailScreen(nav: NavController, route: VideoRoute) {
         val page = d?.pages?.firstOrNull { it.cid == holder.lastPlayedCid } ?: d?.pages?.firstOrNull()
         if (d != null && page != null) {
             playVideoList(d, page.cid)
-            val start = if (page.cid == holder.lastPlayedCid) holder.lastPlayedTimeSec * 1000L else 0L
-            navigateToPlayer(d, pageRequest(d, page, start.coerceAtLeast(0L)))
+            val start = if (page.cid == holder.lastPlayedCid) {
+                resumeStartMs(holder.lastPlayedTimeSec, page.duration)
+            } else 0L
+            navigateToPlayer(d, pageRequest(d, page, start))
         }
     }
 

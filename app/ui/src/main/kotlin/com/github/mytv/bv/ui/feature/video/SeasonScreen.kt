@@ -25,6 +25,7 @@ import com.github.mytv.bv.repository.VideoInfoRepository
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.feature.player.PlayRequest
 import com.github.mytv.bv.ui.feature.player.PlayerLaunchExtras
+import com.github.mytv.bv.ui.feature.player.resumeStartMs
 import com.github.mytv.bv.ui.navigation.PlayerRoute
 import com.github.mytv.bv.ui.navigation.SeasonRoute
 import com.github.mytv.bv.ui.navigation.TagRoute
@@ -117,7 +118,7 @@ fun SeasonScreen(nav: NavController, route: SeasonRoute) {
         when {
             target != null -> playEpisode(
                 data, target.first, target.second,
-                ((progress?.lastTime ?: 0) * 1000L).coerceAtLeast(0L),
+                resumeStartMs(progress?.lastTime ?: 0, target.second.duration),
             )
 
             data.episodes.isNotEmpty() -> playEpisode(data, data.episodes, data.episodes.first(), 0L)
@@ -182,7 +183,7 @@ fun SeasonScreen(nav: NavController, route: SeasonRoute) {
                         ?: list.firstOrNull { it.cid == episode.cid }
                     if (target != null) {
                         val startMs = if (target.id == progress?.lastEpId) {
-                            ((progress?.lastTime ?: 0) * 1000L).coerceAtLeast(0L)
+                            resumeStartMs(progress?.lastTime ?: 0, target.duration)
                         } else 0L
                         playEpisode(data, list, target, startMs)
                     }
@@ -203,11 +204,14 @@ fun SeasonScreen(nav: NavController, route: SeasonRoute) {
 
     // 电视「▶ 继续 第 N 话 · {mm:ss}」/「▶ 播放」
     val lastEpisode = findEpisode(season, progress?.lastEpId)?.second
-    val tvPlayLabel = if (lastEpisode != null && (progress?.lastTime ?: 0) > 0) {
+    val resumeMs = if (lastEpisode != null) {
+        resumeStartMs(progress?.lastTime ?: 0, lastEpisode.duration)
+    } else 0L
+    val tvPlayLabel = if (lastEpisode != null && resumeMs > 0L) {
         stringResource(
             R.string.video_detail_continue,
             episodeNumber(context, lastEpisode),
-            formatDuration((progress?.lastTime ?: 0) * 1000L),
+            formatDuration(resumeMs),
         )
     } else {
         stringResource(R.string.video_detail_play)

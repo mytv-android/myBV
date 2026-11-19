@@ -51,9 +51,9 @@ data class VideoPlayerLogsData(
     val logs: String = "",
 )
 
+/** 续播信息：[lastPlayed] 是起播时跳到的历史进度（毫秒），0 表示从头播。 */
 data class VideoPlayerHistoryData(
     val lastPlayed: Int = 0,
-    val showBackToHistory: Boolean = false,
 )
 
 data class VideoPlayerPaymentData(
@@ -85,6 +85,7 @@ data class VideoPlayerStateData(
     val isBuffering: Boolean = false,
     val isError: Boolean = false,
     val exception: Exception? = null,
+    /** 已续播：显示「确认从头播放」的临时提示 */
     val showBackToHistory: Boolean = false,
 )
 

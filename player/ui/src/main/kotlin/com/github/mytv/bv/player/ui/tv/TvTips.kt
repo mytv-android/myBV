@@ -77,9 +77,9 @@ internal fun TvLongPressSpeedTip(
     }
 }
 
-/** 「上次看到 xx 点击确认键跳转」（照搬旧电视版 SkipTips / BackToHistoryTip）。 */
+/** 「已从 xx 续播，按确认键从头播放」（旧电视版 SkipTips / BackToHistoryTip 改写）。 */
 @Composable
-internal fun TvBackToHistoryTip(
+internal fun TvResumeTip(
     show: Boolean,
     time: String,
     modifier: Modifier = Modifier,
@@ -99,7 +99,7 @@ internal fun TvBackToHistoryTip(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Text(
-                text = stringResource(R.string.player_ui_back_to_history_tv, time),
+                text = stringResource(R.string.player_ui_resume_tip_tv, time),
                 style = PlayerType.BodyBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )

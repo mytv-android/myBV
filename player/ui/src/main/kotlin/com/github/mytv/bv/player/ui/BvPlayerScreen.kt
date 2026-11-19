@@ -108,7 +108,7 @@ import kotlin.math.roundToInt
  * @param onExit 退出播放（电视返回键 / 内嵌控制层返回按钮）。调用前已上报一次心跳
  * @param onSendHeartbeat 上报播放进度（秒；播完为 -1），接 VideoPlayerV3ViewModel.uploadHistory。
  *   每 15 秒（播放中）、暂停、换集、播完、退出时调用；无痕模式（incognitoMode）下不调用
- * @param onClearBackToHistoryData 「回到上次进度」提示结束或已跳转，接 `lastPlayed = 0`
+ * @param onClearBackToHistoryData 「已续播」提示超时消失或用户确认从头播放，接 `lastPlayed = 0`
  * @param onLoadNextVideo 当前视频播完，接 VideoPlayerV3ViewModel.playNextVideo（按播放模式处理）
  * @param onLoadNewVideo 切换到选集列表里的某一项
  * @param onResolutionChange / onCodecChange / onAudioChange 切换清晰度 / 编码 / 音质；
@@ -214,9 +214,11 @@ fun BvPlayerScreen(
         videoZoomState.reset()
     }
 
+    // 「已续播，可确认从头播放」提示只在起播后停留 2 秒（和官方 App 一致）：
+    // 这期间确认键 / 点击按钮才从头播，不操作就继续接着播
     if (showBackToHistory) {
         LaunchedEffect(Unit) {
-            delay(5000)
+            delay(RESUME_TIP_MILLIS)
             // Clear locally before a player callback can re-show the expired tip.
             lastPlayed = 0L
             showBackToHistory = false
@@ -306,12 +308,12 @@ fun BvPlayerScreen(
         }
     }
 
-    // ---------------------------------------------------------------- 回到上次进度
+    // ---------------------------------------------------------------- 续播提示
 
     val updateBackToHistory: () -> Unit = {
         // 此处使用 videoPlayerHistoryData.lastPlayed 无法获取到新值
         if (lastPlayed > 0 && !showBackToHistory) {
-            logger.info { "show showBackToHistory: $lastPlayed" }
+            logger.info { "show resume tip: $lastPlayed" }
             showBackToHistory = true
         }
     }
@@ -649,13 +651,12 @@ fun BvPlayerScreen(
             videoPlayer.seekTo(position)
             mDanmakuView?.notifySeek(position)
         },
-        backToHistory = {
-            val time = lastPlayed
-            logger.fInfo { "Back to history: ${time.formatHourMinSec()}" }
-            markManualSeekClip(time)
+        // 已经续播了，用户在这里确认「从头播放」：放弃续播起点，回到片头
+        playFromStart = {
+            logger.fInfo { "Play from start instead of resumed ${lastPlayed.formatHourMinSec()}" }
             autoSkipState.clear()
-            videoPlayer.seekTo(time)
-            mDanmakuView?.notifySeek(time)
+            videoPlayer.seekTo(0L)
+            mDanmakuView?.notifySeek(0L)
             lastPlayed = 0L
             showBackToHistory = false
             onClearBackToHistoryData()
@@ -776,6 +777,12 @@ private const val AUTO_SKIP_RETRY_MS = 4_000L
 private const val MAX_AUTO_SKIP_RETRIES = 3
 
 /**
+ * 「已续播，可确认从头播放」提示的停留时间：和官方 App 一致只给 2 秒。
+ * 起播时已经接着历史进度在播了，这段时间里不给任何操作就当继续看，不打断播放。
+ */
+private const val RESUME_TIP_MILLIS = 2_000L
+
+/**
  * 自动跳过之后的重试。
  *
  * 跳过片段是靠 seek 到片段末尾实现的；如果那个位置上游给不出数据，播放器会一直缓冲，
@@ -867,8 +874,8 @@ internal class PlayerController(
     val pause: () -> Unit,
     /** 跳转到指定进度（同时同步弹幕）。 */
     val seekTo: (Long) -> Unit,
-    /** 跳回上次播放进度。 */
-    val backToHistory: () -> Unit,
+    /** 放弃续播，从头播放（提示期间用户确认）。 */
+    val playFromStart: () -> Unit,
     /** 上报心跳后切换到选集里的另一项。 */
     val playNewVideo: (VideoListItem) -> Unit,
     /** 上报心跳后退出播放器。 */

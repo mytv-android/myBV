@@ -108,13 +108,12 @@ fun PlayerScreen(nav: NavController, route: PlayerRoute) {
         playerVm.proxyArea = ProxyArea.entries.getOrElse(route.proxyArea) { ProxyArea.MainLand }
         commentVm.commentType = 1L
         commentVm.commentId = route.aid
-        // 沿用旧版：played 作为「回到上次进度」提示
+        // 记忆播放：played 是上次的播放进度，起播即接着播；起播后提示可确认从头播放
         startPlayback(
             playerVm = playerVm,
             videoPlayer = videoPlayer,
             request = request,
             videoDetailRepository = videoDetailRepository,
-            useHistoryTip = true,
         )
     }
 

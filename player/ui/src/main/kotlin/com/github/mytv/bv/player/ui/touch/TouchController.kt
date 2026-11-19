@@ -338,12 +338,12 @@ internal fun TouchController(
             QuickDoubleSpeedPlaybackTip(show = is2xPlaying)
 
             if (stateData.showBackToHistory && isFullScreen) {
-                BackToHistoryTip(
+                ResumeTip(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(bottom = if (showControls) 96.dp else 32.dp),
                     time = historyData.lastPlayed.toLong().formatHourMinSec(),
-                    onClick = controller.backToHistory,
+                    onClick = controller.playFromStart,
                 )
             }
 

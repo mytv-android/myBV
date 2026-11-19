@@ -140,7 +140,7 @@ private val DebugInfoTop = 80.dp
  * | 菜单 / 选集打开 | 返回、菜单（抬起） | 关闭面板 |
  * | 快进中 | 确认（抬起） | 跳到目标时间，暂停中则继续播放 |
  * | 快进中 | 返回、菜单、上、下（抬起） | 取消快进 |
- * | — | 确认短按（抬起） | 有「回到上次进度」提示时跳转，否则播放 / 暂停 |
+ * | — | 确认短按（抬起） | 已续播且在提示期内：从头播放；否则播放 / 暂停 |
  * | — | 确认长按（按住） | 按设置打开菜单，或临时加速播放（松开恢复） |
  * | — | 菜单（抬起） | 打开菜单 |
  * | — | 上（抬起） | 打开选集 |
@@ -510,7 +510,7 @@ internal fun TvController(
             BvKey.Center -> {
                 if (wasLongPress) return@handler true
                 if (stateData.showBackToHistory) {
-                    controller.backToHistory()
+                    controller.playFromStart()
                     return@handler true
                 }
                 logger.fInfo { "[$key] short press" }
@@ -773,7 +773,7 @@ internal fun TvController(
                 }
             }
 
-            TvBackToHistoryTip(
+            TvResumeTip(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(bottom = if (controlsVisible) 150.dp else 32.dp),
