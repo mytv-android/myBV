@@ -63,7 +63,7 @@ class VideoPlayRepository(
                     av = aid,
                     cid = cid,
                     fnval = 4048,
-                    qn = 127,
+                    qn = REQUEST_TOP_QN,
                     fnver = 0,
                     fourk = 1,
                     sessData = authRepository.sessionData,
@@ -82,7 +82,7 @@ class VideoPlayRepository(
                         av = aid,
                         cid = cid,
                         fnval = 4048,
-                        qn = 127,
+                        qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
                         sessData = authRepository.sessionData,
@@ -106,7 +106,7 @@ class VideoPlayRepository(
                                             this.aid = aid
                                             this.cid = cid
                                             fnval = 4048
-                                            qn = 127
+                                            qn = REQUEST_TOP_QN
                                             fnver = 0
                                             fourk = true
                                             // 2 = 强制返回 https 地址，部分设备/网络下 http 直连会失败
@@ -155,7 +155,7 @@ class VideoPlayRepository(
                         cid = cid,
                         epid = epid,
                         fnval = 4048,
-                        qn = 127,
+                        qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
                         sessData = authRepository.sessionData,
@@ -167,7 +167,7 @@ class VideoPlayRepository(
                         av = aid,
                         cid = cid,
                         fnval = 4048,
-                        qn = 127,
+                        qn = REQUEST_TOP_QN,
                         fnver = 0,
                         fourk = 1,
                         sessData = authRepository.sessionData,
@@ -190,7 +190,7 @@ class VideoPlayRepository(
                         val req = playViewReq {
                             this.epid = epid.toLong()
                             cid?.let { this.cid = it }
-                            qn = 127
+                            qn = REQUEST_TOP_QN
                             fnver = 0
                             fnval = 4048
                             fourk = true
@@ -357,6 +357,14 @@ class VideoPlayRepository(
     }
 
     private companion object {
+        /**
+         * 请求的最高清晰度档位。取 129（HDR Vivid）而不是 127（8K）：
+         * 清晰度码越大档位越高，129 > 127 > 126 > 125，只有把顶档报上去，
+         * 账号/设备有权限时接口才会把 HDR Vivid 片源一起下发。
+         * 请求一个片源不存在的档位不会报错，服务端按实际可给的档位返回。
+         */
+        const val REQUEST_TOP_QN = 129
+
         /** 6 分钟一段，最多取 2 小时，避免异常视频无限翻页。 */
         const val MAX_DANMAKU_SEGMENTS = 20
     }

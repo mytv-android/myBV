@@ -46,6 +46,8 @@
     <string name="resolution_dolby_vision">杜比视界</string>
     <string name="resolution_hdr">HDR 真彩色</string>
     <string name="resolution_hdr_short">HDR</string>
+    <string name="resolution_hdr_vivid">HDR Vivid 菁彩</string>
+    <string name="resolution_hdr_vivid_short">HDR Vivid</string>
 
     <string name="video_aspect_ratio_default">默认</string>
     <string name="video_aspect_ratio_four_to_three">4:3</string>
