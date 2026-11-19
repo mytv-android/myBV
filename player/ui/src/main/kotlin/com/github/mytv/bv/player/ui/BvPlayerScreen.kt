@@ -214,7 +214,7 @@ fun BvPlayerScreen(
         videoZoomState.reset()
     }
 
-    // 「已续播，可确认从头播放」提示只在起播后停留 2 秒（和官方 App 一致）：
+    // 「已续播，可确认从头播放」提示只在起播后停留几秒：
     // 这期间确认键 / 点击按钮才从头播，不操作就继续接着播
     if (showBackToHistory) {
         LaunchedEffect(Unit) {
@@ -777,10 +777,10 @@ private const val AUTO_SKIP_RETRY_MS = 4_000L
 private const val MAX_AUTO_SKIP_RETRIES = 3
 
 /**
- * 「已续播，可确认从头播放」提示的停留时间：和官方 App 一致只给 2 秒。
+ * 「已续播，可确认从头播放」提示的停留时间：沿用提示原有的 5 秒。
  * 起播时已经接着历史进度在播了，这段时间里不给任何操作就当继续看，不打断播放。
  */
-private const val RESUME_TIP_MILLIS = 2_000L
+private const val RESUME_TIP_MILLIS = 5_000L
 
 /**
  * 自动跳过之后的重试。
