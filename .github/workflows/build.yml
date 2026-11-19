@@ -79,11 +79,15 @@ jobs:
       # 只跑 app:shared 这一个模块的单元测试，放在 Build apk 之前，测试先红就
       # 不用再等九分钟的打包。全仓 ./gradlew test 暂不启用：bili-api 等模块的
       # 现成测试要读 local.properties 的 SESSDATA / access_token，匿名跑必红。
-      # 这里不写变体任务名（alphaUnitTest 之类在不同 AGP 版本间命名不稳），
-      # 用 AGP 给每个工程建的顶层 test 任务，它依赖该模块所有变体的单元测试。
+      # 不写变体任务名（不同 AGP 版本对 testAlphaUnitTest / alphaUnitTest 的
+      # 命名不一致），用 AGP 给每个工程建的顶层 test 任务；实测它只跑 debug
+      # 变体的 testDebugUnitTest，一次足够，测试源集各变体是同一份。
       - name: Unit tests (app:shared)
         run: |
           ./gradlew :app:shared:test
+          # 每个测试类的用例数 / 失败数打进日志，能直接核对跑了什么，不靠「绿=过了」
+          grep -h "<testsuite " app/shared/build/test-results/*/TEST-*.xml \
+            | sed 's/ timestamp.*//' || true
           # 防空绿：一个结果 XML 都没产出，说明测试其实根本没跑
           count=$(find app/shared/build/test-results -name 'TEST-*.xml' 2>/dev/null | wc -l)
           echo "app:shared 单元测试结果文件数：$count"
