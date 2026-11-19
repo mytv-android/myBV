@@ -53,6 +53,13 @@ android {
     testOptions {
         targetSdk = AppConfiguration.targetSdk
     }
+
+    // GithubApiTest 不是单元测试：它打 api.github.com，而且 GithubApi 经 Prefs 依赖
+    // BVApp.dataStoreManager（lateinit，JVM 单测里没有 Application 就不会初始化）。
+    // 保留源码当手工冒烟测试用，本地与 CI 的单元测试任务都跳过它。
+    tasks.withType<Test>().configureEach {
+        exclude("**/GithubApiTest*")
+    }
 }
 
 androidComponents {

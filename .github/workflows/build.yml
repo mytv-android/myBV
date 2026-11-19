@@ -76,6 +76,18 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # 只跑 app:shared 这一个模块的单元测试（task 名按构建变体走，
+      # 与下面的 Build apk 保持同一个 channel；app:shared 没有 useJUnitPlatform，
+      # 这些测试是 JUnit4）。全仓 ./gradlew test 暂不启用：bili-api 等模块的
+      # 现成测试要读 local.properties 里的 SESSDATA/access_token，匿名跑必红。
+      - name: Unit tests (app:shared)
+        run: |
+          if [ "${{ steps.channel.outputs.value }}" = "stable" ]; then
+            ./gradlew :app:shared:releaseUnitTest
+          else
+            ./gradlew :app:shared:alphaUnitTest
+          fi
+
       - name: Build apk
         run: |
           if [ "${{ steps.channel.outputs.value }}" = "stable" ]; then
