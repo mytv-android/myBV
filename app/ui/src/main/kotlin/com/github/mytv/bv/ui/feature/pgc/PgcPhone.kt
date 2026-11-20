@@ -239,7 +239,8 @@ internal fun PgcPhone(nav: NavController, state: PgcUiState) {
                             )
                         }
                     }
-                    itemsIndexed(feed.ranks, key = { _, rank -> "rank-${rank.title}" }, contentType = { _, _ -> "row" }) { _, rank ->
+                    // key 带上下标：榜单标题只是展示用，接口翻页会重复下发同名榜单，不能单独作为 key
+                    itemsIndexed(feed.ranks, key = { index, rank -> "rank-$index-${rank.title}" }, contentType = { _, _ -> "row" }) { _, rank ->
                         PhoneFeedRow(
                             title = rank.title,
                             posters = rank.items,

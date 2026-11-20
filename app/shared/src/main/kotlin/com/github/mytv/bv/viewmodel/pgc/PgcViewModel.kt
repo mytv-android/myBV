@@ -14,6 +14,7 @@ import dev.aaa1115910.biliapi.repositories.PgcRepository
 import com.github.mytv.bv.BVApp
 import com.github.mytv.bv.BuildConfig
 import com.github.mytv.bv.util.addWithMainContext
+import com.github.mytv.bv.util.fDebug
 import com.github.mytv.bv.util.fInfo
 import com.github.mytv.bv.util.fWarn
 import com.github.mytv.bv.util.toast
@@ -187,13 +188,25 @@ abstract class PgcViewModel(
             }
         }
 
-        data.ranks.forEach { rank ->
-            feedItems.addWithMainContext(
-                FeedListItem(
-                    type = FeedListType.Rank,
-                    rank = rank
-                )
-            )
+        // 接口每一页都会下发排行榜模块，且翻页后会重复下发同一个榜单（标题相同），
+        // 只保留第一次出现的那个：否则界面会出现多行同名榜单，
+        // 而 LazyColumn 用标题做 key，重复 key 会直接抛 IllegalArgumentException 崩溃
+        withContext(Dispatchers.Main) {
+            val loadedTitles = feedItems
+                .filter { it.type == FeedListType.Rank }
+                .mapNotNullTo(mutableSetOf<String>()) { it.rank?.title }
+            data.ranks.forEach { rank ->
+                if (loadedTitles.add(rank.title)) {
+                    feedItems.add(
+                        FeedListItem(
+                            type = FeedListType.Rank,
+                            rank = rank
+                        )
+                    )
+                } else {
+                    logger.fDebug { "skip duplicated $pgcType rank: ${rank.title}" }
+                }
+            }
         }
     }
 }
