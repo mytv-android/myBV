@@ -61,6 +61,7 @@ fun BvListItem(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     interactionSource: MutableInteractionSource? = null,
+    focusScale: Float = 1.1f,
 ) {
     val interaction = interactionSource ?: remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -120,7 +121,7 @@ fun BvListItem(
     if (onClick != null) {
         Surface(
             onClick = onClick,
-            modifier = modifier.bvFocus(corner = 16.dp, onFocused = onFocused),
+            modifier = modifier.bvFocus(scale = focusScale, corner = 16.dp, onFocused = onFocused),
             shape = shape,
             color = container,
             contentColor = content,

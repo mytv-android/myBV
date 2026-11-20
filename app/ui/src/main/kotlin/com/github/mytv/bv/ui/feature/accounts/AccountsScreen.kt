@@ -311,6 +311,8 @@ private fun AccountRow(
             subtitle = subtitle,
             selected = current,
             onClick = onClick,
+            // 与右侧删除键只隔 8dp，不能沿用会覆盖它的 1.1 倍焦点缩放。
+            focusScale = 1.02f,
             leading = { BvAvatar(url = user.avatar.ifBlank { null }, size = 40.dp, fallbackText = user.username) },
         )
         BvIconButton(
