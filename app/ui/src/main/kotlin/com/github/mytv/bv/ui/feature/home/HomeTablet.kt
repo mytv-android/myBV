@@ -81,7 +81,7 @@ private val TabletSectionExtra = 18.dp - TabletGridGap
 
 /**
  * 平板首页（原型 homeTablet）：导航轨由外壳提供；右侧 Column(padding start 8 / end 28 / top 20, spacedBy 18)：
- * 搜索框(440) + 标签（推荐 热门 分区 + 4 个快捷分区）+ 头像，下面是 Adaptive(180) 网格。
+ * 搜索框(440) + 标签（推荐 热门 分区）+ 头像，下面是 Adaptive(180) 网格。
  * 标签页、分区与网格状态由 [HomeScreen] 持有，折叠形态切换时保持。
  */
 @Composable
@@ -96,6 +96,7 @@ internal fun HomeTablet(
     popularGrid: LazyGridState,
 ) {
     val names = rememberRegionNames()
+    val tabs = homeTabs()
     Column(
         Modifier
             .fillMaxSize()
@@ -123,20 +124,8 @@ internal fun HomeTablet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BvChip(stringResource(R.string.home_tab_recommend), page == PageRecommend, { onPage(PageRecommend) })
-                BvChip(stringResource(R.string.home_tab_popular), page == PagePopular, { onPage(PagePopular) })
-                BvChip(stringResource(R.string.home_tab_region), page == PageRegion, { onPage(PageRegion) })
-                // 快捷分区：点击 = 选中「分区」页并切到该分区
-                TabletQuickRegions.forEach { type ->
-                    val index = HomeRegions.indexOf(type)
-                    BvChip(
-                        text = names[index],
-                        selected = page == PageRegion && region == index,
-                        onClick = {
-                            onPage(PageRegion)
-                            onRegion(index)
-                        },
-                    )
+                tabs.forEachIndexed { index, title ->
+                    BvChip(title, page == index, { onPage(index) })
                 }
             }
             HomeAvatar(state, onClick = { nav.navigateTopLevel(TopLevel.Me) })

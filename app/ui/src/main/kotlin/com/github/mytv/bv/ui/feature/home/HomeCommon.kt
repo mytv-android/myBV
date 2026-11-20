@@ -29,6 +29,14 @@ import com.github.mytv.bv.ui.designsystem.component.VideoCard
 import com.github.mytv.bv.ui.designsystem.component.toComposeShape
 import com.github.mytv.bv.entity.carddata.VideoCardData
 
+/** 首页一级标签：手机、折叠屏和平板共用，避免不同形态混入分区快捷入口。 */
+@Composable
+internal fun homeTabs(): List<String> = listOf(
+    stringResource(R.string.home_tab_recommend),
+    stringResource(R.string.home_tab_popular),
+    stringResource(R.string.home_tab_region),
+)
+
 /** 顶栏头像（40dp，Cookie9），点击打开「我的」。未登录时显示人像图标。 */
 @Composable
 internal fun HomeAvatar(state: HomeState, onClick: () -> Unit, modifier: Modifier = Modifier) {

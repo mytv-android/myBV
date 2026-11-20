@@ -73,11 +73,7 @@ internal fun HomeFold(
     recommendGrid.LoadMoreEffect { if (recommendList.isNotEmpty()) state.loadMoreRecommend() }
     popularGrid.LoadMoreEffect { if (popularList.isNotEmpty()) state.loadMorePopular() }
 
-    val tabs = listOf(
-        stringResource(R.string.home_tab_recommend),
-        stringResource(R.string.home_tab_popular),
-        stringResource(R.string.home_tab_region),
-    )
+    val tabs = homeTabs()
 
     Row(
         Modifier

@@ -93,10 +93,6 @@ internal val HomeRegions: List<UgcTypeV2> = listOf(
     UgcTypeV2.LifeExperience, UgcTypeV2.Mysticism,
 )
 
-/** 平板顶栏的 4 个快捷分区（原型：动画 知识 美食 户外）。 */
-internal val TabletQuickRegions: List<UgcTypeV2> =
-    listOf(UgcTypeV2.Douga, UgcTypeV2.Knowledge, UgcTypeV2.Food, UgcTypeV2.Outdoors)
-
 @Composable
 internal fun rememberRegionNames(): List<String> {
     val context = LocalContext.current

@@ -92,12 +92,8 @@ internal fun HomePhone(
     popularGrid: LazyGridState,
 ) {
     val columns = if (LocalDeviceProfile.current.width == WidthClass.Medium) 3 else 2
-    val pager = rememberPagerState(initialPage = page) { 3 }
-    val tabs = listOf(
-        stringResource(R.string.home_tab_recommend),
-        stringResource(R.string.home_tab_popular),
-        stringResource(R.string.home_tab_region),
-    )
+    val tabs = homeTabs()
+    val pager = rememberPagerState(initialPage = page) { tabs.size }
     // 外部索引（HomeScreen 持有）与 pager 双向同步：横向滑动与折叠重排都落到同一个标签页
     LaunchedEffect(page) {
         if (pager.currentPage != page) pager.animateScrollToPage(page)
@@ -131,6 +127,7 @@ internal fun HomePhone(
             tabs = tabs,
             selected = page,
             onSelect = onPage,
+            centered = true,
         )
         HorizontalPager(
             state = pager,

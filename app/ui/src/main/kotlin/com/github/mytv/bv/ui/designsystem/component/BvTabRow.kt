@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -46,6 +47,7 @@ import com.github.mytv.bv.ui.designsystem.theme.BvType
 /**
  * 原型 `.m-tabs`：Tab 间距 22，底部 1dp outlineVariant 分隔线；选中 primary + Bold，
  * 指示条 3dp 高、宽为文字的 60%，位置变化用 defaultSpatialSpec 动画。电视上聚焦即选中。
+ * [centered] 让整组标签居中，指示条跟随整组位置。
  */
 @Composable
 fun BvTabRow(
@@ -54,10 +56,12 @@ fun BvTabRow(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 16.dp,
+    centered: Boolean = false,
 ) {
     val isTv = LocalDeviceProfile.current.isTv
     // 每个 Tab 的 x 与宽度（px）。只在布局阶段写入/读取，不在 Composition 里读
     val bounds = remember { mutableStateMapOf<Int, Long>() }
+    val rowX = remember { mutableIntStateOf(0) }
     val indicatorX = remember { Animatable(0f) }
     val indicatorW = remember { Animatable(0f) }
     val motionScheme = MaterialTheme.motionScheme
@@ -85,6 +89,8 @@ fun BvTabRow(
     Box(modifier.fillMaxWidth()) {
         Row(
             Modifier
+                .align(if (centered) Alignment.Center else Alignment.CenterStart)
+                .onPlaced { rowX.intValue = it.positionInParent().x.roundToInt() }
                 .padding(horizontal = horizontalPadding)
                 .then(if (isTv) Modifier.focusRestorer() else Modifier),
             horizontalArrangement = Arrangement.spacedBy(22.dp),
@@ -122,7 +128,12 @@ fun BvTabRow(
         Box(
             Modifier
                 .align(Alignment.BottomStart)
-                .offset { IntOffset((horizontalPadding.toPx() + indicatorX.value).roundToInt(), 0) }
+                .offset {
+                    IntOffset(
+                        (rowX.intValue + horizontalPadding.toPx() + indicatorX.value).roundToInt(),
+                        0,
+                    )
+                }
                 .layout { measurable, constraints ->
                     val width = indicatorW.value.roundToInt().coerceIn(0, constraints.maxWidth)
                     val placeable = measurable.measure(
