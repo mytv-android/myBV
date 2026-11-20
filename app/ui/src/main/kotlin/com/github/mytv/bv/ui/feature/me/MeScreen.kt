@@ -5,7 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -164,10 +167,21 @@ fun MeScreen(nav: NavController) {
     // 竖向分隔（书本半开 / 双屏跨屏）：入口列表与内容各占一块逻辑屏
     val foldPanes = rememberFoldPanes()?.takeIf { it.vertical && it.isUsable(300.dp) }
 
+    var showLogout by remember(uid) { mutableStateOf(false) }
+    val onLogout = { showLogout = true }
     when {
-        foldPanes != null && layout != DeviceLayout.Tv -> MeTablet(nav, state, foldPanes = foldPanes)
-        layout == DeviceLayout.Phone -> MePhone(nav, state)
-        layout == DeviceLayout.Tablet -> MeTablet(nav, state)
-        else -> MeTv(nav, state)
+        foldPanes != null && layout != DeviceLayout.Tv -> MeTablet(nav, state, onLogout, foldPanes = foldPanes)
+        layout == DeviceLayout.Phone -> MePhone(nav, state, onLogout)
+        layout == DeviceLayout.Tablet -> MeTablet(nav, state, onLogout)
+        else -> MeTv(nav, state, onLogout)
+    }
+    if (showLogout) {
+        MeLogoutDialog(
+            onDismiss = { showLogout = false },
+            onConfirm = {
+                showLogout = false
+                state.user.logout()
+            },
+        )
     }
 }

@@ -23,6 +23,9 @@
     <string name="me_login">登录</string>
     <string name="me_switch_account">切换账号</string>
     <string name="me_user_lock">用户锁</string>
+    <string name="me_logout">退出登录</string>
+    <string name="me_logout_sub">退出当前账号并清除本机登录信息</string>
+    <string name="me_logout_message">退出当前账号，并删除本机保存的登录信息？</string>
     <string name="me_profile_stats">关注 %1$s · 粉丝 %2$s · 硬币 %3$s</string>
     <string name="me_count_wan">%s万</string>
     <string name="me_level">等级 %d</string>

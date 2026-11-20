@@ -40,10 +40,10 @@ import com.github.mytv.bv.ui.navigation.SettingsRoute
 /**
  * 手机「我的」（原型 mePhone）：Column(padding(top = statusBar + 16, 水平 20), spacedBy 18)：
  * 资料头 → 2×2 彩色入口卡（spacedBy 10）→「继续观看」+「全部」→ 横向 VideoCard(150, 进度, 无副信息)
- * → 列表卡（圆角 24、surfaceContainerLow、padding 6）：关注的 UP 主 / 账号与用户锁 / 设置。
+ * → 列表卡（圆角 24、surfaceContainerLow、padding 6）：关注的 UP 主 / 账号与用户锁 / 退出登录（已登录）/ 设置。
  */
 @Composable
-internal fun MePhone(nav: NavController, state: MeState) {
+internal fun MePhone(nav: NavController, state: MeState, onLogout: () -> Unit) {
     val bottom = LocalBottomBarPadding.current + 16.dp
     val continueItems = state.continueItems
     Column(
@@ -123,6 +123,16 @@ internal fun MePhone(nav: NavController, state: MeState) {
                 iconContainerColor = iconContainer,
                 onClick = { nav.navigate(AccountsRoute) },
             )
+            if (state.isLogin) {
+                BvListItem(
+                    title = stringResource(R.string.me_logout),
+                    subtitle = stringResource(R.string.me_logout_sub),
+                    icon = painterResource(R.drawable.ic_logout_24),
+                    iconContainerColor = iconContainer,
+                    iconContentColor = MaterialTheme.colorScheme.error,
+                    onClick = onLogout,
+                )
+            }
             BvListItem(
                 title = stringResource(R.string.me_settings),
                 subtitle = stringResource(R.string.me_settings_sub),

@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,11 +80,12 @@ private fun paneGrid(columns: Int) = SubGridSpec(
 
 /**
  * 平板「我的」（原型 meTablet）：列表-详情。
- * 左列 width 340，padding(24, 12)，spacedBy 18：资料头 + 6 个入口（选中项 secondaryContainer，图标容器 primary / onPrimary）；
+ * 左列 width 340，padding(24, 12)，spacedBy 18：资料头 + 6 个入口（选中项 secondaryContainer，图标容器 primary / onPrimary）
+ * + 退出登录（已登录）；
  * 右栏 margin(16, 20, 16, 4)，圆角 28，surfaceContainerLow，padding 24，Column(spacedBy 16)：随左侧选择原地切换内容。
  */
 @Composable
-internal fun MeTablet(nav: NavController, state: MeState, foldPanes: FoldPanes? = null) {
+internal fun MeTablet(nav: NavController, state: MeState, onLogout: () -> Unit, foldPanes: FoldPanes? = null) {
     var pane by rememberSaveable { mutableStateOf(MeEntry.History) }
     var historyFilter by rememberSaveable { mutableStateOf(HistoryFilter.All) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -124,6 +126,16 @@ internal fun MeTablet(nav: NavController, state: MeState, foldPanes: FoldPanes? 
                         onClick = { pane = entry },
                     )
                 }
+            }
+            if (state.isLogin) {
+                BvListItem(
+                    title = stringResource(R.string.me_logout),
+                    subtitle = stringResource(R.string.me_logout_sub),
+                    icon = painterResource(R.drawable.ic_logout_24),
+                    iconContainerColor = scheme.surfaceContainerHigh,
+                    iconContentColor = scheme.error,
+                    onClick = onLogout,
+                )
             }
         }
         if (split != null) {

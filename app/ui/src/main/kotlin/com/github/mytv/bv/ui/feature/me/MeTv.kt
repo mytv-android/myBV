@@ -42,12 +42,12 @@ import com.github.mytv.bv.ui.navigation.UserLockRoute
 
 /**
  * 电视「我的」（原型 meTv），导航轨叠在左侧，内容从 x = 96 开始：
- * - 顶部 Row at (96, 27, 48)，spacedBy 20：资料头 + Spacer +「切换账号」「用户锁」（tonal）；
+ * - 顶部 Row at (96, 27, 48)，spacedBy 20：资料头 + Spacer +「切换账号」「用户锁」（tonal），已登录时另有「退出登录」；
  * - 4 个彩色入口卡 at (96, 118, 48)，4 列 spacedBy 14，聚焦放大 1.05（ColorTile 自带），第一个为初始焦点；
  * - 「继续观看」at (96, 300)：SectionHeader + VideoCard(190, 进度, 无副信息) 横排。
  */
 @Composable
-internal fun MeTv(nav: NavController, state: MeState) {
+internal fun MeTv(nav: NavController, state: MeState, onLogout: () -> Unit) {
     val firstTile = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         withFrameNanos { }
@@ -87,6 +87,14 @@ internal fun MeTv(nav: NavController, state: MeState) {
                     style = BvButtonStyle.Tonal,
                     icon = painterResource(R.drawable.ic_shield_24),
                 )
+                if (state.isLogin) {
+                    BvButton(
+                        text = stringResource(R.string.me_logout),
+                        onClick = onLogout,
+                        style = BvButtonStyle.Outlined,
+                        icon = painterResource(R.drawable.ic_logout_24),
+                    )
+                }
             }
         }
 
