@@ -381,7 +381,7 @@ private fun buildVideoDetailUi(
                                 watchedFraction(lastPlayedTimeSec, durationSec)
                             } else null,
                         )
-                    },
+                    }.distinctByCid(),
                 )
             )
         }
@@ -402,7 +402,7 @@ private fun buildVideoDetailUi(
                             durationMs = page.duration * 1000L,
                             progress = if (page.cid == lastPlayedCid) watchedFraction(lastPlayedTimeSec, page.duration) else null,
                         )
-                    },
+                    }.distinctByCid(),
                 )
             )
         }
@@ -431,7 +431,7 @@ private fun buildVideoDetailUi(
                                     watchedFraction(lastPlayedTimeSec, episode.duration)
                                 } else null,
                             )
-                        },
+                        }.distinctByCid(),
                     )
                 )
             }
@@ -458,7 +458,8 @@ private fun buildVideoDetailUi(
         metaTablet = listOfNotNull(fans, play, date).joinToString(" · "),
         metaTv = listOfNotNull(fans, play, likes, coins).joinToString(" · "),
         rows = rows,
-        related = related,
+        // 相关推荐同样用 avid 做 key，重复下发（或 avid 为 0 的占位）会抛重复 key
+        related = related.distinctBy { it.avid },
         commentCount = d.stat.reply,
     )
 }

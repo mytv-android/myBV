@@ -224,7 +224,8 @@ internal fun VideoDetailTv(
                             ) {
                                 itemsIndexed(
                                     items = row.episodes,
-                                    key = { _, ep -> ep.cid },
+                                    // 同详情页标签行：cid 为 0 的占位退化成下标，避免重复 key
+                                    key = { index, ep -> ep.cid.takeIf { it != 0L } ?: "idx$index" },
                                     contentType = { _, _ -> "episode" },
                                 ) { _, episode ->
                                     TvEpisodeCard(

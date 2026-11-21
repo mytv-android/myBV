@@ -334,7 +334,8 @@ private fun applySeasonVideoList(
     episodes: List<Episode>,
     videoInfoRepository: VideoInfoRepository,
 ) {
-    val list = episodes.mapIndexed { index, episode ->
+    // 选集面板同样按 cid 取 key，接口重复下发 / cid 为 0 的占位要去掉，否则重复 key 崩溃
+    val list = episodes.distinctBy { it.cid }.mapIndexed { index, episode ->
         VideoListPgcEpisode(
             aid = episode.aid,
             cid = episode.cid,
@@ -371,7 +372,7 @@ private fun buildSeasonUi(
                     key = FeatureRowKey,
                     title = context.getString(R.string.video_detail_season_feature),
                     action = context.getString(R.string.video_detail_all_more),
-                    episodes = data.episodes.map { it.toDetail() },
+                    episodes = data.episodes.map { it.toDetail() }.distinctByCid(),
                 )
             )
         }
@@ -382,7 +383,7 @@ private fun buildSeasonUi(
                         key = "$SectionRowPrefix$index",
                         title = section.title,
                         action = context.getString(R.string.video_detail_all_more),
-                        episodes = section.episodes.map { it.toDetail() },
+                        episodes = section.episodes.map { it.toDetail() }.distinctByCid(),
                     )
                 )
             }
@@ -404,7 +405,9 @@ private fun buildSeasonUi(
         metaTablet = listOfNotNull(data.newEpDesc.takeIf { it.isNotBlank() }, publish).joinToString(" · "),
         metaTv = listOfNotNull(publish).joinToString(" · "),
         rows = rows,
-        seasons = data.seasons.map { DetailSeasonChip(it.seasonId, it.title?.takeIf { t -> t.isNotBlank() } ?: it.shortTitle) },
+        // 季度行同样用 seasonId 做 key，重复下发同名季度也会抛重复 key
+        seasons = data.seasons.distinctBy { it.seasonId }
+            .map { DetailSeasonChip(it.seasonId, it.title?.takeIf { t -> t.isNotBlank() } ?: it.shortTitle) },
         currentSeasonId = data.seasonId,
     )
 }

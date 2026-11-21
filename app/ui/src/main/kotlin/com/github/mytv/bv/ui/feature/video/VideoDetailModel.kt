@@ -52,6 +52,14 @@ internal data class DetailEpisodeRow(
     val episodes: List<DetailEpisode>,
 )
 
+/**
+ * 剧集行用 cid 做 LazyRow / LazyColumn 的 key，接口却会把同一个 cid 重复下发，
+ * 「跳转到其它 PGC」的占位剧集 cid 还是 0；重复 key 会直接抛
+ * IllegalArgumentException（「Key "0" was already used」）把界面带走
+ * （1.log：番剧详情 800+ 集，进页即崩）。按 cid 去重，只保留第一次出现的那个。
+ */
+internal fun List<DetailEpisode>.distinctByCid(): List<DetailEpisode> = distinctBy { it.cid }
+
 @Immutable
 internal data class DetailSeasonChip(val seasonId: Int, val title: String)
 

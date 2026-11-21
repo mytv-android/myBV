@@ -278,7 +278,8 @@ internal fun DetailEpisodeChips(
     ) {
         itemsIndexed(
             items = row.episodes,
-            key = { _, ep -> ep.cid },
+            // cid 为 0 的占位剧集退化成下标：key 必须唯一，否则 LazyRow 直接抛异常
+            key = { index, ep -> ep.cid.takeIf { it != 0L } ?: "idx$index" },
             contentType = { _, _ -> "episode" },
         ) { _, ep ->
             BvChip(
@@ -306,7 +307,8 @@ internal fun DetailSeasonChips(
     ) {
         itemsIndexed(
             items = ui.seasons,
-            key = { _, s -> s.seasonId },
+            // seasonId 为 0 时退化成下标，保证 key 唯一
+            key = { index, s -> s.seasonId.takeIf { it != 0 } ?: "idx$index" },
             contentType = { _, _ -> "season" },
         ) { _, season ->
             BvChip(
