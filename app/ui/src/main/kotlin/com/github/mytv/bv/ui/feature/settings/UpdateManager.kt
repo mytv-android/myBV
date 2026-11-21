@@ -1,5 +1,6 @@
 package com.github.mytv.bv.ui.feature.settings
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ClipData
@@ -353,14 +354,32 @@ private fun installIntent(uri: Uri, action: String) = Intent(action).apply {
  * 有没有安装权限是安装器自己的事：这里只负责拉起来，让 startActivity 的结果说话。
  */
 private fun startInstallerActivity(context: Context, file: File): Boolean {
-    // 必须用实际 applicationId（debug 包带 .debug 后缀），BuildConfig.APPLICATION_ID 是 app:shared 里写死的
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    val uri = installApkUri(context, file) ?: return false
     return listOf(Intent.ACTION_VIEW, Intent.ACTION_INSTALL_PACKAGE).any { action ->
         runCatching { context.startActivity(installIntent(uri, action)) }
             .onFailure { updateLogger.warn(it) { "No activity handled install intent: $action" } }
             .isSuccess
     }
 }
+
+/**
+ * 安装器 Intent 用的 APK URI。Android 7 起跨应用传 file:// 会抛 FileUriExposedException，
+ * 必须走 FileProvider；Android 6 上小米电视等 ROM 的安装器 intent-filter 只声明了 file:
+ * scheme，给 content:// 解析不到 Activity，此时退回 file:// 并把文件开放给安装器进程读取。
+ *
+ * 必须用实际 applicationId（debug 包带 .debug 后缀），BuildConfig.APPLICATION_ID 是 app:shared 里写死的。
+ */
+@SuppressLint("SetWorldReadable")
+private fun installApkUri(context: Context, file: File): Uri? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        runCatching { FileProvider.getUriForFile(context, "${context.packageName}.provider", file) }
+            .onFailure { updateLogger.warn(it) { "No FileProvider uri for install intent" } }
+            .getOrNull()
+    } else {
+        file.parentFile?.apply { setReadable(true, false); setExecutable(true, false) }
+        file.setReadable(true, false)
+        Uri.fromFile(file)
+    }
 
 /** 会话安装结果广播的 action，与 manifest 里 intent-filter 的 ${applicationId} 前缀保持一致。 */
 private fun installStatusAction(context: Context) = "${context.packageName}.action.UPDATE_INSTALL_STATUS"
