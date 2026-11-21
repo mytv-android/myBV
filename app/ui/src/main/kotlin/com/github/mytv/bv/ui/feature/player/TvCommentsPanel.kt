@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +54,7 @@ import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -253,11 +254,11 @@ internal fun TvCommentsPanel(
                                 onPictureClick = onPictureClick,
                             )
                         }
-                        items(
+                        itemsIndexed(
                             items = commentVm.replies,
-                            key = { it.rpid },
-                            contentType = { "reply" },
-                        ) { reply ->
+                            key = { index, reply -> safeLazyKey(reply.rpid, index) },
+                            contentType = { _, _ -> "reply" },
+                        ) { _, reply ->
                             ReplyItem(
                                 comment = reply,
                                 qrLink = remember(reply.rpid, reply.content) {
@@ -281,11 +282,11 @@ internal fun TvCommentsPanel(
                             }
                         }
                     } else {
-                        items(
+                        itemsIndexed(
                             items = commentVm.comments,
-                            key = { it.rpid },
-                            contentType = { "comment" },
-                        ) { comment ->
+                            key = { index, comment -> safeLazyKey(comment.rpid, index) },
+                            contentType = { _, _ -> "comment" },
+                        ) { _, comment ->
                             val qrLinkOfComment = remember(comment.rpid, comment.content) {
                                 commentQrLink(comment.content)
                             }

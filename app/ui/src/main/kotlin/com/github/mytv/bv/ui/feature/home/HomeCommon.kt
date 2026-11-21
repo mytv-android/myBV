@@ -27,6 +27,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvAvatar
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
 import com.github.mytv.bv.ui.designsystem.component.toComposeShape
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.entity.carddata.VideoCardData
 
 /** 首页一级标签：手机、折叠屏和平板共用，避免不同形态混入分区快捷入口。 */
@@ -82,7 +83,7 @@ internal fun ContinueRow(
     ) {
         itemsIndexed(
             items,
-            key = { _, item -> "${item.card.historyBusiness}_${item.card.historyKid ?: item.card.avid}" },
+            key = { index, item -> safeLazyKey(index, item.card.historyBusiness, item.card.historyKid ?: item.card.avid) },
             contentType = { _, _ -> "continue" },
         ) { _, item ->
             VideoCard(
@@ -122,7 +123,7 @@ internal fun RegionChipRow(
     ) {
         itemsIndexed(
             names,
-            key = { _, name -> name },
+            key = { index, name -> safeLazyKey(name, index) },
             contentType = { _, _ -> "region" },
         ) { index, name ->
             BvChip(text = name, selected = index == selected, onClick = { onSelect(index) })

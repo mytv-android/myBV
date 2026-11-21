@@ -51,6 +51,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvIconButton
 import com.github.mytv.bv.ui.designsystem.component.BvIconButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.onBvKey
@@ -199,7 +200,7 @@ internal fun AccountsContent(
                     }
                     itemsIndexed(
                         items = users,
-                        key = { _, user -> user.uid },
+                        key = { index, user -> safeLazyKey(user.uid, index) },
                         contentType = { _, _ -> "account" },
                     ) { _, user ->
                         AccountRow(

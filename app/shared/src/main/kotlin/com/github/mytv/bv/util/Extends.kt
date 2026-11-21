@@ -59,7 +59,12 @@ suspend fun <T> SnapshotStateList<T>.addDistinctWithMainContext(newList: List<T>
     withContext(Dispatchers.Main) {
         val existing = HashSet<Any>()
         forEach { key(it)?.let(existing::add) }
-        addAll(newList.filter { item -> key(item)?.let { it !in existing } ?: true })
+        // 新列表内部同样要去重：重试 / 服务端重复下发会让同一页里出现两个相同 key
+        val toAdd = newList.filter { item ->
+            val k = key(item) ?: return@filter true
+            if (k in existing) false else { existing += k; true }
+        }
+        addAll(toAdd)
     }
 }
 

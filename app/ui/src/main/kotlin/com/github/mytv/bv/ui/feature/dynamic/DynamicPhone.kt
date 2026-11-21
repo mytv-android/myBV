@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
 import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
@@ -89,11 +90,11 @@ internal fun DynamicPhone(state: DynamicPageState, actions: DynamicActions) {
                         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = bottom),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        items(
+                        itemsIndexed(
                             state.items,
-                            key = { item -> item.id?.takeIf { it.isNotBlank() } ?: item.commentId },
-                            contentType = { "dynamic" },
-                        ) { item ->
+                            key = { index, item -> safeLazyKey(index, item.id?.takeIf { it.isNotBlank() } ?: item.commentId) },
+                            contentType = { _, _ -> "dynamic" },
+                        ) { _, item ->
                             DynamicCard(
                                 item = item,
                                 onClick = { actions.open(item) },

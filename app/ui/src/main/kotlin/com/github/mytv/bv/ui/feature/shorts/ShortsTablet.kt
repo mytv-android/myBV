@@ -60,6 +60,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvIconButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvTabRow
 import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
 import com.github.mytv.bv.ui.designsystem.component.VideoRow
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvTheme
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
@@ -148,7 +149,7 @@ private fun TabletVideoArea(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
                 beyondViewportPageCount = 1,
-                key = { page -> items.getOrNull(page)?.aid ?: page.toLong() },
+                key = { page -> safeLazyKey(items.getOrNull(page)?.aid ?: 0L, page) },
             ) { page ->
                 val item = items.getOrNull(page) ?: return@VerticalPager
                 CoverTheme(item.cover, forceDark = true) {
@@ -420,7 +421,7 @@ private fun TabletInfoPanel(
             ) {
                 itemsIndexed(
                     items = upcoming,
-                    key = { _, entry -> entry.aid },
+                    key = { index, entry -> safeLazyKey(entry.aid, index) },
                     contentType = { _, _ -> "video" },
                 ) { index, next ->
                     VideoRow(

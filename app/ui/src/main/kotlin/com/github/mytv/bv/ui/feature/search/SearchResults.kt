@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +60,7 @@ import com.github.mytv.bv.ui.designsystem.component.PosterCard
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
 import com.github.mytv.bv.ui.designsystem.component.VideoRow
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -404,7 +406,7 @@ private fun AllResultsGrid(
                 }
             }
             val leading = videos.take(AllLeadingVideos)
-            items(leading.size, key = { leading[it].avid }, contentType = { "video" }) { index ->
+            items(leading.size, key = { index -> safeLazyKey(leading[index].avid, index) }, contentType = { "video" }) { index ->
                 val card = leading[index]
                 VideoCard(data = card, onClick = { openers.video(card) }, showStats = true)
             }
@@ -421,11 +423,11 @@ private fun AllResultsGrid(
                                 .focusGroup(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            items(
+                            itemsIndexed(
                                 items = pgcs,
-                                key = { "${it.bangumi}-${it.seasonId}" },
-                                contentType = { "pgc" },
-                            ) { item ->
+                                key = { index, item -> safeLazyKey(index, item.bangumi, item.seasonId) },
+                                contentType = { _, _ -> "pgc" },
+                            ) { _, item ->
                                 PgcWideCard(item, onOpen = { openers.pgc(item) }, modifier = Modifier.width(420.dp))
                             }
                         }
@@ -433,7 +435,7 @@ private fun AllResultsGrid(
                 }
             }
             val rest = videos.drop(AllLeadingVideos)
-            items(rest.size, key = { rest[it].avid }, contentType = { "video" }) { index ->
+            items(rest.size, key = { index -> safeLazyKey(rest[index].avid, index) }, contentType = { "video" }) { index ->
                 val card = rest[index]
                 VideoCard(data = card, onClick = { openers.video(card) }, showStats = true)
             }
@@ -477,7 +479,7 @@ private fun VideoResultsGrid(
             item(key = "videoHeader", span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
                 VideoSectionHeader(state, onFilter, showAction = !tv)
             }
-            items(videos.size, key = { videos[it].avid }, contentType = { "video" }) { index ->
+            items(videos.size, key = { index -> safeLazyKey(videos[index].avid, index) }, contentType = { "video" }) { index ->
                 val card = videos[index]
                 VideoCard(data = card, onClick = { openers.video(card) }, showStats = true)
             }
@@ -517,7 +519,7 @@ private fun PgcResultsGrid(
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
-            items(pgcList.size, key = { pgcList[it].seasonId }, contentType = { "pgc" }) { index ->
+            items(pgcList.size, key = { index -> safeLazyKey(pgcList[index].seasonId, index) }, contentType = { "pgc" }) { index ->
                 val item = pgcList[index]
                 if (tv) {
                     PosterCard(
@@ -565,7 +567,7 @@ private fun UserResultsGrid(
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing / 2),
         ) {
-            items(users.size, key = { users[it].mid }, contentType = { "user" }) { index ->
+            items(users.size, key = { index -> safeLazyKey(users[index].mid, index) }, contentType = { "user" }) { index ->
                 val user = users[index]
                 UserResultItem(user, follow, onOpen = { openers.user(user) })
             }
@@ -624,14 +626,14 @@ internal fun SearchResultsList(
             contentPadding = contentPadding,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(shownUsers, key = { "u${it.mid}" }, contentType = { "user" }) { user ->
+            itemsIndexed(shownUsers, key = { index, user -> safeLazyKey(user.mid, index) }, contentType = { _, _ -> "user" }) { _, user ->
                 UserResultItem(user, follow, onOpen = { openers.user(user) }, contentPadding = userItemPadding)
             }
-            items(pgcs, key = { "p${it.bangumi}-${it.seasonId}" }, contentType = { "pgc" }) { item ->
+            itemsIndexed(pgcs, key = { index, item -> safeLazyKey(index, item.bangumi, item.seasonId) }, contentType = { _, _ -> "pgc" }) { _, item ->
                 PgcWideCard(item, onOpen = { openers.pgc(item) }, modifier = Modifier.fillMaxWidth())
             }
             if (showVideos) {
-                items(videos.size, key = { videos[it].avid }, contentType = { "video" }) { index ->
+                items(videos.size, key = { index -> safeLazyKey(videos[index].avid, index) }, contentType = { "video" }) { index ->
                     val card = videos[index]
                     VideoRow(data = card, onClick = { openers.video(card) })
                 }

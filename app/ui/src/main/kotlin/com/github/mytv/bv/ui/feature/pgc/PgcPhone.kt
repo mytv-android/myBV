@@ -63,6 +63,7 @@ import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PosterCard
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
 import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
@@ -130,7 +131,7 @@ internal fun PgcPhone(nav: NavController, state: PgcUiState) {
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            itemsIndexed(names, key = { _, name -> name }, contentType = { _, _ -> "tab" }) { index, name ->
+            itemsIndexed(names, key = { index, name -> safeLazyKey(name, index) }, contentType = { _, _ -> "tab" }) { index, name ->
                 BvChip(text = name, selected = index == state.tab, onClick = { state.onTab(index) })
             }
         }

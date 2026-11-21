@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -34,6 +34,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.ColorTile
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
 import com.github.mytv.bv.ui.feature.timeline.tryRequestFocus
 import com.github.mytv.bv.ui.navigation.AccountsRoute
@@ -142,11 +143,11 @@ internal fun MeTv(nav: NavController, state: MeState, onLogout: () -> Unit) {
                         contentPadding = PaddingValues(start = 24.dp, end = 48.dp, top = 12.dp, bottom = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        items(
+                        itemsIndexed(
                             items = continueItems,
-                            key = { it.card.avid },
-                            contentType = { "video" },
-                        ) { entry ->
+                            key = { index, entry -> safeLazyKey(entry.card.avid, index) },
+                            contentType = { _, _ -> "video" },
+                        ) { _, entry ->
                             VideoCard(
                                 data = entry.card,
                                 onClick = { nav.openHistory(entry) },

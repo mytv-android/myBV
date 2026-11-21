@@ -69,6 +69,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -470,7 +471,7 @@ private fun SearchTvInput(
                             contentPadding = PaddingValues(start = 4.dp, top = 12.dp, end = 48.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            items(cards.size, key = { cards[it].avid }, contentType = { "video" }) { index ->
+                            items(cards.size, key = { index -> safeLazyKey(cards[index].avid, index) }, contentType = { "video" }) { index ->
                                 val card = cards[index]
                                 VideoCard(
                                     data = card,

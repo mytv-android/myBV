@@ -92,17 +92,6 @@ internal fun VideoListItem.displayTitle(context: Context, inUgcSeason: Boolean):
     else -> ""
 }
 
-/** Saveable identities distinguish section headers and interactive nodes sharing a video. */
-internal fun VideoListItem.lazyKey(): String = when (this) {
-    is VideoListInteractiveNode -> "node:$aid:$nodeId:$edgeId:$startPos"
-    is VideoListPgcEpisode -> "episode:$seasonId:$epid:$cid"
-    is VideoListUgcEpisode -> "ugc:$aid:$cid"
-    is VideoListPart -> "part:$aid:$cid"
-    is VideoListUgcEpisodeTitle -> "section:$index:$title"
-    is VideoListItemData -> "video:$aid:$cid"
-    else -> error("Unsupported video list item: ${this::class}")
-}
-
 internal fun VideoListItem.lazyContentType(): String =
     if (this is VideoListUgcEpisodeTitle) "heading" else "episode"
 

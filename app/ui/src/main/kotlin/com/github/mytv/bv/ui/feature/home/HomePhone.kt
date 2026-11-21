@@ -63,6 +63,7 @@ import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.navigation.HistoryRoute
 import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
@@ -367,7 +368,7 @@ internal fun LazyGridScope.ugcCards(
     onOpen: (com.github.mytv.bv.entity.carddata.VideoCardData) -> Unit,
 ) {
     val count = (list.size - skip).coerceAtLeast(0)
-    items(count, key = { index -> list[index + skip].aid }, contentType = { "video" }) { index ->
+    items(count, key = { index -> safeLazyKey(list[index + skip].aid, index) }, contentType = { "video" }) { index ->
         val item = list.getOrNull(index + skip)
         if (item != null) {
             val card = remember(item) { item.toCard() }

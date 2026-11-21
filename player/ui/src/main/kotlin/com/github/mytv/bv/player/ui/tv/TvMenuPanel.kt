@@ -71,7 +71,6 @@ import com.github.mytv.bv.player.ui.formatDanmakuArea
 import com.github.mytv.bv.player.ui.formatPercent
 import com.github.mytv.bv.player.ui.formatSpeed
 import com.github.mytv.bv.player.ui.indexOfCid
-import com.github.mytv.bv.player.ui.lazyKey
 import com.github.mytv.bv.player.ui.lazyContentType
 import com.github.mytv.bv.util.requestFocus
 import kotlin.math.abs
@@ -479,7 +478,7 @@ internal fun TvVideoListPanel(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             item(key = "title", contentType = "heading") { Eyebrow(stringResource(R.string.player_ui_episodes), 0.dp) }
-            itemsIndexed(list, key = { _, item -> item.lazyKey() }, contentType = { _, item -> item.lazyContentType() }) { index, item ->
+            itemsIndexed(list, key = { _, item -> item.lazyKey }, contentType = { _, item -> item.lazyContentType() }) { index, item ->
                 if (item is VideoListUgcEpisodeTitle) {
                     Eyebrow(item.displayTitle(context, inUgcSeason), 10.dp)
                 } else {

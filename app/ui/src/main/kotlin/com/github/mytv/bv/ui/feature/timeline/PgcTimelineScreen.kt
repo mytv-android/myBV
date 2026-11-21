@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +51,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
 import com.github.mytv.bv.ui.designsystem.component.PosterCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.navigation.SeasonRoute
 import kotlinx.coroutines.launch
@@ -157,7 +157,7 @@ private fun TimelinePhone(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottom),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(day.episodes, key = { it.seasonId }, contentType = { "episode" }) { episode ->
+                    itemsIndexed(day.episodes, key = { index, episode -> safeLazyKey(episode.seasonId, index) }, contentType = { _, _ -> "episode" }) { _, episode ->
                         TimelineEpisodeRow(
                             episode = episode,
                             followed = follow.isFollowed(episode.seasonId),
@@ -203,7 +203,7 @@ private fun TimelineTablet(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                itemsIndexed(day.episodes, key = { _, episode -> episode.seasonId }, contentType = { _, _ -> "episode" }) { _, episode ->
+                itemsIndexed(day.episodes, key = { index, episode -> safeLazyKey(episode.seasonId, index) }, contentType = { _, _ -> "episode" }) { _, episode ->
                     TimelinePoster(episode, onClick = { onOpen(episode) })
                 }
             }
@@ -269,7 +269,7 @@ private fun TimelineTv(
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    itemsIndexed(shown.episodes, key = { _, episode -> episode.seasonId }, contentType = { _, _ -> "episode" }) { index, episode ->
+                    itemsIndexed(shown.episodes, key = { index, episode -> safeLazyKey(episode.seasonId, index) }, contentType = { _, _ -> "episode" }) { index, episode ->
                         TimelinePoster(
                             episode,
                             onClick = { onOpen(episode) },
@@ -315,7 +315,7 @@ private fun TimelineDayChips(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        itemsIndexed(model.timelines, key = { _, timeline -> timeline.dayOfWeek }, contentType = { _, _ -> "day" }) { index, timeline ->
+        itemsIndexed(model.timelines, key = { index, timeline -> safeLazyKey(timeline.dayOfWeek, index) }, contentType = { _, _ -> "day" }) { index, timeline ->
             val label = if (timeline.isToday) today else stringResource(
                 R.string.timeline_day_label,
                 weekdays.getOrElse(timeline.dayOfWeek - 1) { "" },

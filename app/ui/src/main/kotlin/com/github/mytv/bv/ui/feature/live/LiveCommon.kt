@@ -33,6 +33,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CardFrame
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
 import com.github.mytv.bv.ui.feature.home.LoadMoreEffect
@@ -131,7 +132,7 @@ internal fun LazyGridScope.liveCards(
     list: List<LiveRoomItem>,
     onOpen: (LiveRoomItem) -> Unit,
 ) {
-    items(list.size, key = { index -> list[index].roomId }, contentType = { "live" }) { index ->
+    items(list.size, key = { index -> safeLazyKey(list[index].roomId, index) }, contentType = { "live" }) { index ->
         val item = list[index]
         LiveRoomCard(item = item, onClick = { onOpen(item) })
     }
@@ -210,7 +211,7 @@ internal fun LiveChipRow(
     ) {
         itemsIndexed(
             names,
-            key = { _, name -> name },
+            key = { index, name -> safeLazyKey(name, index) },
             contentType = { _, _ -> "tab" },
         ) { index, name ->
             BvChip(

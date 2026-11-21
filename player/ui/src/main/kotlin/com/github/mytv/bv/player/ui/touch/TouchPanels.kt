@@ -67,7 +67,6 @@ import com.github.mytv.bv.player.ui.formatDanmakuArea
 import com.github.mytv.bv.player.ui.formatPercent
 import com.github.mytv.bv.player.ui.formatSpeed
 import com.github.mytv.bv.player.ui.indexOfCid
-import com.github.mytv.bv.player.ui.lazyKey
 import com.github.mytv.bv.player.ui.lazyContentType
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -301,7 +300,7 @@ private fun EpisodesPanel(
                 text = stringResource(R.string.player_ui_episodes),
             )
         }
-        items(items = list, key = { it.lazyKey() }, contentType = { it.lazyContentType() }) { item ->
+        items(items = list, key = { it.lazyKey }, contentType = { it.lazyContentType() }) { item ->
             if (item is VideoListUgcEpisodeTitle) {
                 Text(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp),

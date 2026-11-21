@@ -52,6 +52,7 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvChip
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.timeline.tryRequestFocus
 import com.github.mytv.bv.util.getDisplayName
@@ -219,7 +220,7 @@ private fun <T : PgcIndexParam> FilterChipRow(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            itemsIndexed(options, key = { _, option -> option.toString() }, contentType = { _, _ -> "chip" }) { index, option ->
+            itemsIndexed(options, key = { index, option -> safeLazyKey(option.toString(), index) }, contentType = { _, _ -> "chip" }) { index, option ->
                 val isSelected = option == selected
                 BvChip(
                     text = option.getDisplayName(context),

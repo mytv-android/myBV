@@ -43,6 +43,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvIconButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.TvBackdrop
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -117,7 +118,7 @@ internal fun VideoDetailTv(
                     ) {
                         itemsIndexed(
                             items = ui.seasons,
-                            key = { _, s -> s.seasonId },
+                            key = { index, s -> safeLazyKey(s.seasonId, index) },
                             contentType = { _, _ -> "season" },
                         ) { _, season ->
                             BvChip(
@@ -225,7 +226,7 @@ internal fun VideoDetailTv(
                                 itemsIndexed(
                                     items = row.episodes,
                                     // 同详情页标签行：cid 为 0 的占位退化成下标，避免重复 key
-                                    key = { index, ep -> ep.cid.takeIf { it != 0L } ?: "idx$index" },
+                                    key = { index, ep -> safeLazyKey(ep.cid, index) },
                                     contentType = { _, _ -> "episode" },
                                 ) { _, episode ->
                                     TvEpisodeCard(
@@ -256,7 +257,7 @@ internal fun VideoDetailTv(
                             ) {
                                 itemsIndexed(
                                     items = ui.related,
-                                    key = { _, video -> video.avid },
+                                    key = { index, video -> safeLazyKey(video.avid, index) },
                                     contentType = { _, _ -> "related" },
                                 ) { _, video ->
                                     VideoCard(

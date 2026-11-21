@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -60,6 +60,7 @@ import com.github.mytv.bv.ui.designsystem.component.commentCardAction
 import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.CommentQrCodeDialog
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.component.commentQrLink
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
@@ -143,11 +144,11 @@ internal fun DetailCommentList(
             if (showSortChips) {
                 item(key = "sort") { CommentSortChips(commentVm) }
             }
-            items(
+            itemsIndexed(
                 items = commentVm.comments,
-                key = { it.rpid },
-                contentType = { "comment" },
-            ) { comment ->
+                key = { index, comment -> safeLazyKey(comment.rpid, index) },
+                contentType = { _, _ -> "comment" },
+            ) { _, comment ->
                 CommentItem(
                     comment = comment,
                     onPictureClick = onShowPictures,
@@ -285,11 +286,11 @@ internal fun RepliesSheet(
                     }
                 }
             }
-            items(
+            itemsIndexed(
                 items = commentVm.replies,
-                key = { it.rpid },
-                contentType = { "reply" },
-            ) { reply ->
+                key = { index, reply -> safeLazyKey(reply.rpid, index) },
+                contentType = { _, _ -> "reply" },
+            ) { _, reply ->
                 val replyAction = commentCardAction(reply, onReplyClick = null, onPictureClick = onShowPictures)
                 CommentItem(
                     comment = reply,

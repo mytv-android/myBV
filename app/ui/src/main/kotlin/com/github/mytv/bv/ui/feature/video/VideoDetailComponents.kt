@@ -45,6 +45,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.CardFrame
 import com.github.mytv.bv.ui.designsystem.component.DurationBadge
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.viewmodel.video.VideoActionsViewModel
 
@@ -279,7 +280,7 @@ internal fun DetailEpisodeChips(
         itemsIndexed(
             items = row.episodes,
             // cid 为 0 的占位剧集退化成下标：key 必须唯一，否则 LazyRow 直接抛异常
-            key = { index, ep -> ep.cid.takeIf { it != 0L } ?: "idx$index" },
+            key = { index, ep -> safeLazyKey(ep.cid, index) },
             contentType = { _, _ -> "episode" },
         ) { _, ep ->
             BvChip(
@@ -308,7 +309,7 @@ internal fun DetailSeasonChips(
         itemsIndexed(
             items = ui.seasons,
             // seasonId 为 0 时退化成下标，保证 key 唯一
-            key = { index, s -> s.seasonId.takeIf { it != 0 } ?: "idx$index" },
+            key = { index, s -> safeLazyKey(s.seasonId, index) },
             contentType = { _, _ -> "season" },
         ) { _, season ->
             BvChip(

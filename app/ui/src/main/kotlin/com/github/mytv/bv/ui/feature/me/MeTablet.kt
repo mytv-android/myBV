@@ -50,6 +50,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.accounts.AccountsContent
 import com.github.mytv.bv.ui.feature.favorite.FavoriteContent
@@ -331,7 +332,7 @@ private fun ColumnScope.HistoryPane(
                     }
                     items(
                         count = list.size,
-                        key = { index -> list[index].card.avid },
+                        key = { index -> safeLazyKey(list[index].card.avid, index) },
                         contentType = { "video" },
                     ) { index ->
                         val entry = list[index]

@@ -48,6 +48,7 @@ import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
 import com.github.mytv.bv.ui.designsystem.adaptive.WidthClass
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.feature.home.EmptyOrLoading
@@ -267,7 +268,7 @@ internal fun <T> SubPageGrid(
             } else {
                 items(
                     count = list.size,
-                    key = itemKey?.let { keyOf -> { index: Int -> keyOf(list[index]) } },
+                    key = itemKey?.let { keyOf -> { index: Int -> safeLazyKey(index, keyOf(list[index])) } },
                     contentType = { "item" },
                 ) { index ->
                     val item = list[index]

@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -65,6 +65,7 @@ import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
@@ -280,11 +281,11 @@ internal fun DynamicDetailPane(
                 )
             }
             if (tab == 0) {
-                items(
+                itemsIndexed(
                     commentVm.comments,
-                    key = { comment -> comment.rpid },
-                    contentType = { "comment" },
-                ) { comment ->
+                    key = { index, comment -> safeLazyKey(comment.rpid, index) },
+                    contentType = { _, _ -> "comment" },
+                ) { _, comment ->
                     val openReplies: (() -> Unit)? = if (comment.repliesCount > 0) {
                         {
                             commentVm.prepareReplies(comment)

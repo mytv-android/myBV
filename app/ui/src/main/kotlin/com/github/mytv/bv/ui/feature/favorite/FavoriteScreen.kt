@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +36,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.feature.timeline.DeleteConfirmDialog
 import com.github.mytv.bv.ui.feature.timeline.DeleteModeHint
 import com.github.mytv.bv.ui.feature.timeline.SubGridKind
@@ -142,7 +143,7 @@ internal fun FavoriteContent(
                 contentPadding = chipsPadding,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(folders, key = { it.id }, contentType = { "folder" }) { folder ->
+                itemsIndexed(folders, key = { index, folder -> safeLazyKey(folder.id, index) }, contentType = { _, _ -> "folder" }) { _, folder ->
                     BvChip(
                         text = folder.title,
                         selected = current?.id == folder.id,

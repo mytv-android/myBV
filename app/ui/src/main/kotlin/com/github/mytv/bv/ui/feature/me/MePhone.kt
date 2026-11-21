@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +29,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.ColorTile
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.feature.home.fullBleed
 import com.github.mytv.bv.ui.navigation.AccountsRoute
 import com.github.mytv.bv.ui.navigation.FollowingRoute
@@ -85,11 +86,11 @@ internal fun MePhone(nav: NavController, state: MeState, onLogout: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(
+                itemsIndexed(
                     items = continueItems,
-                    key = { it.card.avid },
-                    contentType = { "video" },
-                ) { entry ->
+                    key = { index, entry -> safeLazyKey(entry.card.avid, index) },
+                    contentType = { _, _ -> "video" },
+                ) { _, entry ->
                     VideoCard(
                         data = entry.card,
                         onClick = { nav.openHistory(entry) },

@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -84,6 +83,7 @@ import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
 import com.github.mytv.bv.ui.designsystem.component.WavyProgress
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
@@ -297,11 +297,11 @@ private fun FavoriteDialog(item: ShortsItem, vm: ShortsViewModel, onDismiss: () 
                     Modifier.heightIn(max = 360.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    items(
+                    itemsIndexed(
                         items = folders,
-                        key = { it.id },
-                        contentType = { "folder" },
-                    ) { folder ->
+                        key = { index, folder -> safeLazyKey(folder.id, index) },
+                        contentType = { _, _ -> "folder" },
+                    ) { _, folder ->
                         val checked = folder.id in selected
                         BvListItem(
                             title = folder.title,
@@ -502,7 +502,7 @@ internal fun ShortsCommentList(
             if (ready || root != null) {
                 itemsIndexed(
                     items = list,
-                    key = { _, comment -> comment.rpid },
+                    key = { index, comment -> safeLazyKey(comment.rpid, index) },
                     contentType = { _, _ -> "comment" },
                 ) { index, comment ->
                     val openReplies: (() -> Unit)? =

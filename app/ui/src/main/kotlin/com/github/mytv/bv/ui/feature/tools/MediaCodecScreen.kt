@@ -54,6 +54,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -288,7 +289,7 @@ private fun CodecList(
         ) {
             itemsIndexed(
                 items = decoders,
-                key = { _, codec -> "${codec.media}-${codec.name}-${codec.mimeType}" },
+                key = { index, codec -> safeLazyKey(index, codec.media, codec.name, codec.mimeType) },
                 contentType = { _, _ -> "codec" },
             ) { index, codec ->
                 val video = codec.media == CodecMedia.Video

@@ -75,6 +75,7 @@ import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
 import com.github.mytv.bv.ui.designsystem.component.TvBackdrop
 import com.github.mytv.bv.ui.designsystem.component.VideoCard
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
@@ -705,7 +706,7 @@ private fun <T> TvVideoRow(
                 ) {
                     items(
                         count = cards.size,
-                        key = { index -> cardKey(cards[index]) },
+                        key = { index -> safeLazyKey(cardKey(cards[index]), index) },
                         contentType = { "video" },
                     ) { index ->
                         val item = cards[index]
@@ -772,7 +773,7 @@ private fun TvRegionContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = TvContentTop, bottom = 27.dp),
         ) {
-            items(HomeRegions.size, key = { HomeRegions[it].name }, contentType = { "row" }) { index ->
+            items(HomeRegions.size, key = { index -> safeLazyKey(index, HomeRegions[index].name) }, contentType = { "row" }) { index ->
                 TvRegionRow(
                     nav = nav,
                     state = state,
@@ -833,7 +834,7 @@ private fun <T> TvGridContent(
         ) {
             items(
                 count = cards.size,
-                key = { index -> cardKey(cards[index]) },
+                key = { index -> safeLazyKey(cardKey(cards[index]), index) },
                 contentType = { "video" },
             ) { index ->
                 val item = cards[index]

@@ -35,6 +35,7 @@ import com.github.mytv.bv.appui.R
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.TvRowPivot
@@ -239,7 +240,7 @@ private fun TvDynamicRow(
             ) {
                 itemsIndexed(
                     items,
-                    key = { _, item -> item.id?.takeIf { it.isNotBlank() } ?: item.commentId },
+                    key = { index, item -> safeLazyKey(index, item.id?.takeIf { it.isNotBlank() } ?: item.commentId) },
                     contentType = { _, _ -> "card" },
                 ) { index, item ->
                     DynamicTvCard(

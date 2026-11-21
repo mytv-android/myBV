@@ -50,6 +50,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.BvButtonStyle
 import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.BvListItem
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.BvKey
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.focus.onBvKey
@@ -242,7 +243,7 @@ internal fun EpisodeSheet(
                 itemsIndexed(
                     items = row.episodes,
                     // 同详情页标签行：cid 为 0 的占位退化成下标，避免重复 key
-                    key = { index, ep -> ep.cid.takeIf { it != 0L } ?: "idx$index" },
+                    key = { index, ep -> safeLazyKey(ep.cid, index) },
                     contentType = { _, _ -> "episode" },
                 ) { _, ep ->
                     val playing = ep.cid == currentCid

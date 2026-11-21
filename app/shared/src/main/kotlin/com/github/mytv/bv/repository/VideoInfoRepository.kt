@@ -21,7 +21,11 @@ class VideoInfoRepository {
 
     /** Publish a complete snapshot; callers cannot mutate the currently displayed list in place. */
     fun replaceVideoList(items: List<VideoListItem>) {
-        videoList = items.toList()
+        // 选集面板按 lazyKey 取 item key，接口会重复下发同一集（或 cid 为 0 的占位），
+        // 重复 key 直接抛 IllegalArgumentException 把界面带走（1.log：番剧详情 800+ 集）。
+        // 这里是所有选集列表的唯一出口，按 key 去重、只保留第一次出现的那个。
+        val seen = HashSet<String>(items.size)
+        videoList = items.filter { seen.add(it.lazyKey) }
     }
 
     var interactivePlaybackContext: InteractivePlaybackContext? = null

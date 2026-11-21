@@ -38,6 +38,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.component.BvTabRow
 import com.github.mytv.bv.ui.designsystem.component.SectionHeader
 import com.github.mytv.bv.ui.designsystem.component.VideoRow
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.viewmodel.CommentViewModel
 import kotlinx.coroutines.launch
@@ -201,7 +202,7 @@ private fun PhoneIntro(
             }
             itemsIndexed(
                 items = ui.related,
-                key = { _, video -> video.avid },
+                key = { index, video -> safeLazyKey(video.avid, index) },
                 contentType = { _, _ -> "related" },
             ) { _, video ->
                 VideoRow(

@@ -79,6 +79,7 @@ import com.github.mytv.bv.ui.designsystem.component.Ambient
 import com.github.mytv.bv.ui.designsystem.component.BvAvatar
 import com.github.mytv.bv.ui.designsystem.component.BvIconButton
 import com.github.mytv.bv.ui.designsystem.component.CinemaScrim
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
@@ -124,7 +125,7 @@ internal fun ShortsPhone(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
-            key = { page -> items.getOrNull(page)?.aid ?: page.toLong() },
+            key = { page -> safeLazyKey(items.getOrNull(page)?.aid ?: 0L, page) },
         ) { page ->
             val item = items.getOrNull(page) ?: return@VerticalPager
             CoverTheme(item.cover, forceDark = true) {

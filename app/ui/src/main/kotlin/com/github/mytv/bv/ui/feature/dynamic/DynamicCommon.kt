@@ -50,6 +50,7 @@ import com.github.mytv.bv.ui.designsystem.component.AvatarShape
 import com.github.mytv.bv.ui.designsystem.component.BvAvatar
 import com.github.mytv.bv.ui.designsystem.component.BvButton
 import com.github.mytv.bv.ui.designsystem.component.toComposeShape
+import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.navigation.DynamicDetailRoute
@@ -424,7 +425,7 @@ internal fun DynamicUpRow(
                 isAll = true,
             )
         }
-        itemsIndexed(ups, key = { _, up -> up.mid }, contentType = { _, _ -> "up" }) { index, up ->
+        itemsIndexed(ups, key = { index, up -> safeLazyKey(up.mid, index) }, contentType = { _, _ -> "up" }) { index, up ->
             UpAvatarItem(
                 name = up.name,
                 avatar = up.avatar,
