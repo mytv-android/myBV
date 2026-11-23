@@ -25,7 +25,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.cio.writeChannel
-import io.ktor.utils.io.copyAndClose
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -51,6 +51,13 @@ object GithubApi {
 
     /** 测速结果缓存有效期：5 分钟，检查更新与下载各自独立。 */
     private const val PROBE_TTL_MS = 5 * 60 * 1000L
+
+    /**
+     * 应用内用镜像时的速度门槛：前 [MIRROR_SPEED_GATE_MS] 毫秒拉不到
+     * [MIRROR_SPEED_GATE_MIN_BYTES] 就换下一个站。
+     */
+    private const val MIRROR_SPEED_GATE_MS = 5_000L
+    private const val MIRROR_SPEED_GATE_MIN_BYTES = 1L shl 20
 
     private val apiProbe = ProbeCache()
     private val downloadProbe = ProbeCache()
@@ -196,9 +203,11 @@ object GithubApi {
     }
 
     /** 命中 5 分钟缓存就直接用，否则并发测速所有线路并按耗时排序。 */
-    private suspend fun routeOrder(target: String, cache: ProbeCache): List<String> {
+    private suspend fun routeOrder(target: String, cache: ProbeCache): List<MirrorRoute> {
         val selected = Prefs.githubMirror
         cache.get(selected)?.let { return it }
+        // 远程清单可能已经过期，顺手补一次；拉不到也不影响内置清单。
+        GithubRoutes.refreshListIfStale()
         val order = GithubRoutes.applyPinned(
             GithubRoutes.probeOrder(target) { probeReachable(it) },
             selected,
@@ -219,25 +228,26 @@ object GithubApi {
         private var expiresAt = 0L
 
         @Volatile
-        private var order: List<String>? = null
+        private var order: List<MirrorRoute>? = null
 
         /** 这份顺序对应的线路选择；用户换了线路，旧结果立刻作废。 */
         @Volatile
         private var mirror: GithubMirror? = null
 
-        fun get(selected: GithubMirror): List<String>? =
+        fun get(selected: GithubMirror): List<MirrorRoute>? =
             order?.takeIf { System.currentTimeMillis() < expiresAt && mirror == selected }
 
-        fun put(selected: GithubMirror, value: List<String>) {
+        fun put(selected: GithubMirror, value: List<MirrorRoute>) {
             order = value
             mirror = selected
             expiresAt = System.currentTimeMillis() + PROBE_TTL_MS
         }
 
-        fun promote(mirror: String) {
+        fun promote(mirrorId: String) {
             val current = order ?: return
-            if (current.firstOrNull() == mirror || mirror !in current) return
-            order = listOf(mirror) + current.filterNot { it == mirror }
+            val lead = current.firstOrNull { it.id == mirrorId } ?: return
+            if (current.first() == lead) return
+            order = listOf(lead) + current.filterNot { it == lead }
         }
     }
 
@@ -308,7 +318,31 @@ object GithubApi {
                             statusCode = response.status.value,
                         )
                     }
-                    response.bodyAsChannel().copyAndClose(file.writeChannel())
+                    // 速度门槛：前 5 秒拉不到 1 MB 就换下一个站。
+                    val channel = response.bodyAsChannel()
+                    val gateBytes = minOf(
+                        MIRROR_SPEED_GATE_MIN_BYTES,
+                        downloadAsset.size.takeIf { it > 0 }?.toLong() ?: MIRROR_SPEED_GATE_MIN_BYTES,
+                    )
+                    val gateDeadline = System.currentTimeMillis() + MIRROR_SPEED_GATE_MS
+                    var copied = 0L
+                    val gate = ByteArray(64 * 1024)
+                    file.outputStream().use { output ->
+                        while (true) {
+                            val read = channel.readAvailable(gate)
+                            if (read <= 0) break
+                            output.write(gate, 0, read)
+                            copied += read
+                            if (copied < gateBytes && System.currentTimeMillis() > gateDeadline) {
+                                // statusCode 传 null：HTTP 本身是 200，慢的是这条线路，
+                                // 要让 requestWithMirrors 继续换下一条，而不是当致命错误抛出。
+                                throw GithubApiException(
+                                    "前 ${MIRROR_SPEED_GATE_MS / 1000} 秒只下载了 ${copied / 1024} KB，低于速度门槛",
+                                )
+                            }
+                        }
+                        output.flush()
+                    }
                 }
                 check(file.startsWithZipMagic()) { "下载内容不是有效的 APK（可能被网络拦截）" }
                 downloadAsset.sha256?.let { expected ->
