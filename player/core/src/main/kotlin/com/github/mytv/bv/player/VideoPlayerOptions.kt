@@ -1,6 +1,8 @@
 package com.github.mytv.bv.player
 
 import com.github.mytv.bv.player.entity.AudioBalanceLevel
+import com.github.mytv.bv.player.entity.SpatialAudioMode
+import com.github.mytv.bv.player.entity.StereoUpmixSettings
 
 data class VideoPlayerOptions(
     val userAgent: String? = null,
@@ -14,5 +16,7 @@ data class VideoPlayerOptions(
      * 通过候选列表接口起播时，播放失败/频繁缓冲自动切下一个地址。
      * 仅影响新签名 [AbstractVideoPlayer.playUrl] 的列表重载，单地址调用行为不变，默认开启。
      */
-    val enableCdnFailover: Boolean = true
+    val enableCdnFailover: Boolean = true,
+    val spatialAudioMode: SpatialAudioMode = SpatialAudioMode.Off,
+    val stereoUpmixSettings: StereoUpmixSettings = StereoUpmixSettings(),
 )

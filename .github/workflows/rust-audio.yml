@@ -1,0 +1,113 @@
+name: Rust audio
+
+on:
+  pull_request:
+    paths:
+      - 'native/audio/**'
+      - 'native/encode/**'
+      - 'player/core/**'
+      - 'player/shared/**'
+      - 'app/shared/**'
+      - 'app/ui/**'
+      - 'tools/build_*audio.py'
+      - 'tools/build_eac3_jni.py'
+      - 'gradle/**'
+      - 'buildSrc/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - '.github/workflows/rust-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+      - name: Install Rust tools
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - name: Check formatting
+        run: cargo +stable fmt --manifest-path native/audio/Cargo.toml --check
+      - name: Test PCM kernels
+        run: cargo +stable test --manifest-path native/audio/Cargo.toml --locked --all-features
+      - name: Check native code
+        run: cargo +stable clippy --manifest-path native/audio/Cargo.toml --locked --all-features --all-targets -- -D warnings
+      - name: Check optional encoder bridge
+        run: |
+          cargo +stable fmt --manifest-path native/encode/Cargo.toml --check
+          cargo +stable clippy --manifest-path native/encode/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Exercise actual JNI boundary
+        run: python native/audio/tests/run_jni_smoke.py
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+      - name: Verify default Kotlin build
+        run: ./gradlew :player:core:testDebugUnitTest :player:core:assembleDebug :app:ui:compileDebugKotlin
+      - name: Install Rust Android targets
+        run: |
+          rustup target add aarch64-linux-android armv7-linux-androideabi
+          cargo install cargo-ndk --version 4.1.2 --locked
+      - name: Build host JNI library
+        run: cargo build --manifest-path native/audio/Cargo.toml --release --locked --features jni-bridge
+      - name: Exercise Kotlin adapter with real JNI
+        run: ./gradlew :player:core:testDebugUnitTest -Pmybv.testNativeAudio=native/audio/target/release
+      - name: Verify optional Rust packaging
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+          ./gradlew :player:core:assembleDebug -Pmybv.rustAudio=true
+      - name: Build optional LGPL E-AC-3 libraries
+        run: |
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/ffmpeg-8.0.1.tar.xz" https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz
+          echo '05ee0b03119b45c0bdb4df654b96802e909e0a752f72e4fe3794f487229e5a41  '"$RUNNER_TEMP/ffmpeg-8.0.1.tar.xz" | sha256sum --check
+          tar -xf "$RUNNER_TEMP/ffmpeg-8.0.1.tar.xz" -C "$RUNNER_TEMP"
+          python tools/build_ffmpeg_audio.py --source "$RUNNER_TEMP/ffmpeg-8.0.1" --ndk "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/28.2.13676358" --output "$RUNNER_TEMP/ffmpeg-android"
+      - name: Verify optional encoder packaging
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+          ./gradlew :player:core:assembleDebug -Pmybv.rustAudio=true -Pmybv.eac3Encoder=true -Pmybv.ffmpegPrefix="$RUNNER_TEMP/ffmpeg-android"
+      - name: Check minified optional audio integration
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+          ./gradlew :app:minifyLiteR8TestWithR8 -Pmybv.rustAudio=true -Pmybv.eac3Encoder=true -Pmybv.ffmpegPrefix="$RUNNER_TEMP/ffmpeg-android" --max-workers=2
+      - name: Check AAR contains both native ABIs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          aar = Path('player/core/build/outputs/aar/core-debug.aar')
+          with ZipFile(aar) as package:
+              for abi in ('arm64-v8a', 'armeabi-v7a'):
+                  assert f'jni/{abi}/libmybv_audio.so' in package.namelist(), abi
+                  for library in ('mybv_encode', 'avcodec_mybv', 'avutil_mybv', 'swresample_mybv'):
+                      assert f'jni/{abi}/lib{library}.so' in package.namelist(), (abi, library)
+          PY
+      - name: Verify disabling backend removes native libraries
+        run: |
+          ./gradlew :player:core:assembleDebug -Pmybv.rustAudio=false -Pmybv.eac3Encoder=false
+          python - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('player/core/build/outputs/aar/core-debug.aar') as package:
+              assert not any(name.endswith('/libmybv_audio.so') for name in package.namelist())
+              assert not any(name.endswith(('/libmybv_encode.so', '/libavcodec_mybv.so', '/libavutil_mybv.so', '/libswresample_mybv.so')) for name in package.namelist())
+          PY

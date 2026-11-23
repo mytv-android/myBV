@@ -1,0 +1,7 @@
+# Keep 64-bit Android libraries loadable on 16 KiB-page devices, including with
+# Rust toolchains whose Android target still defaults to smaller ELF alignment.
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
