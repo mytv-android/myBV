@@ -109,15 +109,21 @@ internal fun TouchDetailHost(
         }
     }
 
-    // 手机横过来自动全屏，竖回去退出；桌面半开时保持分区布局
-    LaunchedEffect(landscape, isPhoneDevice, inTabletop) {
-        if (!isPhoneDevice || inTabletop) return@LaunchedEffect
-        if (landscape) {
-            if (!holder.fullscreen && !lockedPortrait) holder.fullscreen = true
-        } else if (holder.fullscreen &&
-            activity?.requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        ) {
-            holder.fullscreen = false
+    // 手机横过来自动全屏，竖回去退出；桌面半开时保持分区布局。
+    // 在配置变化当帧的组合阶段立即同步 holder.fullscreen，避免先按非全屏布局渲染一帧、
+    // 下一帧才由 LaunchedEffect 触发 movableContentOf 二次搬移播放器导致 Surface 尺寸滞留。
+    val orientationSyncKey = Triple(landscape, isPhoneDevice, inTabletop)
+    var lastOrientationSyncKey by remember { mutableStateOf<Triple<Boolean, Boolean, Boolean>?>(null) }
+    if (lastOrientationSyncKey != orientationSyncKey) {
+        lastOrientationSyncKey = orientationSyncKey
+        if (isPhoneDevice && !inTabletop) {
+            if (landscape) {
+                if (!holder.fullscreen && !lockedPortrait) holder.fullscreen = true
+            } else if (holder.fullscreen &&
+                activity?.requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            ) {
+                holder.fullscreen = false
+            }
         }
     }
 

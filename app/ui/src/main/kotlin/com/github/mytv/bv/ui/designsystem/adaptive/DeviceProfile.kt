@@ -58,7 +58,11 @@ fun Context.isTelevision(): Boolean {
 @Composable
 fun rememberDeviceProfile(): DeviceProfile {
     val context = LocalContext.current
-    val widthDp = LocalConfiguration.current.screenWidthDp
+    val configuration = LocalConfiguration.current
+    val widthDp = configuration.screenWidthDp
+    // 手机（最短边 < 600dp）横过来时宽度可能达到或超过 840dp（如 20:9、sw384dp 设备横屏为 853dp），
+    // 仍按手机的 Medium 宽度档位处理，避免自动模式下横屏误切平板布局。
+    val isPhone = configuration.smallestScreenWidthDp < 600
     val tv = remember(context) { context.isTelevision() }
     val keyboard = LocalInputModeManager.current.inputMode == InputMode.Keyboard
     // 设置 → 外观与主题 → 界面布局：改了立刻整个 App 换布局，不用重启
@@ -66,7 +70,7 @@ fun rememberDeviceProfile(): DeviceProfile {
     val mode by modeFlow.collectAsStateWithLifecycle(initialValue = LayoutMode.Auto)
     val width = when {
         widthDp < 600 -> WidthClass.Compact
-        widthDp < 840 -> WidthClass.Medium
+        isPhone || widthDp < 840 -> WidthClass.Medium
         widthDp < 1200 -> WidthClass.Expanded
         else -> WidthClass.Large
     }

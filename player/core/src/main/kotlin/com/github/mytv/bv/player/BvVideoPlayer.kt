@@ -3,6 +3,7 @@ package com.github.mytv.bv.player
 import android.graphics.SurfaceTexture
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -63,6 +64,20 @@ fun BvVideoPlayer(
                         player = videoPlayer.mPlayer
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
                         useController = false
+                        // movableContentOf 跨容器搬移时，AndroidViewHolder 会将子 View 先移除再重新 addView，
+                        // 但 AndroidViewsHandler.requestLayout() 不会向上触发 AndroidComposeView 的 View 级布局遍历，
+                        // 导致 ViewRootImpl 跳过 performMeasure/performLayout、在 onPreDraw 中按旧尺寸创建 Surface。
+                        // 重新挂载到窗口时向宿主请求一次 View 布局遍历，确保在 onPreDraw 前按新容器尺寸完成测量与布局。
+                        addOnAttachStateChangeListener(
+                            object : View.OnAttachStateChangeListener {
+                                override fun onViewAttachedToWindow(v: View) {
+                                    v.requestLayout()
+                                    (v.parent?.parent?.parent as? View)?.requestLayout()
+                                }
+
+                                override fun onViewDetachedFromWindow(v: View) = Unit
+                            }
+                        )
                     }
                 },
                 update = { view ->
