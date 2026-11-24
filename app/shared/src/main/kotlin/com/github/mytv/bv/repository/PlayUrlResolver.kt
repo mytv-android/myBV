@@ -45,6 +45,9 @@ class PlayUrlResolver(
 ) {
     companion object {
         private val logger = KotlinLogging.logger { }
+
+        /** 只接受封口 `Range` 的 CDN 域名后缀，见 [openRangeRejectingHostsLast] */
+        private val OPEN_RANGE_REJECTING_HOST_SUFFIXES = listOf(".akamaized.net")
     }
 
     /**
@@ -303,10 +306,12 @@ class PlayUrlResolver(
             selectedAudioUrls = listOfNotNull(audioUrl)
         } else {
             // 如果未通过网络代理获得播放地址，才判断是否应该替换为官方 cdn
-            videoUrl = selectOfficialCdnUrl(videoUrls, preferOfficialCdn)
-            audioUrl = if (audioUrls.isNotEmpty()) selectOfficialCdnUrl(audioUrls, preferOfficialCdn) else null
-            selectedVideoUrls = candidateUrls(videoUrl, videoUrls)
-            selectedAudioUrls = audioUrl?.let { candidateUrls(it, audioUrls) } ?: emptyList()
+            val orderedVideoUrls = videoUrls.openRangeRejectingHostsLast()
+            val orderedAudioUrls = audioUrls.openRangeRejectingHostsLast()
+            videoUrl = selectOfficialCdnUrl(orderedVideoUrls, preferOfficialCdn)
+            audioUrl = if (orderedAudioUrls.isNotEmpty()) selectOfficialCdnUrl(orderedAudioUrls, preferOfficialCdn) else null
+            selectedVideoUrls = candidateUrls(videoUrl, orderedVideoUrls)
+            selectedAudioUrls = audioUrl?.let { candidateUrls(it, orderedAudioUrls) } ?: emptyList()
         }
         logger.fInfo { "Select audio: $audioItem" }
 
@@ -441,6 +446,20 @@ class PlayUrlResolver(
             null
         }
     }
+
+    /**
+     * 把拒绝开区间 `Range` 的 CDN 排到候选末尾（稳定排序，其余保持接口返回顺序）。
+     *
+     * 海外下发的 `upos-hz-mirrorakam.akamaized.net` 只接受封口的 `Range: bytes=a-b`，
+     * 对 `bytes=a-` 和不带 `Range` 的请求一律返回 403；而播放器用的是渐进式数据源，
+     * 只会发开区间请求。接口常把它排在视频或音频的首位，导致海外起播直接 403。
+     * 只有这一个候选时顺序不变，行为与之前一致。
+     */
+    internal fun List<String>.openRangeRejectingHostsLast(): List<String> =
+        sortedBy { url ->
+            val host = runCatching { URI(url).host }.getOrNull().orEmpty()
+            OPEN_RANGE_REJECTING_HOST_SUFFIXES.any { host.endsWith(it, ignoreCase = true) }
+        }
 
     private fun String.urlHost(): String =
         runCatching { with(URI(this)) { "$scheme://$authority" } }.getOrDefault(this)
