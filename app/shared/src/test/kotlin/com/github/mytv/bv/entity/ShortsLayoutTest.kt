@@ -22,7 +22,8 @@ class ShortsLayoutTest {
         video: Pair<Int, Int>,
         fold: ShortsFold? = null,
         comments: Boolean = false,
-    ) = resolveShortsLayout(w, h, fold, video.first, video.second, comments)
+        bottomInset: Float = 0f,
+    ) = resolveShortsLayout(w, h, fold, video.first, video.second, comments, bottomInset)
 
     private fun assertRect(expected: ShortsRect, actual: ShortsRect) {
         assertEquals(expected.x, actual.x, 0.5f, "x")
@@ -94,6 +95,33 @@ class ShortsLayoutTest {
         assertEquals(0.127f, l.crop, 0.005f)
         assertRect(ShortsRect(0f, 0f, 745f, 640f), l.video)
         assertTrue(l.zones.isEmpty())
+    }
+
+    @Test
+    fun `unfolded flat with taskbar covers above the taskbar`() {
+        // 实机：Pixel Fold 展开，容器 745×701，底部任务栏 60 不透明。宽度顶满后下方 142 里只有 82 露在任务栏上面；
+        // 铺满整个容器要裁 20.3%（超过上限），只铺到任务栏上沿裁 12.8%
+        val l = layout(745f, 701f, 1440 to 1080, bottomInset = 60f)
+        assertTrue(l.cover)
+        assertEquals(0.128f, l.crop, 0.005f)
+        assertRect(ShortsRect(0f, 0f, 745f, 641f), l.video)
+        assertTrue(l.zones.isEmpty())
+    }
+
+    @Test
+    fun `bottom inset does not squeeze a strip that still fits`() {
+        // 平板横屏 1200×800 + 24 手势条：信息条 125，露出 101，一行信息条（84）放得下
+        val l = layout(1200f, 800f, landscape, bottomInset = 24f)
+        assertFalse(l.cover)
+        val strip = assertNotNull(l.zone(ShortsZoneKind.InfoStrip))
+        assertEquals(125f, strip.rect.height, 0.5f)
+    }
+
+    @Test
+    fun `strip with comments needs its height above the bottom inset`() {
+        // 竖屏平板 800×1280 看横屏：画面 450，下方 830；任务栏 500 时只露出 330，不够再接评论
+        assertNotNull(layout(800f, 1280f, landscape).zone(ShortsZoneKind.InfoStripWithComments))
+        assertNotNull(layout(800f, 1280f, landscape, bottomInset = 500f).zone(ShortsZoneKind.InfoStrip))
     }
 
     @Test

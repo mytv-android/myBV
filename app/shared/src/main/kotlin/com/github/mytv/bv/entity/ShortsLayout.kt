@@ -11,12 +11,13 @@ import kotlin.math.roundToInt
  *    第二片放评论（竖向折痕）或控制（横向折痕）。铰链（occluding）一律留空。
  * 2. 画面贴边：竖屏视频高度顶满所在区域、贴左；横屏视频宽度顶满、贴顶。不居中、不加边距和圆角框。
  * 3. 能铺满就铺满：铺满所需的裁切，竖屏视频不超过 20%、横屏视频不超过 10% 时直接放大铺满，信息叠在画面上。
- *    画面下方剩的高度连一条信息条都放不下时（如折叠屏展开看 4:3），裁切放宽到 20% 也铺满，免得信息条被压成一道缝。
+ *    画面下方剩的高度（扣掉底部系统栏）连一条信息条都放不下时（如折叠屏展开看 4:3），裁切放宽到 20% 也铺满，
+ *    免得信息条被压成一道缝；铺满整个区域超过 20% 时，只铺到底部系统栏上沿（大屏的任务栏不透明，铺到它后面等于又裁掉一截）。
  * 4. 剩下的空间放内容：右侧剩余宽度 < 300 放竖排操作列，300～720 放信息栏，≥ 720 拆两栏（信息 + 评论）；
  *    下方剩余高度 < 360 放信息条，≥ 360 信息条下面接评论。
  * 5. 评论不盖画面：单区的横屏视频打开评论时，右侧让出 400 给评论，画面按 2、3 条重新贴边。
  *
- * 所有尺寸都是 dp，坐标相对传入的容器（已扣掉导航轨等外壳占用）。纯函数，便于单元测试。
+ * 所有尺寸都是 dp，坐标相对传入的容器（已扣掉导航轨等外壳占用；底部系统栏不扣，画面和区域背景铺到它后面）。纯函数，便于单元测试。
  */
 object ShortsLayoutRules {
     const val PORTRAIT_CROP_LIMIT = 0.2f
@@ -112,6 +113,7 @@ data class ShortsLayout(
  * @param videoWidth 视频宽，优先用播放器上报的值；0 表示未知
  * @param videoHeight 视频高；0 表示未知（未知时按 16:9 横屏处理，与 [ShortsItem.isPortrait] 一致）
  * @param commentsOpen 评论是否打开（只影响单区的横屏视频）
+ * @param bottomInset 容器底部被系统栏（任务栏、手势条）盖住的高度：贴底的区域里内容要让出这一截
  */
 fun resolveShortsLayout(
     width: Float,
@@ -120,9 +122,11 @@ fun resolveShortsLayout(
     videoWidth: Int,
     videoHeight: Int,
     commentsOpen: Boolean,
+    bottomInset: Float = 0f,
 ): ShortsLayout {
     val w = width.coerceAtLeast(1f)
     val h = height.coerceAtLeast(1f)
+    val bottom = bottomInset.coerceIn(0f, h / 2f)
     val known = videoWidth > 0 && videoHeight > 0
     val portrait = known && videoHeight > videoWidth
     val ratio = if (known) videoWidth.toFloat() / videoHeight else 16f / 9f
@@ -130,9 +134,11 @@ fun resolveShortsLayout(
     val panes = fold?.let { splitPanes(w, h, it) }
     if (fold != null && panes != null) {
         val (first, second, hinge) = panes
-        val placed = place(first, ratio, portrait)
+        // 竖向折痕两片都贴底；横向折痕的第一片在上半，碰不到底部系统栏
+        val firstInset = if (fold.vertical) bottom else 0f
+        val placed = place(first, ratio, portrait, firstInset)
         val zones = buildList {
-            placed.spare?.let { add(spareZone(it, placed.spareRight, commentsElsewhere = true)) }
+            placed.spare?.let { add(spareZone(it, placed.spareRight, commentsElsewhere = true, firstInset)) }
             add(ShortsZone(if (fold.vertical) ShortsZoneKind.Comments else ShortsZoneKind.Controls, second))
         }
         return ShortsLayout(
@@ -153,9 +159,9 @@ fun resolveShortsLayout(
         comments = ShortsRect(w - cw, 0f, cw, h)
         area = ShortsRect(0f, 0f, w - cw, h)
     }
-    val placed = place(area, ratio, portrait)
+    val placed = place(area, ratio, portrait, bottom)
     val zones = buildList {
-        placed.spare?.let { add(spareZone(it, placed.spareRight, commentsElsewhere = comments != null)) }
+        placed.spare?.let { add(spareZone(it, placed.spareRight, commentsElsewhere = comments != null, bottom)) }
         comments?.let { add(ShortsZone(ShortsZoneKind.Comments, it)) }
     }
     return ShortsLayout(
@@ -186,7 +192,8 @@ private data class Placed(
     val spareRight: Boolean,
 )
 
-private fun place(area: ShortsRect, ratio: Float, portrait: Boolean): Placed {
+/** @param bottomInset 这片区域底部被系统栏盖住的高度 */
+private fun place(area: ShortsRect, ratio: Float, portrait: Boolean, bottomInset: Float): Placed {
     val crop = shortsCoverCrop(area.width, area.height, ratio)
     val limit = if (portrait) ShortsLayoutRules.PORTRAIT_CROP_LIMIT else ShortsLayoutRules.LANDSCAPE_CROP_LIMIT
     if (crop <= limit) {
@@ -206,8 +213,17 @@ private fun place(area: ShortsRect, ratio: Float, portrait: Boolean): Placed {
     } else {
         // 区域比画面窄：宽度顶满、贴顶，下面剩空
         val vh = (area.width / ratio).roundToInt().toFloat().coerceAtMost(area.height)
-        if (area.height - vh < shortsStripMinHeight(area.width) && crop <= ShortsLayoutRules.SQUEEZED_CROP_LIMIT) {
-            return Placed(area, cover = true, crop = crop, spare = null, spareRight = false)
+        if (area.height - vh - bottomInset < shortsStripMinHeight(area.width)) {
+            if (crop <= ShortsLayoutRules.SQUEEZED_CROP_LIMIT) {
+                return Placed(area, cover = true, crop = crop, spare = null, spareRight = false)
+            }
+            if (bottomInset > 0f) {
+                val above = ShortsRect(area.x, area.y, area.width, area.height - bottomInset)
+                val aboveCrop = shortsCoverCrop(above.width, above.height, ratio)
+                if (aboveCrop <= ShortsLayoutRules.SQUEEZED_CROP_LIMIT) {
+                    return Placed(above, cover = true, crop = aboveCrop, spare = null, spareRight = false)
+                }
+            }
         }
         Placed(
             video = ShortsRect(area.x, area.y, area.width, vh),
@@ -227,7 +243,7 @@ fun shortsStripMinHeight(width: Float): Float =
         ShortsLayoutRules.STRIP_MIN_HEIGHT
     }
 
-private fun spareZone(spare: ShortsRect, right: Boolean, commentsElsewhere: Boolean): ShortsZone {
+private fun spareZone(spare: ShortsRect, right: Boolean, commentsElsewhere: Boolean, bottomInset: Float): ShortsZone {
     val kind = if (right) {
         when {
             spare.width < ShortsLayoutRules.ACTIONS_MAX_WIDTH -> ShortsZoneKind.Actions
@@ -236,7 +252,7 @@ private fun spareZone(spare: ShortsRect, right: Boolean, commentsElsewhere: Bool
             else -> ShortsZoneKind.InfoTabs
         }
     } else {
-        if (!commentsElsewhere && spare.height >= ShortsLayoutRules.STRIP_COMMENTS_MIN_HEIGHT) {
+        if (!commentsElsewhere && spare.height - bottomInset >= ShortsLayoutRules.STRIP_COMMENTS_MIN_HEIGHT) {
             ShortsZoneKind.InfoStripWithComments
         } else {
             ShortsZoneKind.InfoStrip

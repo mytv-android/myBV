@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -278,6 +279,8 @@ internal fun ShortsTablet(
     val fold = LocalWindowFold.current
     val startInset = LocalContentStartInset.current
     val safe = WindowInsets.safeDrawing.asPaddingValues()
+    // 布局只看系统栏：safeDrawing 含输入法，写评论时弹出键盘不该把画面改成另一种摆法
+    val barsBottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding().value
 
     BoxWithConstraints(
         Modifier
@@ -308,6 +311,7 @@ internal fun ShortsTablet(
                 right = safe.calculateRightPadding(LayoutDirection.Ltr).value,
                 bottom = safe.calculateBottomPadding().value,
             ),
+            barsBottom = barsBottom,
         )
 
         val currentSize = current?.let { pool.tabletVideoSize(it) } ?: IntSize.Zero
@@ -648,9 +652,11 @@ private data class TabletStage(
     val height: Float,
     val fold: ShortsFold?,
     val insets: TabletInsets,
+    /** 底部系统栏（任务栏、手势条）高度，不含输入法 */
+    val barsBottom: Float = 0f,
 ) {
     fun layoutFor(size: IntSize, commentsOpen: Boolean): ShortsLayout =
-        resolveShortsLayout(width, height, fold, size.width, size.height, commentsOpen)
+        resolveShortsLayout(width, height, fold, size.width, size.height, commentsOpen, barsBottom)
 
     /** 全屏：画面铺满整个容器（分区时只铺满第一片，仍然不跨折痕），其余区域隐藏 */
     fun fullscreen(layout: ShortsLayout): ShortsLayout {
