@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -98,6 +99,10 @@ internal class ShortsPlayerSlot(val index: Int) {
 
     var state by mutableStateOf(SlotState.Idle)
         internal set
+
+    /** 失败原因是付费内容且没有试看片段：重试没有意义，界面只提示 */
+    var needPay by mutableStateOf(false)
+        internal set
     var firstFrameRendered by mutableStateOf(false)
         internal set
     var isPlaying by mutableStateOf(false)
@@ -152,6 +157,7 @@ internal class ShortsPlayerSlot(val index: Int) {
 
     internal fun resetPlayback(item: ShortsItem?) {
         state = SlotState.Idle
+        needPay = false
         firstFrameRendered = false
         isPlaying = false
         buffering = false
@@ -319,7 +325,7 @@ internal class ShortsPlayerPool(
         if (aid != currentAid) return
         val slot = currentSlot ?: return
         if (slot.state == SlotState.Error) {
-            retry(aid)
+            if (!slot.needPay) retry(aid)
             return
         }
         userPaused = !userPaused
@@ -538,6 +544,7 @@ internal class ShortsPlayerPool(
                 applyRole(slot)
             }.onFailure {
                 logger.fWarn { "Resolve shorts play url failed: [av=${item.aid}] ${it.stackTraceToString()}" }
+                slot.needPay = it is PlayUrlResolver.NeedPayException
                 slot.state = SlotState.Error
             }
         }
@@ -763,6 +770,13 @@ internal fun ShortsVideo(
             if (showStatus && slot != null && pool.currentAid == item.aid) {
                 Box {
                     when {
+                        slot.state == SlotState.Error && slot.needPay -> Text(
+                            stringResource(R.string.shorts_need_pay),
+                            style = BvType.Body,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                        )
+
                         slot.state == SlotState.Error -> Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp),

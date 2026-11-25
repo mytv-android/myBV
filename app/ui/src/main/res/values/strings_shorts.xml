@@ -31,6 +31,7 @@
     <string name="shorts_no_comments">还没有评论</string>
     <string name="shorts_empty">暂时没有可以刷的视频</string>
     <string name="shorts_play_failed">播放失败</string>
+    <string name="shorts_need_pay">付费内容，不支持试看</string>
 
     <!-- 投币 / 收藏 对话框 -->
     <string name="shorts_coin_title">投币</string>

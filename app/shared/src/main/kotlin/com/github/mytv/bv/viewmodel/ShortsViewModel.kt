@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 刷刷（竖屏视频流）
@@ -102,6 +103,9 @@ class ShortsViewModel(
         private set
     var favoriteFoldersLoading by mutableStateOf(false)
         private set
+
+    /** 已确认转成剧集的稿件（aid → epid），之后直接按剧集取流；会在 IO 线程并发读写 */
+    private val pgcEpids = ConcurrentHashMap<Long, Int>()
 
     private val _events = MutableSharedFlow<ShortsEvent>(extraBufferCapacity = 16)
     val events: SharedFlow<ShortsEvent> = _events.asSharedFlow()
@@ -523,12 +527,43 @@ class ShortsViewModel(
         maxQuality: Resolution? = null,
         preferredQuality: Resolution? = null
     ): PlayUrlResolver.ResolvedPlayUrl = withContext(Dispatchers.IO) {
-        playUrlResolver.resolve(
-            aid = item.aid,
-            cid = item.cid,
-            maxQuality = maxQuality,
-            preferredQuality = preferredQuality ?: Prefs.defaultQuality
-        )
+        val quality = preferredQuality ?: Prefs.defaultQuality
+        pgcEpids[item.aid]?.let { epid ->
+            return@withContext playUrlResolver.resolve(
+                aid = item.aid,
+                cid = item.cid,
+                epid = epid,
+                maxQuality = maxQuality,
+                preferredQuality = quality
+            )
+        }
+        try {
+            playUrlResolver.resolve(
+                aid = item.aid,
+                cid = item.cid,
+                maxQuality = maxQuality,
+                preferredQuality = quality
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // 官方号上传的番剧 / 电影 / 纪录片会出现在 story 流里，但稿件已转成剧集，
+            // 普通视频的取流接口对它只回「啥都木有」；查详情拿到剧集 id 后按剧集取流（未购买时是试看片段）
+            val epid = runCatching {
+                videoDetailRepository.getVideoDetail(aid = item.aid, preferApiType = Prefs.apiType)
+            }.onFailure {
+                if (it is CancellationException) throw it
+            }.getOrNull()?.takeIf { it.redirectToEp }?.epid ?: throw e
+            logger.fInfo { "Shorts item av${item.aid} redirects to ep$epid, resolve as pgc" }
+            pgcEpids[item.aid] = epid
+            playUrlResolver.resolve(
+                aid = item.aid,
+                cid = item.cid,
+                epid = epid,
+                maxQuality = maxQuality,
+                preferredQuality = quality
+            )
+        }
     }
 
     /** 上报播放进度（与播放器相同的心跳接口），未登录时忽略 */
