@@ -83,6 +83,7 @@ import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.ui.designsystem.theme.CoverTheme
 import com.github.mytv.bv.ui.designsystem.theme.LocalThemePrefs
+import com.github.mytv.bv.ui.feature.video.CommentPicturesSheetWindow
 import com.github.mytv.bv.ui.navigation.LocalBottomBarPadding
 import com.github.mytv.bv.viewmodel.ShortsViewModel
 import dev.aaa1115910.biliapi.entity.Picture
@@ -462,6 +463,8 @@ private fun ShortsCommentSheet(
     onPictureClick: (List<Picture>, Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // 评论面板是独立窗口：面板打开期间，评论图片预览要改到它上面的窗口里，否则显示在面板下层
+    CommentPicturesSheetWindow()
     LaunchedEffect(item.aid) { comments.load(item.aid) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
