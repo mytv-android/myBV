@@ -14,10 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.entity.ShortsLayoutRules
 import com.github.mytv.bv.ui.designsystem.adaptive.DeviceLayout
 import com.github.mytv.bv.ui.designsystem.adaptive.LocalDeviceProfile
+import com.github.mytv.bv.ui.designsystem.adaptive.rememberFoldPanes
 import com.github.mytv.bv.ui.designsystem.theme.BvTheme
 import com.github.mytv.bv.ui.feature.video.CommentPicturePreviewerHost
 import com.github.mytv.bv.ui.feature.video.rememberCommentPictures
@@ -36,6 +39,7 @@ import org.koin.androidx.compose.koinViewModel
  *
  * ShortsViewModel、评论 ViewModel、播放器池、弹幕与播放菜单状态在这里创建，三种布局共享。
  * 手机（最短边 < 600dp）横过来时宽度可能超过 840dp，仍按手机处理（当前视频全屏横屏播放）。
+ * 折叠屏半开、双屏跨屏时不看宽度档位，一律走大屏外壳按折痕切区（如竖着半开的桌面姿态只有 700dp 宽）。
  */
 @Composable
 fun ShortsScreen(nav: NavController, route: ShortsRoute) {
@@ -59,7 +63,13 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
     }
     ShortsEventToasts(vm)
 
-    val layout = if (!profile.isTv && configuration.smallestScreenWidthDp < 600) DeviceLayout.Phone else profile.layout
+    val foldPanes = rememberFoldPanes()
+    val split = !profile.isTv && foldPanes?.isUsable(ShortsLayoutRules.MIN_PANE.dp) == true
+    val layout = when {
+        split -> DeviceLayout.Tablet
+        !profile.isTv && configuration.smallestScreenWidthDp < 600 -> DeviceLayout.Phone
+        else -> profile.layout
+    }
     // 弹幕与播放菜单三端共用一份状态；弹幕区域默认值手机「少」，其余半屏
     val danmaku = rememberShortsDanmaku(isPhone = layout == DeviceLayout.Phone)
     ShortsDanmakuLoadEffect(danmaku, pool, vm.items)

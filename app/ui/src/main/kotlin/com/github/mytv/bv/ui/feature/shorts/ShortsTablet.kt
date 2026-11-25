@@ -1258,7 +1258,8 @@ private fun TabletZoneBox(
                 Modifier
                     .fillMaxSize()
                     .tabletWheel(PointerEventPass.Main, ui.go),
-                contentAlignment = Alignment.CenterStart,
+                // 原型 `.blk.strip`：贴着画面下沿往下排，条高时不居中（否则画面和信息之间空出一大块）
+                contentAlignment = Alignment.TopStart,
             ) {
                 // 信息条可能很矮：展开简介后在条内滚动
                 TabletStrip(
@@ -1268,7 +1269,7 @@ private fun TabletZoneBox(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 12.dp),
                 )
             }
 
@@ -1329,18 +1330,31 @@ private fun TabletStrip(item: ShortsItem, ui: TabletUi, wide: Boolean, modifier:
             TabletActionRow(item = item, ui = ui, showComments = true)
         }
     } else {
-        Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TabletUpRow(item = item, ui = ui, modifier = Modifier.widthIn(max = 260.dp))
-                TabletStripTitle(item = item, ui = ui, collapsedLines = 1, modifier = Modifier.weight(1f))
+        BoxWithConstraints(modifier) {
+            // 原型 `.g-row` 是换行排、标题至少 220：折叠屏半开时左半很窄，标题放不下就单独占一行，
+            // 否则会被 UP 主那一行挤成一串省略号
+            val titleInline = maxWidth - StripUpMaxWidth - 16.dp >= StripTitleMinWidth
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (titleInline) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TabletUpRow(item = item, ui = ui, modifier = Modifier.widthIn(max = StripUpMaxWidth))
+                        TabletStripTitle(item = item, ui = ui, collapsedLines = 1, modifier = Modifier.weight(1f))
+                    }
+                } else {
+                    TabletUpRow(item = item, ui = ui, modifier = Modifier.fillMaxWidth())
+                    TabletStripTitle(item = item, ui = ui, collapsedLines = 2)
+                }
+                TabletActionRow(item = item, ui = ui, showComments = true)
             }
-            TabletActionRow(item = item, ui = ui, showComments = true)
         }
     }
 }
+
+private val StripUpMaxWidth = 260.dp
+private val StripTitleMinWidth = 220.dp
 
 @Composable
 private fun TabletStripTitle(item: ShortsItem, ui: TabletUi, collapsedLines: Int, modifier: Modifier = Modifier) {
