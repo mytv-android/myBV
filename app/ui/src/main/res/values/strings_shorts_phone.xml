@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 刷刷 · 手机（重设计） -->
+    <string name="shorts_phone_swipe_hint">UP 主页改为点头像</string>
+    <string name="shorts_phone_fullscreen">全屏观看</string>
+    <string name="shorts_phone_exit_fullscreen">退出全屏</string>
+    <string name="shorts_phone_fullscreen_hint">上下滑切换 · 单击继续</string>
+    <string name="shorts_phone_views">%1$s 播放</string>
+    <string name="shorts_phone_close">关闭</string>
+</resources>

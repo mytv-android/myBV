@@ -15,6 +15,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.media3.common.VideoSize
 import coil.compose.AsyncImage
 import dev.aaa1115910.biliapi.entity.ApiType
 import com.github.mytv.bv.appui.R
+import com.github.mytv.bv.entity.ShortsAfterEnd
 import com.github.mytv.bv.entity.ShortsItem
 import com.github.mytv.bv.player.VideoPlayerOptions
 import com.github.mytv.bv.player.entity.Resolution
@@ -111,6 +113,15 @@ internal class ShortsPlayerSlot(val index: Int) {
     var videoHeight by mutableIntStateOf(0)
         internal set
 
+    /** 当前地址的清晰度与可选清晰度（解析成功后才有） */
+    var quality by mutableStateOf<Resolution?>(null)
+        internal set
+    var availableQualities by mutableStateOf<List<Resolution>>(emptyList())
+        internal set
+
+    /** 换画质后重新加载：prepare 之后跳回这个位置；-1 表示不跳 */
+    internal var pendingSeekMs = -1L
+
     internal fun attach(view: TextureView) {
         views.remove(view)
         views.add(view)
@@ -150,6 +161,9 @@ internal class ShortsPlayerSlot(val index: Int) {
         videoHeight = item?.height ?: 0
         retried = false
         played = false
+        quality = null
+        availableQualities = emptyList()
+        pendingSeekMs = -1L
     }
 }
 
@@ -159,7 +173,8 @@ internal class ShortsPlayerSlot(val index: Int) {
  * - 第 i 页用一个实例播放；i+1 prepare 后静音暂停；i−1 保留暂停；超出范围的实例 stop 后复用。
  * - 移动网络（[bind] 的 maxQuality 返回非 null）：清晰度上限 720P，只预准备下一条，且等当前条缓冲好再预准备。
  * - 页面不可见：全部暂停并上报进度（[onHidden]），停止后释放当前条之外的实例（[releaseInactive]）。
- * - 刷刷默认关闭弹幕（池里不创建弹幕播放器）。
+ * - 倍速（[speed]）本次会话跨条保持，长按 2× 临时叠加；播完后循环本条或翻到下一条（[afterEnd]）。
+ * - 弹幕层由 ShortsDanmaku 单独管理，只跟当前条；进度跳变时 [seekSerial] 加一，弹幕据此重新对齐。
  *
  * 由 [ShortsPlayerPoolHolder]（与 ShortsViewModel 同一个 ViewModelStore）持有，导航离开再回来时当前条还在。
  */
@@ -188,6 +203,27 @@ internal class ShortsPlayerPool(
     /** 长按 2 倍速中 */
     var boosting by mutableStateOf(false)
         private set
+
+    /** 菜单里选的倍速：本次会话跨条保持，长按 2× 临时盖在上面 */
+    var speed by mutableFloatStateOf(1f)
+        private set
+
+    /** 播完后：循环本条 / 自动下一条（存在 Prefs.shortsAfterEnd） */
+    var afterEnd by mutableStateOf(runCatching { Prefs.shortsAfterEnd }.getOrDefault(ShortsAfterEnd.Loop))
+        private set
+
+    /** 菜单里选的画质：本次会话，之后的视频也按它；null 表示用设置里的默认画质（移动网络 720P 上限） */
+    var preferredQuality by mutableStateOf<Resolution?>(null)
+        private set
+
+    /** 进度跳变（拖动、快进退、循环回到开头、换画质）时加一 */
+    var seekSerial by mutableIntStateOf(0)
+        private set
+
+    /**
+     * 当前条播完且 [afterEnd] 为「自动下一条」时调用，由界面翻到下一条；返回 false（已经是最后一条）时从头循环。
+     */
+    var onCurrentEnded: (() -> Boolean)? = null
 
     val currentSlot: ShortsPlayerSlot? get() = currentAid?.let { slotFor(it) }
 
@@ -309,10 +345,64 @@ internal class ShortsPlayerPool(
     fun seekTo(aid: Long, positionMs: Long) {
         if (aid != currentAid) return
         val slot = currentSlot ?: return
-        val target = positionMs.coerceAtLeast(0L)
+        val duration = slot.durationMs
+        val target = if (duration > 0) positionMs.coerceIn(0L, duration) else positionMs.coerceAtLeast(0L)
         slot.player?.seekTo(target)
         slot.positionMs = target
+        seekSerial++
     }
+
+    /** 菜单倍速（0.5～2） */
+    // speed 是委托属性，private set 也会生成 setSpeed(F)V，换个 JVM 名避免签名冲突
+    @JvmName("changeSpeed")
+    fun setSpeed(value: Float) {
+        val v = value.coerceIn(0.25f, 4f)
+        if (speed == v) return
+        speed = v
+        currentSlot?.let { applyRole(it) }
+    }
+
+    // 同 setSpeed：避免与 afterEnd 的 private setter 撞 JVM 签名
+    @JvmName("changeAfterEnd")
+    fun setAfterEnd(value: ShortsAfterEnd) {
+        if (afterEnd == value) return
+        afterEnd = value
+        runCatching { Prefs.shortsAfterEnd = value }
+        slots.forEach { slot -> slot.player?.mPlayer?.repeatMode = repeatMode() }
+    }
+
+    /**
+     * 换画质：重新解析当前条（回到原进度），相邻条按新画质重新准备。
+     * null 表示回到设置里的默认画质。
+     */
+    fun setQuality(value: Resolution?) {
+        if (preferredQuality == value) return
+        preferredQuality = value
+        val current = currentSlot
+        slots.forEach { slot ->
+            if (slot.item == null || slot.state == SlotState.Idle) return@forEach
+            slot.loadJob?.cancel()
+            slot.loadJob = null
+            if (slot === current) {
+                slot.pendingSeekMs = slot.player?.mPlayer?.currentPosition ?: slot.positionMs
+            }
+            slot.retried = false
+            slot.state = SlotState.Idle
+        }
+        if (lastItems.isNotEmpty()) update(lastIndex, lastItems)
+    }
+
+    /** 弹幕取进度：直接读播放器（弹幕每帧在主线程调用） */
+    fun positionNow(aid: Long): Long {
+        val slot = slotFor(aid) ?: return 0L
+        return slot.player?.mPlayer?.currentPosition?.coerceAtLeast(0L) ?: slot.positionMs
+    }
+
+    fun isPlayingNow(aid: Long): Boolean =
+        aid == currentAid && slotFor(aid)?.player?.mPlayer?.isPlaying == true
+
+    fun speedNow(aid: Long): Float =
+        slotFor(aid)?.player?.mPlayer?.playbackParameters?.speed ?: 1f
 
     // ---------------- 可见性 ----------------
 
@@ -415,9 +505,11 @@ internal class ShortsPlayerPool(
         slot.state = SlotState.Loading
         val cap = maxQuality()
         val assignId = slot.assignId
+        val preferred = preferredQuality
         slot.loadJob = scope.launch {
             val result = try {
-                Result.success(vm.resolvePlayUrl(item, cap))
+                // 菜单里选过画质时以它为准，不再套移动网络上限
+                Result.success(vm.resolvePlayUrl(item, if (preferred != null) null else cap, preferred))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -432,8 +524,16 @@ internal class ShortsPlayerPool(
                 }
                 // 每条视频有自己的响度元数据；没有元数据时处理器旁路
                 player.setAudioLoudness(url.playData.volume?.toAudioLoudness())
+                slot.quality = url.quality
+                slot.availableQualities = url.availableQualities
                 player.playUrl(url.videoUrl, url.audioUrl)
                 player.prepare()
+                slot.pendingSeekMs.takeIf { it > 0 }?.let { position ->
+                    player.seekTo(position)
+                    slot.positionMs = position
+                    if (slot.item?.aid == currentAid) seekSerial++
+                }
+                slot.pendingSeekMs = -1L
                 slot.state = SlotState.Preparing
                 applyRole(slot)
             }.onFailure {
@@ -448,7 +548,7 @@ internal class ShortsPlayerPool(
         val player = ExoMediaPlayer(context, options)
         val listener = listenerFor(slot)
         player.mPlayer?.let { exo ->
-            exo.repeatMode = Player.REPEAT_MODE_ONE
+            exo.repeatMode = repeatMode()
             exo.playWhenReady = false
             exo.addListener(listener)
         }
@@ -463,12 +563,29 @@ internal class ShortsPlayerPool(
         val aid = slot.item?.aid
         if (aid != null && aid == currentAid) {
             exo.volume = 1f
-            exo.setPlaybackSpeed(if (boosting) 2f else 1f)
+            exo.setPlaybackSpeed(if (boosting) maxOf(2f, speed) else speed)
+            // 「自动下一条」播完会停在结尾；翻回来时从头播
+            if (exo.playbackState == Player.STATE_ENDED) exo.seekTo(0L)
             exo.playWhenReady = visible && !userPaused
         } else {
             exo.playWhenReady = false
             exo.volume = 0f
             if (exo.playbackParameters.speed != 1f) exo.setPlaybackSpeed(1f)
+        }
+    }
+
+    private fun repeatMode(): Int =
+        if (afterEnd == ShortsAfterEnd.Loop) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+
+    private fun onCurrentEnded(slot: ShortsPlayerSlot) {
+        val moved = afterEnd == ShortsAfterEnd.Next && onCurrentEnded?.invoke() == true
+        if (!moved) {
+            // 最后一条，或者界面没接：从头循环
+            slot.player?.mPlayer?.let { exo ->
+                exo.seekTo(0L)
+                exo.playWhenReady = visible && !userPaused
+            }
+            seekSerial++
         }
     }
 
@@ -502,6 +619,10 @@ internal class ShortsPlayerPool(
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             slot.buffering = playbackState == Player.STATE_BUFFERING
+            if (playbackState == Player.STATE_ENDED) {
+                val aid = slot.item?.aid
+                if (aid != null && aid == currentAid) onCurrentEnded(slot)
+            }
             if (playbackState == Player.STATE_READY) {
                 slot.player?.mPlayer?.duration?.takeIf { it > 0 }?.let { slot.durationMs = it }
                 if (slot.state == SlotState.Preparing) {
@@ -521,6 +642,17 @@ internal class ShortsPlayerPool(
 
         override fun onPlayerError(error: PlaybackException) {
             onSlotError(slot, error)
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int,
+        ) {
+            // 循环播放回到开头：弹幕要跟着回去
+            if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION && slot.item?.aid == currentAid) {
+                seekSerial++
+            }
         }
     }
 

@@ -55,4 +55,39 @@
     <string name="shorts_toast_failed">操作失败：%1$s</string>
     <string name="shorts_toast_login">请先登录</string>
     <string name="shorts_toast_load_failed">加载失败：%1$s</string>
+
+    <!-- 进度、暂停、弹幕、播放菜单（重设计） -->
+    <string name="shorts_progress">进度</string>
+    <string name="shorts_paused">已暂停</string>
+    <string name="shorts_seek_forward">+%1$d 秒</string>
+    <string name="shorts_seek_backward">-%1$d 秒</string>
+    <string name="shorts_danmaku_glyph">弹</string>
+    <string name="shorts_danmaku">弹幕</string>
+    <string name="shorts_danmaku_on">弹幕已开</string>
+    <string name="shorts_danmaku_off">弹幕已关</string>
+    <string name="shorts_danmaku_area_few">少</string>
+    <string name="shorts_danmaku_area_half">半屏</string>
+    <string name="shorts_danmaku_area_full">全屏</string>
+    <string name="shorts_danmaku_density_sparse">稀疏</string>
+    <string name="shorts_danmaku_density_standard">标准</string>
+    <string name="shorts_danmaku_density_dense">密集</string>
+    <string name="shorts_danmaku_type_rolling">滚动</string>
+    <string name="shorts_danmaku_type_top">顶部</string>
+    <string name="shorts_danmaku_type_bottom">底部</string>
+    <string name="shorts_after_end_loop">循环本条</string>
+    <string name="shorts_after_end_next">自动下一条</string>
+    <string name="shorts_menu">播放设置</string>
+    <string name="shorts_menu_danmaku">弹幕</string>
+    <string name="shorts_menu_danmaku_area">显示区域</string>
+    <string name="shorts_menu_danmaku_opacity">不透明度 %1$d%%</string>
+    <string name="shorts_menu_danmaku_scale">字号 %1$d%%</string>
+    <string name="shorts_menu_danmaku_density">密度</string>
+    <string name="shorts_menu_danmaku_types">类型</string>
+    <string name="shorts_menu_speed">倍速</string>
+    <string name="shorts_menu_quality">画质</string>
+    <string name="shorts_menu_after_end">播完后</string>
+    <string name="shorts_menu_toview">稍后再看</string>
+    <string name="shorts_menu_toview_added">已加稍后再看</string>
+    <string name="shorts_menu_detail">视频详情</string>
+    <string name="shorts_tab_settings">设置</string>
 </resources>

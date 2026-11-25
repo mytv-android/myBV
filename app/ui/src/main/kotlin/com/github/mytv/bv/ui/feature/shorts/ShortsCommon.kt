@@ -82,7 +82,6 @@ import com.github.mytv.bv.ui.designsystem.component.tvConfirmClick
 import com.github.mytv.bv.ui.designsystem.component.FullPageLoading
 import com.github.mytv.bv.ui.designsystem.component.LoadMoreIndicator
 import com.github.mytv.bv.ui.designsystem.component.PageMessage
-import com.github.mytv.bv.ui.designsystem.component.WavyProgress
 import com.github.mytv.bv.ui.designsystem.component.safeLazyKey
 import com.github.mytv.bv.ui.designsystem.focus.TvColumnPivot
 import com.github.mytv.bv.ui.designsystem.focus.bvFocus
@@ -649,51 +648,6 @@ internal fun SpeedBoostPill(visible: Boolean, modifier: Modifier = Modifier) {
             color = Color.White,
         )
     }
-}
-
-/**
- * 当前视频的波浪进度条。[seekable] 时可拖动；[overrideMs] 用于电视快进快退预览。
- */
-@Composable
-internal fun ShortsProgress(
-    pool: ShortsPlayerPool,
-    item: ShortsItem,
-    modifier: Modifier = Modifier,
-    seekable: Boolean = true,
-    overrideMs: Long? = null,
-) {
-    val slot = pool.slotFor(item.aid)
-    var seeking by remember(item.aid) { mutableStateOf<Float?>(null) }
-    val duration: () -> Long = {
-        slot?.durationMs?.takeIf { it > 0 } ?: (item.duration * 1000L)
-    }
-    val onSeek: ((Float) -> Unit)? = if (seekable) {
-        { value: Float -> seeking = value }
-    } else {
-        null
-    }
-    val onSeekFinished: (() -> Unit)? = if (seekable) {
-        {
-            seeking?.let { pool.seekTo(item.aid, (it * duration()).toLong()) }
-            seeking = null
-        }
-    } else {
-        null
-    }
-    WavyProgress(
-        // 位置只在 Draw 阶段读取：播放器每 100ms 更新 positionMs 不会触发重组
-        progress = {
-            seeking ?: run {
-                val total = duration()
-                val position = overrideMs ?: slot?.positionMs ?: 0L
-                if (total > 0) position.toFloat() / total else 0f
-            }
-        },
-        modifier = modifier,
-        playing = slot?.isPlaying == true,
-        onSeek = onSeek,
-        onSeekFinished = onSeekFinished,
-    )
 }
 
 /** 列表为空时：加载中 / 失败或没有内容（可重试） */

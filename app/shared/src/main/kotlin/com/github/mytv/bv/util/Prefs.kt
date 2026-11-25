@@ -22,6 +22,8 @@ import com.github.mytv.bv.BuildConfig
 import com.github.mytv.bv.entity.DarkMode
 import com.github.mytv.bv.entity.LayoutMode
 import com.github.mytv.bv.entity.PlayerType
+import com.github.mytv.bv.entity.ShortsAfterEnd
+import com.github.mytv.bv.entity.ShortsDanmakuArea
 import com.github.mytv.bv.entity.ThemePrefs
 import com.github.mytv.bv.entity.ThemeSource
 import com.github.mytv.bv.entity.ThemeType
@@ -542,6 +544,53 @@ object Prefs {
             dsm.editPreference(PrefKeys.prefPlayerSkipSilenceKey, value)
         }
 
+    /**
+     * 刷刷弹幕开关。没设置过（-1）时沿用主播放器的默认开关。
+     */
+    var shortsDanmakuEnabled: Boolean
+        get() = runBlocking {
+            when (dsm.getPreferenceFlow(PrefKeys.prefShortsDanmakuEnabledRequest).first()) {
+                0 -> false
+                1 -> true
+                else -> defaultDanmakuEnabled
+            }
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefShortsDanmakuEnabledKey, if (value) 1 else 0)
+        }
+
+    /** 刷刷弹幕区域；没设置过时返回 null，由界面按设备取默认值（手机「少」，其余半屏） */
+    var shortsDanmakuArea: ShortsDanmakuArea?
+        get() = runBlocking {
+            ShortsDanmakuArea.entries.getOrNull(
+                dsm.getPreferenceFlow(PrefKeys.prefShortsDanmakuAreaRequest).first()
+            )
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefShortsDanmakuAreaKey, value?.ordinal ?: -1)
+        }
+
+    /** 刷刷播完后：循环本条（默认）/ 自动下一条 */
+    var shortsAfterEnd: ShortsAfterEnd
+        get() = runBlocking {
+            ShortsAfterEnd.entries.getOrNull(
+                dsm.getPreferenceFlow(PrefKeys.prefShortsAfterEndRequest).first()
+            ) ?: ShortsAfterEnd.Loop
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(PrefKeys.prefShortsAfterEndKey, value.ordinal)
+        }
+
+    /** 电视刷刷的按键提示是否已经显示过 */
+    var shortsTvHintShown: Boolean
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefShortsTvHintShownRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefShortsTvHintShownKey, value) }
+
+    /** 手机刷刷「UP 主页改为点头像」的提示是否已经显示过 */
+    var shortsSwipeHintShown: Boolean
+        get() = runBlocking { dsm.getPreferenceFlow(PrefKeys.prefShortsSwipeHintShownRequest).first() }
+        set(value) = runBlocking { dsm.editPreference(PrefKeys.prefShortsSwipeHintShownKey, value) }
+
     /** 自动跳过 PGC 片头片尾，默认关闭（照搬 fantasy） */
     var skipPgcIntroOutro: Boolean
         get() = runBlocking {
@@ -732,6 +781,11 @@ object PrefKeys {
     val prefEnableFfmpegAudioRenderer = booleanPreferencesKey("enable_ffmpeg_audio_renderer")
     val prefPlayerAudioBalanceLevelKey = intPreferencesKey("player_audio_balance_level")
     val prefPlayerSkipSilenceKey = booleanPreferencesKey("player_skip_silence")
+    val prefShortsDanmakuEnabledKey = intPreferencesKey("shorts_danmaku_enabled")
+    val prefShortsDanmakuAreaKey = intPreferencesKey("shorts_danmaku_area")
+    val prefShortsAfterEndKey = intPreferencesKey("shorts_after_end")
+    val prefShortsTvHintShownKey = booleanPreferencesKey("shorts_tv_hint_shown")
+    val prefShortsSwipeHintShownKey = booleanPreferencesKey("shorts_swipe_hint_shown")
     val prefSkipPgcIntroOutroKey = booleanPreferencesKey("skip_pgc_intro_outro")
     val prefShowPlayerLogsKey = booleanPreferencesKey("show_player_logs")
     val prefShowDebugInfoKey = booleanPreferencesKey("show_debug_info")
@@ -826,6 +880,11 @@ object PrefKeys {
     val prefPlayerAudioBalanceLevelRequest =
         PreferenceRequest(prefPlayerAudioBalanceLevelKey, AudioBalanceLevel.Off.ordinal)
     val prefPlayerSkipSilenceRequest = PreferenceRequest(prefPlayerSkipSilenceKey, false)
+    val prefShortsDanmakuEnabledRequest = PreferenceRequest(prefShortsDanmakuEnabledKey, -1)
+    val prefShortsDanmakuAreaRequest = PreferenceRequest(prefShortsDanmakuAreaKey, -1)
+    val prefShortsAfterEndRequest = PreferenceRequest(prefShortsAfterEndKey, 0)
+    val prefShortsTvHintShownRequest = PreferenceRequest(prefShortsTvHintShownKey, false)
+    val prefShortsSwipeHintShownRequest = PreferenceRequest(prefShortsSwipeHintShownKey, false)
     val prefSkipPgcIntroOutroRequest = PreferenceRequest(prefSkipPgcIntroOutroKey, false)
     val prefShowPlayerLogsRequest = PreferenceRequest(prefShowPlayerLogsKey, true)
     val prefShowDebugInfoRequest = PreferenceRequest(prefShowDebugInfoKey, false)

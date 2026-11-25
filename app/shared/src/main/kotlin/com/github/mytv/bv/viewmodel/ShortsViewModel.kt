@@ -516,12 +516,19 @@ class ShortsViewModel(
      * 解析播放地址（供刷刷播放器池使用）
      *
      * @param maxQuality 清晰度上限，移动网络下可传 [PlayUrlResolver.recommendedMaxQuality] 的结果
+     * @param preferredQuality 首选清晰度：刷刷菜单里选过画质时用它，否则用设置里的默认画质
      */
     suspend fun resolvePlayUrl(
         item: ShortsItem,
-        maxQuality: Resolution? = null
+        maxQuality: Resolution? = null,
+        preferredQuality: Resolution? = null
     ): PlayUrlResolver.ResolvedPlayUrl = withContext(Dispatchers.IO) {
-        playUrlResolver.resolve(aid = item.aid, cid = item.cid, maxQuality = maxQuality)
+        playUrlResolver.resolve(
+            aid = item.aid,
+            cid = item.cid,
+            maxQuality = maxQuality,
+            preferredQuality = preferredQuality ?: Prefs.defaultQuality
+        )
     }
 
     /** 上报播放进度（与播放器相同的心跳接口），未登录时忽略 */

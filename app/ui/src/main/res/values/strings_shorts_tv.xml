@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 电视刷刷（设计稿「电视」一节） -->
+    <string name="shorts_tv_stage">刷刷画面</string>
+    <string name="shorts_tv_up_next">接下来</string>
+    <string name="shorts_tv_liked">已点赞</string>
+    <string name="shorts_tv_coined">已投币</string>
+    <string name="shorts_tv_favoured">已收藏</string>
+
+    <!-- 信息列底部的按键提示 -->
+    <string name="shorts_tv_key_updown">↑↓</string>
+    <string name="shorts_tv_key_leftright">←→</string>
+    <string name="shorts_tv_key_ok">OK</string>
+    <string name="shorts_tv_key_ok_long">长按 OK</string>
+    <string name="shorts_tv_key_menu">≡</string>
+    <string name="shorts_tv_hint_switch">切换</string>
+    <string name="shorts_tv_hint_seek">快进退</string>
+    <string name="shorts_tv_hint_pause">暂停</string>
+    <string name="shorts_tv_hint_panel">面板</string>
+
+    <!-- 刷刷面板 -->
+    <string name="shorts_tv_panel">刷刷面板</string>
+    <string name="shorts_tv_cat_interact">互动</string>
+    <string name="shorts_tv_cat_picture">画面</string>
+    <string name="shorts_tv_cat_playback">播放</string>
+    <string name="shorts_tv_follow_up">关注 UP 主</string>
+    <string name="shorts_tv_danmaku_show">显示弹幕</string>
+    <string name="shorts_tv_danmaku_opacity">不透明度</string>
+    <string name="shorts_tv_danmaku_scale">字号</string>
+
+    <!-- 首次进入的按键提示 -->
+    <string name="shorts_tv_guide_title">刷刷遥控器操作</string>
+    <string name="shorts_tv_guide_key_updown">↑ ↓</string>
+    <string name="shorts_tv_guide_key_channel">频道 ±</string>
+    <string name="shorts_tv_guide_key_leftright">← →</string>
+    <string name="shorts_tv_guide_key_ok">OK</string>
+    <string name="shorts_tv_guide_key_ok_long">长按 OK</string>
+    <string name="shorts_tv_guide_key_menu">菜单键</string>
+    <string name="shorts_tv_guide_key_back">返回</string>
+    <string name="shorts_tv_guide_switch">上一条 / 下一条</string>
+    <string name="shorts_tv_guide_seek">快退 / 快进 5 秒，连按加速</string>
+    <string name="shorts_tv_guide_ok">暂停 / 继续；快进中立即跳转</string>
+    <string name="shorts_tv_guide_panel">打开刷刷面板：互动、评论、弹幕、画面、播放</string>
+    <string name="shorts_tv_guide_back">依次关闭面板、取消快进、呼出导航栏</string>
+    <string name="shorts_tv_guide_continue">按 OK 键（或点一下屏幕）继续</string>
+</resources>

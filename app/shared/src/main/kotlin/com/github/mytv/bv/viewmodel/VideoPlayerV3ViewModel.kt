@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.aaa1115910.biliapi.entity.ApiType
@@ -46,6 +44,7 @@ import com.github.mytv.bv.player.entity.VideoCodec
 import com.github.mytv.bv.player.entity.VideoListItemData
 import com.github.mytv.bv.player.entity.VideoListInteractiveNode
 import com.github.mytv.bv.player.entity.toAudioLoudness
+import com.github.mytv.bv.repository.loadEngineDanmakus
 import com.github.mytv.bv.repository.PlayUrlResolver
 import com.github.mytv.bv.repository.VideoInfoRepository
 import com.github.mytv.bv.util.GeetestSession
@@ -719,27 +718,8 @@ class VideoPlayerV3ViewModel(
 
     suspend fun loadDanmaku(cid: Long) {
         runCatching {
-            // App 模式走 gRPC 分段弹幕，Web 模式走 XML；仓库内部已做回退
-            val danmakuList = videoPlayRepository.getDanmakuData(
-                aid = currentAid,
-                cid = cid,
-                preferApiType = Prefs.apiType
-            ).map {
-                Danmaku(
-                    dmid = it.dmid,
-                    positionMs = (it.time * 1000).toInt(),
-                    text = it.text,
-                    // 文档 §8.1：4 = 底部固定，5 = 顶部固定
-                    type = when (it.type) {
-                        4 -> Danmaku.MODE_BOTTOM
-                        5 -> Danmaku.MODE_TOP
-                        else -> Danmaku.MODE_SCROLL
-                    },
-                    textSize = it.size,
-                    color = Color(it.color).toArgb(),
-                    level = it.level,
-                )
-            }
+            // App 模式走 gRPC 分段弹幕，Web 模式走 XML；与刷刷共用同一个加载器
+            val danmakuList = videoPlayRepository.loadEngineDanmakus(aid = currentAid, cid = cid)
             danmakuData.swapListWithMainContext(danmakuList)
             danmakuView?.setDanmakus(danmakuList)
         }.onFailure {

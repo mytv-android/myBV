@@ -34,7 +34,7 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * 刷刷（第 9.2 节，原型 shortsPhone / shortsTablet / shortsTv；播放器池见第 10.4 节）。
  *
- * ShortsViewModel、评论 ViewModel 与播放器池在这里创建，三种布局共享。
+ * ShortsViewModel、评论 ViewModel、播放器池、弹幕与播放菜单状态在这里创建，三种布局共享。
  * 手机（最短边 < 600dp）横过来时宽度可能超过 840dp，仍按手机处理（当前视频全屏横屏播放）。
  */
 @Composable
@@ -60,6 +60,10 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
     ShortsEventToasts(vm)
 
     val layout = if (!profile.isTv && configuration.smallestScreenWidthDp < 600) DeviceLayout.Phone else profile.layout
+    // 弹幕与播放菜单三端共用一份状态；弹幕区域默认值手机「少」，其余半屏
+    val danmaku = rememberShortsDanmaku(isPhone = layout == DeviceLayout.Phone)
+    ShortsDanmakuLoadEffect(danmaku, pool, vm.items)
+    val menu = rememberShortsMenuState(vm, pool, danmaku, actions)
 
     // 平板右侧信息栏与对话框跟随全局明暗（视频区域的强制深色在 ShortsTablet 里处理）；手机、电视整页深色。
     // 对话框必须与页面放在同一个主题作用域里：页面旁边再并列一个 BvTheme 会让页面整个不显示。
@@ -77,9 +81,9 @@ fun ShortsScreen(nav: NavController, route: ShortsRoute) {
                 }
             } else {
                 when (layout) {
-                    DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions, onPictureClick)
-                    DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions, onPictureClick)
-                    DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions, onPictureClick)
+                    DeviceLayout.Phone -> ShortsPhone(vm, pool, comments, actions, menu, onPictureClick)
+                    DeviceLayout.Tablet -> ShortsTablet(vm, pool, comments, actions, menu, onPictureClick)
+                    DeviceLayout.Tv -> ShortsTv(vm, pool, comments, actions, menu, onPictureClick)
                 }
             }
             ShortsActionDialogs(actions)
