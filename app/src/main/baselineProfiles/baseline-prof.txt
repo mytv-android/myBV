@@ -12391,3 +12391,31 @@ HSLorg/slf4j/helpers/SubstituteLoggerFactory;-><init>()V
 HSLorg/slf4j/impl/HandroidLoggerAdapter;-><clinit>()V
 HSLorg/slf4j/impl/HandroidLoggerAdapter;->isLoggable(I)Z
 HSLorg/slf4j/simple/SimpleServiceProvider;-><init>()V
+# 刷刷：上面是冷启动采集，不含刷刷。进入刷刷后要组合当前页和前后各一页、建播放器和弹幕层，
+# 这些代码首次进入时都在解释执行，主线程卡顿会吞掉头几秒里的第一下翻页。
+# 通配规则由 AGP 在 R8 之前展开（ExpandArtProfileWildcardsTask）。
+HSPLcom/github/mytv/bv/ui/feature/shorts/**->**(**)**
+Lcom/github/mytv/bv/ui/feature/shorts/**;
+HSPLcom/github/mytv/bv/viewmodel/Shorts*;->**(**)**
+Lcom/github/mytv/bv/viewmodel/Shorts*;
+HSPLcom/github/mytv/bv/entity/Shorts*;->**(**)**
+Lcom/github/mytv/bv/entity/Shorts*;
+HSPLcom/github/mytv/bv/ui/designsystem/**->**(**)**
+Lcom/github/mytv/bv/ui/designsystem/**;
+HSPLcom/github/mytv/bv/player/**->**(**)**
+Lcom/github/mytv/bv/player/**;
+# 「跟随内容」主题每翻一条都从封面取色
+HSPLcom/materialkolor/**->**(**)**
+Lcom/materialkolor/**;
+# 播放器池在主线程创建 ExoPlayer、换源
+HSPLandroidx/media3/exoplayer/**->**(**)**
+Landroidx/media3/exoplayer/**;
+HSPLandroidx/media3/common/**->**(**)**
+Landroidx/media3/common/**;
+# 竖向翻页和前后页预组合
+HSPLandroidx/compose/foundation/pager/**->**(**)**
+Landroidx/compose/foundation/pager/**;
+HSPLandroidx/compose/foundation/lazy/layout/**->**(**)**
+Landroidx/compose/foundation/lazy/layout/**;
+HSPLandroidx/compose/foundation/gestures/**->**(**)**
+Landroidx/compose/foundation/gestures/**;
