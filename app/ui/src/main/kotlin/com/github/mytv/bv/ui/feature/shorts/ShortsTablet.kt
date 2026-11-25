@@ -930,8 +930,9 @@ private fun TabletVideoChrome(
                 .align(Alignment.TopCenter)
                 .padding(top = 24.dp),
         )
-        // 铺满时右侧是操作列，切条靠上下滑、滚轮和方向键（原型同样只在非铺满时显示）
-        if (!layout.cover) {
+        // 铺满时右侧是操作列，切条靠上下滑、滚轮和方向键（原型同样只在非铺满时显示）；
+        // 桌面姿态下半的控制区已有大号的上一条 / 下一条，这里不再重复
+        if (!layout.cover && layout.zone(ShortsZoneKind.Controls) == null) {
             Column(
                 Modifier
                     .align(Alignment.CenterEnd)
@@ -1261,11 +1262,13 @@ private fun TabletZoneBox(
                 // 原型 `.blk.strip`：贴着画面下沿往下排，条高时不居中（否则画面和信息之间空出一大块）
                 contentAlignment = Alignment.TopStart,
             ) {
-                // 信息条可能很矮：展开简介后在条内滚动
+                // 信息条可能很矮：展开简介后在条内滚动。
+                // 横向折痕（桌面姿态）下半是控制区，操作按钮都在那边，信息条只留 UP 主和标题，一行放得下
                 TabletStrip(
                     item = item,
                     ui = ui,
                     wide = zone.rect.width >= 900f,
+                    showActions = layout.zone(ShortsZoneKind.Controls) == null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
@@ -1316,9 +1319,19 @@ private fun TabletInfoHeader(item: ShortsItem, ui: TabletUi, showComments: Boole
     }
 }
 
-/** 横向信息条（原型 `.blk.strip`）：UP 主、标题、操作按钮（含「评论」开关）；窄时操作按钮换到第二行 */
+/**
+ * 横向信息条（原型 `.blk.strip`）：UP 主、标题、操作按钮（含「评论」开关）；窄时操作按钮换到第二行。
+ *
+ * @param showActions 操作按钮行；另一片是控制区（已有同样的按钮）时不放
+ */
 @Composable
-private fun TabletStrip(item: ShortsItem, ui: TabletUi, wide: Boolean, modifier: Modifier = Modifier) {
+private fun TabletStrip(
+    item: ShortsItem,
+    ui: TabletUi,
+    wide: Boolean,
+    modifier: Modifier = Modifier,
+    showActions: Boolean = true,
+) {
     if (wide) {
         Row(
             modifier,
@@ -1327,7 +1340,7 @@ private fun TabletStrip(item: ShortsItem, ui: TabletUi, wide: Boolean, modifier:
         ) {
             TabletUpRow(item = item, ui = ui, modifier = Modifier.widthIn(max = 280.dp))
             TabletStripTitle(item = item, ui = ui, collapsedLines = 2, modifier = Modifier.weight(1f))
-            TabletActionRow(item = item, ui = ui, showComments = true)
+            if (showActions) TabletActionRow(item = item, ui = ui, showComments = true)
         }
     } else {
         BoxWithConstraints(modifier) {
@@ -1347,7 +1360,7 @@ private fun TabletStrip(item: ShortsItem, ui: TabletUi, wide: Boolean, modifier:
                     TabletUpRow(item = item, ui = ui, modifier = Modifier.fillMaxWidth())
                     TabletStripTitle(item = item, ui = ui, collapsedLines = 2)
                 }
-                TabletActionRow(item = item, ui = ui, showComments = true)
+                if (showActions) TabletActionRow(item = item, ui = ui, showComments = true)
             }
         }
     }
