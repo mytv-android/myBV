@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -161,6 +162,9 @@ private val PhoneActionColumnHeight = 60.dp + (63.dp + PhoneActionSpacing) * 5
 /** 竖屏视频的弹幕层：从顶栏下沿（状态栏 + 52）到底部信息上沿（底部往上 200） */
 private val PhoneDanmakuTop = 52.dp
 private val PhoneDanmakuBottom = 200.dp
+
+/** 右侧操作列（46dp 按钮 + 10dp 边距 + 标签余量）让给弹幕层的宽度 */
+private val PhoneDanmakuActionsGap = 72.dp
 
 /** 全屏控制层：播放中进入全屏、切条、单击后停留的时间 */
 private const val PhoneControlsMs = 3000L
@@ -405,8 +409,10 @@ internal fun ShortsPhone(
                 ShortsMenuContent(
                     state = menu,
                     item = item,
+                    // 面板不替内容让开导航栏：滚到底时最后一行要能露出来
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
                         .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
                     // 分享、视频详情会离开当前界面：面板直接移除，不留在新页面上面
                     onAction = { menuItem = null },
@@ -1077,7 +1083,9 @@ private fun PhoneDanmaku(
     navExtra: Dp,
     hidden: Boolean,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    // 这一层叠在 Pager 上面：Compose 只看直接子节点是否声明「与兄弟共享」，包装层不声明的话，
+    // 画面区域内的单击、横滑都到不了下面的页面手势
+    BoxWithConstraints(Modifier.fillMaxSize().shortsTouchPassThrough()) {
         val screenHeight = maxHeight
         val portrait = item == null || pool.phonePortrait(item)
         val top: Dp
@@ -1095,8 +1103,11 @@ private fun PhoneDanmaku(
         } else {
             layerHeight = maxWidth * 9f / 16f
             top = (screenHeight - layerHeight) / 2 - layerHeight * 0.1f
-            fraction = danmaku.area.fraction
+            // 横屏视频竖着看：16:9 画面本来就矮，「少」也按上半算（设计稿：默认上半），否则两行挤在一起互相压
+            fraction = maxOf(danmaku.area.fraction, ShortsDanmakuArea.Half.fraction)
         }
+        // 「少」只到操作列上沿；其余区域会和右侧操作列重叠，弹幕不从按钮后面穿过，让出操作列的宽度
+        val overlapsActions = !portrait || danmaku.area != ShortsDanmakuArea.Few
         ShortsDanmakuLayer(
             danmaku = danmaku,
             pool = pool,
@@ -1104,7 +1115,7 @@ private fun PhoneDanmaku(
             areaFraction = fraction,
             modifier = Modifier
                 .offset(y = top)
-                .fillMaxWidth()
+                .width(if (overlapsActions) (maxWidth - PhoneDanmakuActionsGap).coerceAtLeast(1.dp) else maxWidth)
                 .height(layerHeight),
             hidden = hidden,
         )

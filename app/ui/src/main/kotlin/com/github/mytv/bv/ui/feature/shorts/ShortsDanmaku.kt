@@ -1,5 +1,6 @@
 package com.github.mytv.bv.ui.feature.shorts
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,7 +16,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mytv.bv.entity.ShortsDanmakuArea
 import com.github.mytv.bv.entity.ShortsItem
@@ -45,6 +51,7 @@ import org.koin.compose.koinInject
  * - 开关和区域刷刷单独记（[Prefs.shortsDanmakuEnabled] / [Prefs.shortsDanmakuArea]），竖屏画面构图和主播放器不同；
  *   样式（不透明度、字号、密度、类型）和主播放器共用 Prefs.defaultDanmaku*。
  * - 数据按 cid 缓存最近 3 条：当前条停稳后拉取，当前条缓冲完成后预取下一条。
+ *   拉取失败（多半是快速翻条触发的 -412 风控）记 30 秒：这段时间不重拉这一条，也不预取，免得越拉越被限。
  * - 渲染用 [ShortsDanmakuLayer]：每个弹幕层自己持有一个 [DanmakuView]（它离开窗口就会释放，不能在两个父容器之间搬），
  *   一个页面只放一个弹幕层，跟着当前条走。
  */
@@ -57,6 +64,8 @@ internal class ShortsDanmaku(
     companion object {
         private val logger = KotlinLogging.logger { }
         private const val CACHE_SIZE = 3
+        private const val RETRY_AFTER_MS = 30_000L
+        private const val FAILURE_MEMO_SIZE = 16
     }
 
     var enabled by mutableStateOf(runCatching { Prefs.shortsDanmakuEnabled }.getOrDefault(true))
@@ -86,6 +95,8 @@ internal class ShortsDanmaku(
 
     private val cache = LinkedHashMap<Long, List<Danmaku>>()
     private val jobs = HashMap<Long, Job>()
+    private val failedAt = LinkedHashMap<Long, Long>()
+    private var lastFailureAt = Long.MIN_VALUE / 2
 
     fun danmakusFor(cid: Long): List<Danmaku>? = cache[cid]
 
@@ -153,16 +164,24 @@ internal class ShortsDanmaku(
         )
     }
 
-    /** 拉取这一条的弹幕（已缓存或正在拉取时直接返回） */
-    fun load(item: ShortsItem) {
+    /**
+     * 拉取这一条的弹幕（已缓存或正在拉取时直接返回）。
+     *
+     * @param prefetch 预取下一条：刚失败过时先不预取
+     */
+    fun load(item: ShortsItem, prefetch: Boolean = false) {
         val cid = item.cid
         if (cid <= 0 || cache.containsKey(cid) || jobs[cid]?.isActive == true) return
+        val now = SystemClock.elapsedRealtime()
+        if (failedAt[cid]?.let { now - it < RETRY_AFTER_MS } == true) return
+        if (prefetch && now - lastFailureAt < RETRY_AFTER_MS) return
         jobs[cid] = scope.launch {
             try {
                 val list = withContext(Dispatchers.IO) {
                     repository.loadEngineDanmakus(aid = item.aid, cid = cid).sorted()
                 }
                 cache[cid] = list
+                failedAt.remove(cid)
                 while (cache.size > CACHE_SIZE) {
                     val eldest = cache.keys.first()
                     cache.remove(eldest)
@@ -171,6 +190,11 @@ internal class ShortsDanmaku(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                val failed = SystemClock.elapsedRealtime()
+                failedAt.remove(cid)
+                failedAt[cid] = failed
+                while (failedAt.size > FAILURE_MEMO_SIZE) failedAt.remove(failedAt.keys.first())
+                lastFailureAt = failed
                 logger.fWarn { "Load shorts danmaku failed: [av=${item.aid}] ${e.stackTraceToString()}" }
             } finally {
                 jobs.remove(cid)
@@ -204,7 +228,7 @@ internal fun ShortsDanmakuLoadEffect(danmaku: ShortsDanmaku, pool: ShortsPlayerP
             val index = items.indexOfFirst { it.aid == aid }
             val current = items.getOrNull(index) ?: return@collectLatest
             danmaku.load(current)
-            if (ready) items.getOrNull(index + 1)?.let { danmaku.load(it) }
+            if (ready) items.getOrNull(index + 1)?.let { danmaku.load(it, prefetch = true) }
         }
     }
 }
@@ -265,6 +289,29 @@ internal fun ShortsDanmakuLayer(
 
     AndroidView(
         factory = { view },
-        modifier = modifier.graphicsLayer { alpha = if (hidden || !isCurrent) 0f else 1f },
+        // 裁到本层：滚动弹幕从右边缘外进场，不裁的话会画到黑边和操作列上
+        modifier = modifier.graphicsLayer {
+            clip = true
+            alpha = if (hidden || !isCurrent) 0f else 1f
+        },
     )
+}
+
+/**
+ * 命中测试时声明「与兄弟节点共享触摸」：叠在画面上的弹幕层（或它的包装层）不挡住下面的页面手势。
+ *
+ * Compose 命中一个子节点后，只看这个**直接子节点**有没有声明共享来决定是否继续把触摸交给它下面的兄弟。
+ * AndroidView 自己声明了共享，但外面再包一层布局（如 BoxWithConstraints）就失效了，所以包装层要挂上这个。
+ */
+internal fun Modifier.shortsTouchPassThrough(): Modifier = this then TouchPassThroughElement
+
+private data object TouchPassThroughElement : ModifierNodeElement<TouchPassThroughNode>() {
+    override fun create(): TouchPassThroughNode = TouchPassThroughNode()
+    override fun update(node: TouchPassThroughNode) = Unit
+}
+
+private class TouchPassThroughNode : Modifier.Node(), PointerInputModifierNode {
+    override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) = Unit
+    override fun onCancelPointerInput() = Unit
+    override fun sharePointerInputWithSiblings(): Boolean = true
 }

@@ -85,6 +85,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -98,6 +100,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -852,20 +855,55 @@ private fun TvInfo(
             val preview = if (comments.loadedAid == item.aid) comments.comments.take(2) else emptyList()
             if (preview.isNotEmpty()) {
                 // 屏幕矮时评论卡先被压缩，按键提示始终留在底部
-                Column(
-                    Modifier
+                TvFittingColumn(
+                    spacing = 10.dp,
+                    modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f, fill = false)
                         .clip(RoundedCornerShape(18.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = .8f))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     preview.forEach { CommentItem(comment = it, maxLines = 2) }
                 }
             }
         }
         TvKeyHints(Modifier.padding(top = 12.dp))
+    }
+}
+
+/**
+ * 竖排，但只摆放得下的子项：每个子项按自然高度量，放不下的整条不显示（第一条总会显示，超出部分由外层裁掉）。
+ *
+ * 普通 Column 被压矮时，超高的子项会被居中偏移，评论配图就压到正文上了。
+ */
+@Composable
+private fun TvFittingColumn(
+    spacing: Dp,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Layout(content, modifier) { measurables, constraints ->
+        val gap = spacing.roundToPx()
+        val childConstraints = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)
+        val shown = ArrayList<Placeable>(measurables.size)
+        var used = 0
+        for (measurable in measurables) {
+            val placeable = measurable.measure(childConstraints)
+            val next = if (shown.isEmpty()) placeable.height else used + gap + placeable.height
+            if (shown.isNotEmpty() && next > constraints.maxHeight) break
+            shown += placeable
+            used = next
+        }
+        val width = (shown.maxOfOrNull { it.width } ?: 0).coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height = used.coerceIn(constraints.minHeight, constraints.maxHeight)
+        layout(width, height) {
+            var y = 0
+            shown.forEach {
+                it.placeRelative(0, y)
+                y += it.height + gap
+            }
+        }
     }
 }
 
