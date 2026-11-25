@@ -65,6 +65,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,6 +105,7 @@ import com.github.mytv.bv.player.ui.design.bvFocus
 import com.github.mytv.bv.player.ui.design.onBvKey
 import com.github.mytv.bv.player.ui.design.onBvKeyUp
 import com.github.mytv.bv.player.ui.design.rememberSponsorProgressRanges
+import com.github.mytv.bv.player.ui.formatSpeed
 import com.github.mytv.bv.player.ui.nextAfter
 import com.github.mytv.bv.player.ui.rememberPartLabel
 import com.github.mytv.bv.util.fInfo
@@ -110,6 +113,7 @@ import com.github.mytv.bv.util.formatHourMinSec
 import com.github.mytv.bv.util.requestFocus
 import com.github.mytv.bv.util.toast
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.github.mytv.bv.player.shared.R as SharedR
@@ -186,6 +190,8 @@ internal fun TvController(
 
     var menuOpen by remember { mutableStateOf(false) }
     var menuCategory by remember { mutableStateOf(TvMenuCategory.Picture) }
+    // 从控制栏「倍速」打开时焦点直接落在当前倍速上，按 ↑↓ 就能换
+    var menuFocusOption by remember { mutableStateOf(false) }
     var listOpen by remember { mutableStateOf(false) }
     var panelOpenedFromButtons by remember { mutableStateOf(false) }
 
@@ -232,8 +238,14 @@ internal fun TvController(
         panelOpenedFromButtons = buttonsFocused
         listOpen = false
         menuCategory = category
+        menuFocusOption = false
         menuOpen = true
         showControls()
+    }
+
+    val openSpeedMenu: () -> Unit = {
+        openMenu(TvMenuCategory.Speed)
+        menuFocusOption = true
     }
 
     val openList: () -> Unit = {
@@ -758,6 +770,14 @@ internal fun TvController(
                                     onClick = onOpenComments,
                                 )
                             }
+                            // 不是 1× 时按钮直接显示当前倍速，一眼看出这次播放调过速
+                            val speed = configData.currentVideoSpeed
+                            TvControlButton(
+                                icon = painterResource(R.drawable.ic_speed_24),
+                                contentDescription = stringResource(R.string.player_ui_cd_speed),
+                                label = if (abs(speed - 1f) < 0.001f) null else formatSpeed(context, speed),
+                                onClick = openSpeedMenu,
+                            )
                             TvControlButton(
                                 icon = painterResource(R.drawable.ic_subtitles_24),
                                 contentDescription = stringResource(R.string.player_ui_cd_subtitle),
@@ -800,6 +820,7 @@ internal fun TvController(
                     menuState = menuState,
                     category = menuCategory,
                     onCategoryChange = { menuCategory = it },
+                    focusOption = menuFocusOption,
                 )
             }
 
@@ -850,6 +871,8 @@ private fun Modifier.controlsPadding(
 /**
  * 控制栏按钮：44dp FilledTonal 图标按钮（原型 `.m-ib.t`：surfaceContainerHighest / onSurface），
  * 聚焦时放大 1.10 + 外侧描边，背景 inverseSurface、内容色 inverseOnSurface。
+ *
+ * @param label 不为 null 时显示这段短文字代替图标（如倍速按钮显示「1.5×」）
  */
 @Composable
 private fun TvControlButton(
@@ -859,6 +882,7 @@ private fun TvControlButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     size: Dp = 44.dp,
+    label: String? = null,
 ) {
     val dpad = LocalPlayerDpad.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -889,6 +913,18 @@ private fun TvControlButton(
         ),
         interactionSource = interactionSource,
     ) {
-        Icon(painter = icon, contentDescription = contentDescription)
+        if (label != null) {
+            val description = contentDescription.orEmpty()
+            Text(
+                text = label,
+                modifier = Modifier.semantics { this.contentDescription = description },
+                style = ControlLabelStyle,
+                maxLines = 1,
+            )
+        } else {
+            Icon(painter = icon, contentDescription = contentDescription)
+        }
     }
 }
+
+private val ControlLabelStyle = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)

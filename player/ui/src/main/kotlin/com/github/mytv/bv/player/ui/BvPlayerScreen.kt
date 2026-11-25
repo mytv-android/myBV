@@ -561,7 +561,7 @@ fun BvPlayerScreen(
             }
         },
         onPlaySpeedChange = { speed ->
-            logger.info { "Set default play speed: $speed" }
+            logger.info { "Set play speed for this playback: $speed" }
             onPlaySpeedChange(speed)
             applySpeed(speed)
         },

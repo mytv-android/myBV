@@ -29,6 +29,7 @@
     <string name="player_ui_cd_exit_fullscreen">退出全屏</string>
     <string name="player_ui_cd_comments">评论</string>
     <string name="player_ui_cd_settings">设置</string>
+    <string name="player_ui_cd_speed">倍速</string>
 
     <!-- 触摸端侧边面板 -->
     <string name="player_ui_panel_quality">画质</string>
@@ -65,6 +66,7 @@
     <string name="player_ui_menu_others">其他</string>
     <string name="player_ui_section_resolution">分辨率</string>
     <string name="player_ui_section_speed">倍速</string>
+    <string name="player_ui_section_speed_session">倍速 · 仅本次播放</string>
     <string name="player_ui_section_danmaku_switch">弹幕</string>
     <string name="player_ui_section_danmaku_type">类型</string>
     <string name="player_ui_section_danmaku_mask">防遮挡</string>

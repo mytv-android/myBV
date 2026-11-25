@@ -75,9 +75,10 @@ import com.github.mytv.bv.player.ui.lazyContentType
 import com.github.mytv.bv.util.requestFocus
 import kotlin.math.abs
 
-/** 电视菜单的四个分类（第 9.4 节）：画面 / 弹幕 / 字幕 / 其他。 */
+/** 电视菜单的分类（第 9.4 节）：画面 / 倍速 / 弹幕 / 字幕 / 其他。 */
 internal enum class TvMenuCategory(val labelRes: Int) {
     Picture(R.string.player_ui_menu_picture),
+    Speed(R.string.player_ui_section_speed),
     Danmaku(R.string.player_ui_menu_danmaku),
     Subtitle(R.string.player_ui_menu_subtitle),
     Others(R.string.player_ui_menu_others),
@@ -165,19 +166,28 @@ private fun <T> LazyListScope.optionSection(
     isSelected: (T) -> Boolean,
     onSelect: (T) -> Unit,
     optionKey: (T) -> Any = { it.toString() },
+    focusRequester: FocusRequester? = null,
+    focusTarget: (T) -> Boolean = isSelected,
 ) {
     item(key = "$key-title", contentType = "heading") { Eyebrow(title(), if (first) 0.dp else 10.dp) }
     // API responses can repeat an audio/codec value or subtitle id.
     itemsIndexed(options, key = { index, option -> "$key-${optionKey(option)}-$index" }, contentType = { _, _ -> "option" }) { _, option ->
-        OptionItem(text = label(option), selected = isSelected(option), onClick = { onSelect(option) })
+        OptionItem(
+            modifier = if (focusRequester != null && focusTarget(option)) Modifier.focusRequester(focusRequester) else Modifier,
+            text = label(option),
+            selected = isSelected(option),
+            onClick = { onSelect(option) },
+        )
     }
 }
 
 /**
  * 电视菜单面板（长按确认或菜单键打开）：
  * 左列分类（宽 96，surfaceContainerHigh，聚焦即选中），右列选项（Eyebrow 标题 + ✓ 选项）。
- * 菜单内容沿用旧 MenuController：画面（分辨率、编码、画面比例、倍速、音质）、
+ * 菜单内容沿用旧 MenuController：画面（分辨率、编码、画面比例、音质）、倍速（只管这次播放）、
  * 弹幕（开关、类型、密度、大小、透明度、区域、蒙版、等级过滤）、字幕（轨道、字号、背景透明度、底部边距）、其他（播放模式）。
+ *
+ * @param focusOption 打开时焦点直接落在当前选中的选项上（控制栏「倍速」按钮打开时），否则落在分类上
  */
 @Composable
 internal fun TvMenuPanel(
@@ -185,13 +195,15 @@ internal fun TvMenuPanel(
     category: TvMenuCategory,
     onCategoryChange: (TvMenuCategory) -> Unit,
     modifier: Modifier = Modifier,
+    focusOption: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val categoryRequesters = remember { TvMenuCategory.entries.associateWith { FocusRequester() } }
+    val optionRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        categoryRequesters.getValue(category).requestFocus(scope)
+        (if (focusOption) optionRequester else categoryRequesters.getValue(category)).requestFocus(scope)
     }
 
     TvPanelShell(modifier = modifier) {
@@ -238,6 +250,7 @@ internal fun TvMenuPanel(
             ) {
                 when (category) {
                     TvMenuCategory.Picture -> pictureOptions(menuState, context)
+                    TvMenuCategory.Speed -> speedOptions(menuState, context, optionRequester)
                     TvMenuCategory.Danmaku -> danmakuOptions(menuState, context)
                     TvMenuCategory.Subtitle -> subtitleOptions(menuState)
                     TvMenuCategory.Others -> othersOptions(menuState, context)
@@ -276,15 +289,6 @@ private fun LazyListScope.pictureOptions(menuState: PlayerMenuState, context: an
         onSelect = { menuState.setAspectRatio(it) },
     )
     optionSection(
-        key = "speed",
-        title = { stringResource(R.string.player_ui_section_speed) },
-        first = false,
-        options = PlayerMenuState.SpeedPresets,
-        label = { formatSpeed(context, it) },
-        isSelected = { it.near(menuState.speed) },
-        onSelect = { menuState.setSpeed(it) },
-    )
-    optionSection(
         key = "audio",
         title = { stringResource(R.string.player_ui_section_audio) },
         first = false,
@@ -292,6 +296,27 @@ private fun LazyListScope.pictureOptions(menuState: PlayerMenuState, context: an
         label = { it.getDisplayName(context) },
         isSelected = { it == menuState.audio },
         onSelect = { menuState.selectAudio(it) },
+    )
+}
+
+/** 倍速只管这次播放（连播下一集沿用），默认倍速在设置里改。焦点落在当前倍速上；不是常用值时落在最接近的那一档。 */
+private fun LazyListScope.speedOptions(
+    menuState: PlayerMenuState,
+    context: android.content.Context,
+    focusRequester: FocusRequester,
+) {
+    val presets = PlayerMenuState.SpeedPresets
+    val nearest = presets.minBy { abs(it - menuState.speed) }
+    optionSection(
+        key = "speed",
+        title = { stringResource(R.string.player_ui_section_speed_session) },
+        first = true,
+        options = presets,
+        label = { formatSpeed(context, it) },
+        isSelected = { it.near(menuState.speed) },
+        onSelect = { menuState.setSpeed(it) },
+        focusRequester = focusRequester,
+        focusTarget = { it.near(nearest) },
     )
 }
 

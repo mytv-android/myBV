@@ -281,8 +281,8 @@ internal fun BvPlayerHost(
                     onAspectRatioChange = { aspectRatio ->
                         playerVm.currentVideoAspectRatio = aspectRatio
                     },
+                    // 播放器里调的倍速只管这次播放（连播下一集沿用），不改设置里的默认倍速
                     onPlaySpeedChange = { speed ->
-                        PreferenceWrites.enqueue { Prefs.defaultPlaySpeed = speed }
                         playerVm.currentPlaySpeed = speed
                     },
                     onDanmakuEnabledChange = { enabled ->
