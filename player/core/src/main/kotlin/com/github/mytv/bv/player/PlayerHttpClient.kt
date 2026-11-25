@@ -27,6 +27,7 @@ object PlayerHttpClient {
             client ?: OkHttpUtil.generateCustomSslOkHttpClient(context)
                 .newBuilder()
                 .dns(Ipv4OnlyDns)
+                .addInterceptor(MediaRangeInterceptor)
                 .build()
                 .also { client = it }
         }
