@@ -87,6 +87,32 @@ class ShortsLayoutTest {
     }
 
     @Test
+    fun `unfolded flat 4 by 3 video covers instead of a squeezed strip`() {
+        // Pixel Fold 展开扣掉导航轨约 745×640：4:3 宽度顶满后下方只剩 81，两行信息条放不下
+        val l = layout(745f, 640f, 1440 to 1080)
+        assertTrue(l.cover)
+        assertEquals(0.127f, l.crop, 0.005f)
+        assertRect(ShortsRect(0f, 0f, 745f, 640f), l.video)
+        assertTrue(l.zones.isEmpty())
+    }
+
+    @Test
+    fun `wide strip needs less height than a two row strip`() {
+        assertEquals(ShortsLayoutRules.STRIP_MIN_HEIGHT_WIDE, shortsStripMinHeight(1200f))
+        assertEquals(ShortsLayoutRules.STRIP_MIN_HEIGHT, shortsStripMinHeight(745f))
+    }
+
+    @Test
+    fun `squeezed strip stays when covering would crop too much`() {
+        // 下方只剩 110（两行信息条要 120），但铺满要裁 22%，超过放宽后的上限，仍然完整显示
+        val l = layout(693f, 500f, landscape)
+        assertFalse(l.cover)
+        assertEquals(0.22f, l.crop, 0.005f)
+        val strip = assertNotNull(l.zone(ShortsZoneKind.InfoStrip))
+        assertEquals(110f, strip.rect.height, 0.5f)
+    }
+
+    @Test
     fun `half opened book covers first pane and puts comments on the second`() {
         val l = layout(750f, 690f, portrait, ShortsFold(vertical = true, start = 335f, thickness = 0f, occluding = false))
         assertTrue(l.split)

@@ -11,6 +11,7 @@ import kotlin.math.roundToInt
  *    第二片放评论（竖向折痕）或控制（横向折痕）。铰链（occluding）一律留空。
  * 2. 画面贴边：竖屏视频高度顶满所在区域、贴左；横屏视频宽度顶满、贴顶。不居中、不加边距和圆角框。
  * 3. 能铺满就铺满：铺满所需的裁切，竖屏视频不超过 20%、横屏视频不超过 10% 时直接放大铺满，信息叠在画面上。
+ *    画面下方剩的高度连一条信息条都放不下时（如折叠屏展开看 4:3），裁切放宽到 20% 也铺满，免得信息条被压成一道缝。
  * 4. 剩下的空间放内容：右侧剩余宽度 < 300 放竖排操作列，300～720 放信息栏，≥ 720 拆两栏（信息 + 评论）；
  *    下方剩余高度 < 360 放信息条，≥ 360 信息条下面接评论。
  * 5. 评论不盖画面：单区的横屏视频打开评论时，右侧让出 400 给评论，画面按 2、3 条重新贴边。
@@ -23,6 +24,18 @@ object ShortsLayoutRules {
     const val ACTIONS_MAX_WIDTH = 300f
     const val TWO_COLUMN_MIN_WIDTH = 720f
     const val STRIP_COMMENTS_MIN_HEIGHT = 360f
+
+    /** 信息条宽到这个值时 UP 主、标题、操作按钮排成一行，否则操作按钮换到第二行 */
+    const val STRIP_WIDE_MIN_WIDTH = 900f
+
+    /** 一行信息条的最低高度：头像 44 / 两行标题 + Meta、上下内边距 26 */
+    const val STRIP_MIN_HEIGHT_WIDE = 84f
+
+    /** 两行信息条的最低高度：UP 主 44、间距 10、操作按钮 40、上下内边距 26 */
+    const val STRIP_MIN_HEIGHT = 120f
+
+    /** 下方放不下信息条时，铺满允许的裁切 */
+    const val SQUEEZED_CROP_LIMIT = 0.2f
     const val COMMENTS_WIDTH = 400f
 
     /** 单区横屏视频让出评论栏的最小宽度：让出 400 后画面区至少还要 400 */
@@ -193,6 +206,9 @@ private fun place(area: ShortsRect, ratio: Float, portrait: Boolean): Placed {
     } else {
         // 区域比画面窄：宽度顶满、贴顶，下面剩空
         val vh = (area.width / ratio).roundToInt().toFloat().coerceAtMost(area.height)
+        if (area.height - vh < shortsStripMinHeight(area.width) && crop <= ShortsLayoutRules.SQUEEZED_CROP_LIMIT) {
+            return Placed(area, cover = true, crop = crop, spare = null, spareRight = false)
+        }
         Placed(
             video = ShortsRect(area.x, area.y, area.width, vh),
             cover = false,
@@ -202,6 +218,14 @@ private fun place(area: ShortsRect, ratio: Float, portrait: Boolean): Placed {
         )
     }
 }
+
+/** 这么宽的信息条至少要多高才放得下 */
+fun shortsStripMinHeight(width: Float): Float =
+    if (width >= ShortsLayoutRules.STRIP_WIDE_MIN_WIDTH) {
+        ShortsLayoutRules.STRIP_MIN_HEIGHT_WIDE
+    } else {
+        ShortsLayoutRules.STRIP_MIN_HEIGHT
+    }
 
 private fun spareZone(spare: ShortsRect, right: Boolean, commentsElsewhere: Boolean): ShortsZone {
     val kind = if (right) {

@@ -101,6 +101,7 @@ import com.github.mytv.bv.entity.ShortsDanmakuArea
 import com.github.mytv.bv.entity.ShortsFold
 import com.github.mytv.bv.entity.ShortsItem
 import com.github.mytv.bv.entity.ShortsLayout
+import com.github.mytv.bv.entity.ShortsLayoutRules
 import com.github.mytv.bv.entity.ShortsRect
 import com.github.mytv.bv.entity.ShortsZone
 import com.github.mytv.bv.entity.ShortsZoneKind
@@ -1267,7 +1268,7 @@ private fun TabletZoneBox(
                 TabletStrip(
                     item = item,
                     ui = ui,
-                    wide = zone.rect.width >= 900f,
+                    wide = zone.rect.width >= ShortsLayoutRules.STRIP_WIDE_MIN_WIDTH,
                     showActions = layout.zone(ShortsZoneKind.Controls) == null,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1282,7 +1283,7 @@ private fun TabletZoneBox(
                     .padding(start = 20.dp, end = 20.dp, top = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TabletStrip(item = item, ui = ui, wide = zone.rect.width >= 900f)
+                TabletStrip(item = item, ui = ui, wide = zone.rect.width >= ShortsLayoutRules.STRIP_WIDE_MIN_WIDTH)
                 TabletTabbed(item = item, ui = ui, tabs = tabs)
             }
 
