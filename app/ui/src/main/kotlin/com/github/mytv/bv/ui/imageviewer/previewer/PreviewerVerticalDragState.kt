@@ -79,8 +79,8 @@ open class PreviewerVerticalDragState(
         animateContainerVisibleState = MutableTransitionState(false)
         // 等待下一帧
         ticket.awaitNextTicket()
-        // 重置container
-        viewerContainerState?.reset(defaultAnimationSpec)
+        // 内容退出组合后它的协程作用域已经取消，不能再通过该作用域启动复位动画
+        viewerContainerState?.resetImmediately()
         // 将transform标记为退出
         transformState?.setExitState()
         // 标记动作结束
