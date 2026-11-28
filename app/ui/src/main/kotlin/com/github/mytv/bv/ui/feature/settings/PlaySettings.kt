@@ -32,6 +32,7 @@ import com.github.mytv.bv.ui.designsystem.component.BvChip
 import com.github.mytv.bv.ui.designsystem.theme.BvType
 import com.github.mytv.bv.util.Prefs
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** 默认倍速可选值（旧电视播放器菜单：0.25–3.0，每档 0.25）。 */
 private val QualityOptions = Resolution.entries.reversed()
