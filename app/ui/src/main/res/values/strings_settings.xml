@@ -68,6 +68,8 @@
     <string name="settings_play_quality">默认画质</string>
     <string name="settings_play_codec">默认视频编码</string>
     <string name="settings_play_audio">默认音质</string>
+    <string name="settings_play_volume">播放器音量</string>
+    <string name="settings_play_volume_desc">只作用于 App 内播放器，与系统媒体音量相互独立：调小它不会改变侧键 / 遥控器音量，系统音量照旧由系统调节。播放中的视频在播放菜单里也能随时改</string>
     <string name="settings_play_audio_balance">音量均衡</string>
     <string name="settings_play_speed">默认倍速</string>
     <string name="settings_play_speed_value">%1$sx</string>

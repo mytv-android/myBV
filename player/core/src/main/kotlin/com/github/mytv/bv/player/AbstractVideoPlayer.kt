@@ -85,6 +85,15 @@ abstract class AbstractVideoPlayer {
     abstract var speed: Float
 
     /**
+     * 播放器自身的音量（0..1），与系统音量相互独立：调小它不影响系统媒体音量，
+     * 系统音量照旧通过 [android.media.AudioManager] 调节。
+     *
+     * 内核创建时由 [VideoPlayerOptions.volume] 给出初值，播放过程中可随时改写（播放菜单里调音量）。
+     * 内核已释放时写入无效，读取返回 1f。
+     */
+    abstract var volume: Float
+
+    /**
      * 推入本集的响度元数据，null 表示没有元数据（旁路）。
      *
      * 换集/换清晰度后都必须重新推一次：处理器按当前元数据算静态增益，

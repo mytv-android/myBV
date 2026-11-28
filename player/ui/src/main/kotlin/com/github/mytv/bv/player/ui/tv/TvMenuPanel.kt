@@ -99,6 +99,8 @@ private val DanmakuFilterLevelPresets = listOf(0, 2, 4, 6, 8, 10)
 private val SubtitleSizePresets = listOf(16, 20, 24, 28, 32, 40, 48)
 private val SubtitleBackgroundPresets = listOf(0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f)
 private val SubtitlePaddingPresets = listOf(0, 8, 12, 16, 24, 32, 48)
+/** 播放器自身音量的常用值（与系统音量独立） */
+private val VolumePresets = listOf(0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f)
 
 private fun Float.near(other: Float) = abs(this - other) < 0.001f
 
@@ -184,7 +186,7 @@ private fun <T> LazyListScope.optionSection(
 /**
  * 电视菜单面板（长按确认或菜单键打开）：
  * 左列分类（宽 96，surfaceContainerHigh，聚焦即选中），右列选项（Eyebrow 标题 + ✓ 选项）。
- * 菜单内容沿用旧 MenuController：画面（分辨率、编码、画面比例、音质）、倍速（只管这次播放）、
+ * 菜单内容沿用旧 MenuController：画面（分辨率、编码、画面比例、音质、播放器音量）、倍速（只管这次播放）、
  * 弹幕（开关、类型、密度、大小、透明度、区域、蒙版、等级过滤）、字幕（轨道、字号、背景透明度、底部边距）、其他（播放模式）。
  *
  * @param focusOption 打开时焦点直接落在当前选中的选项上（控制栏「倍速」按钮打开时），否则落在分类上
@@ -296,6 +298,16 @@ private fun LazyListScope.pictureOptions(menuState: PlayerMenuState, context: an
         label = { it.getDisplayName(context) },
         isSelected = { it == menuState.audio },
         onSelect = { menuState.selectAudio(it) },
+    )
+    // 播放器自身的音量：与系统音量（遥控音量键）互不影响
+    optionSection(
+        key = "volume",
+        title = { stringResource(R.string.player_ui_section_volume) },
+        first = false,
+        options = VolumePresets,
+        label = { formatPercent(it) },
+        isSelected = { it.near(menuState.volume) },
+        onSelect = { menuState.setVolume(it) },
     )
 }
 

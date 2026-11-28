@@ -255,7 +255,9 @@ internal class ShortsPlayerPool(
             },
             enableFfmpegAudioRenderer = Prefs.enableFfmpegAudioRenderer,
             enableSkipSilence = Prefs.playerSkipSilence,
-            audioBalanceLevel = Prefs.playerAudioBalanceLevel
+            audioBalanceLevel = Prefs.playerAudioBalanceLevel,
+            // 播放器自身的音量，与系统音量独立
+            volume = Prefs.playerVolume,
         )
     }
 

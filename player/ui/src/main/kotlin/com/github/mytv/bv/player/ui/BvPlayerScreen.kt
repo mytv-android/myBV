@@ -113,6 +113,7 @@ import kotlin.math.roundToInt
  * @param onLoadNewVideo 切换到选集列表里的某一项
  * @param onResolutionChange / onCodecChange / onAudioChange 切换清晰度 / 编码 / 音质；
  *   处理完后调用 afterChange()，播放器会回到切换前的进度继续播放
+ * @param onVolumeChange 播放器自身的音量（0..1），与系统音量独立；改动立即在当前播放内核上生效
  * @param onDanmakuEnabledChange 弹幕总开关（触摸端「弹 开」标签、弹幕面板开关、电视菜单「弹幕」项）
  * @param onDanmakuSwitchChange 显示的弹幕类型（含 DanmakuType.All）
  * @param onDanmakuSizeChange 弹幕字号缩放
@@ -140,6 +141,7 @@ fun BvPlayerScreen(
     onAudioChange: (Audio, afterChange: suspend () -> Unit) -> Unit,
     onAspectRatioChange: (VideoAspectRatio) -> Unit,
     onPlaySpeedChange: (Float) -> Unit,
+    onVolumeChange: (Float) -> Unit,
     onDanmakuEnabledChange: (Boolean) -> Unit,
     onDanmakuSwitchChange: (List<DanmakuType>) -> Unit,
     onDanmakuSizeChange: (Float) -> Unit,
@@ -564,6 +566,12 @@ fun BvPlayerScreen(
             logger.info { "Set play speed for this playback: $speed" }
             onPlaySpeedChange(speed)
             applySpeed(speed)
+        },
+        onVolumeChange = { volume ->
+            logger.info { "Set player volume: $volume" }
+            // 播放内核先响应用户操作，再交给调用方落盘
+            videoPlayer.volume = volume
+            onVolumeChange(volume)
         },
         onAspectRatioChange = { ratio ->
             aspectRatioSetting = ratio

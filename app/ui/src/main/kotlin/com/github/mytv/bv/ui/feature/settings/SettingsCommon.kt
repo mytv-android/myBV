@@ -296,6 +296,8 @@ internal fun SettingSliderGroup(
 /**
  * 写入 Prefs 的滑块组：拖动时只改本地值，松手（或方向键调节停下 400ms 后）再写入，
  * 避免每一帧都写 DataStore。
+ *
+ * @param description 滑块下方的说明文案（选这项的代价、与其它设置的关系等）
  */
 private class SavedSliderValue(var value: Float) {
     var current = value
@@ -311,6 +313,7 @@ internal fun PrefSliderGroup(
     save: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int = 0,
+    description: String? = null,
 ) {
     val currentValue by rememberUpdatedState(value)
     val currentSave by rememberUpdatedState(save)
@@ -331,18 +334,21 @@ internal fun PrefSliderGroup(
     DisposableEffect(Unit) {
         onDispose { currentCommit() }
     }
-    SettingSliderGroup(
-        label = label,
-        valueText = valueText,
-        value = value,
-        onValueChange = {
-            saved.current = it
-            onValueChange(it)
-        },
-        valueRange = valueRange,
-        steps = steps,
-        onValueChangeFinished = commit,
-    )
+    SettingGroup(label, valueText) {
+        SettingSlider(
+            value = value,
+            onValueChange = {
+                saved.current = it
+                onValueChange(it)
+            },
+            valueRange = valueRange,
+            steps = steps,
+            onValueChangeFinished = commit,
+        )
+        if (description != null) {
+            Text(description, style = BvType.Meta, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 /**

@@ -101,6 +101,8 @@ internal fun BvPlayerHost(
     var showDebugInfo by remember { mutableStateOf(Prefs.showDebugInfo) }
     // 渲染方式进播放页时读一次；切换它只影响画面 View，不需要重建播放内核
     val videoRenderMode = remember { Prefs.videoRenderMode }
+    // 播放器自身的音量：内核创建时已按它设好，菜单里调节后同步这里并回写 Prefs
+    var playerVolume by remember { mutableStateOf(Prefs.playerVolume) }
 
     // 旧播放页 onPause：暂停视频（弹幕引擎通过 isPlayingProvider 跟随，无需单独暂停）
     DisposableEffect(lifecycleOwner, videoPlayer) {
@@ -192,6 +194,7 @@ internal fun BvPlayerHost(
                     showPlayerLogs = showPlayerLogs,
                     showDebugInfo = showDebugInfo,
                     currentVideoRenderMode = videoRenderMode,
+                    currentVideoVolume = playerVolume,
                 ),
                 LocalVideoPlayerDanmakuMasksData provides VideoPlayerDanmakuMasksData(
                     danmakuMasks = playerVm.danmakuMasks,
@@ -284,6 +287,11 @@ internal fun BvPlayerHost(
                     // 播放器里调的倍速只管这次播放（连播下一集沿用），不改设置里的默认倍速
                     onPlaySpeedChange = { speed ->
                         playerVm.currentPlaySpeed = speed
+                    },
+                    // 播放器音量与系统音量独立：播放内核已由 BvPlayerScreen 立即生效，这里只同步界面与设置
+                    onVolumeChange = { volume ->
+                        playerVolume = volume
+                        PreferenceWrites.enqueueLatest("player-volume") { Prefs.playerVolume = volume }
                     },
                     onDanmakuEnabledChange = { enabled ->
                         playerVm.currentDanmakuEnabled = enabled

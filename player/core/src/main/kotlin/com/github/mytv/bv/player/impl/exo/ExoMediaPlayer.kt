@@ -181,6 +181,8 @@ class ExoMediaPlayer(
             .build()
 
         initListener()
+        // 播放器自身的音量：与系统音量独立，菜单 / 设置里改的是这一路
+        mPlayer?.volume = options.volume.coerceIn(0f, 1f)
     }
 
     private fun initListener() {
@@ -323,6 +325,12 @@ class ExoMediaPlayer(
         set(value) {
             mPlayer?.setPlaybackSpeed(value)
             applySkipSilence()
+        }
+
+    override var volume: Float
+        get() = mPlayer?.volume ?: 1f
+        set(value) {
+            mPlayer?.volume = value.coerceIn(0f, 1f)
         }
 
     /** 运行时开关；实际是否生效还取决于当前播放速度，需达到 [SKIP_SILENCE_MIN_SPEED] 才真正开启 */

@@ -545,6 +545,23 @@ object Prefs {
         }
 
     /**
+     * 播放器自身的音量（0..1），默认 1（满音量）。
+     * 与系统音量相互独立：改它不动系统媒体音量，只作用于 App 内播放内核。
+     * 新播放器创建时读取；播放过程中在播放菜单里调节会立即生效并回写这里。
+     */
+    var playerVolume: Float
+        get() = runBlocking {
+            dsm.getPreferenceFlow(PrefKeys.prefPlayerVolumeRequest).first()
+                .coerceIn(0f, 1f)
+        }
+        set(value) = runBlocking {
+            dsm.editPreference(
+                PrefKeys.prefPlayerVolumeKey,
+                value.coerceIn(0f, 1f)
+            )
+        }
+
+    /**
      * 刷刷弹幕开关。没设置过（-1）时沿用主播放器的默认开关。
      */
     var shortsDanmakuEnabled: Boolean
@@ -781,6 +798,7 @@ object PrefKeys {
     val prefEnableFfmpegAudioRenderer = booleanPreferencesKey("enable_ffmpeg_audio_renderer")
     val prefPlayerAudioBalanceLevelKey = intPreferencesKey("player_audio_balance_level")
     val prefPlayerSkipSilenceKey = booleanPreferencesKey("player_skip_silence")
+    val prefPlayerVolumeKey = floatPreferencesKey("player_volume")
     val prefShortsDanmakuEnabledKey = intPreferencesKey("shorts_danmaku_enabled")
     val prefShortsDanmakuAreaKey = intPreferencesKey("shorts_danmaku_area")
     val prefShortsAfterEndKey = intPreferencesKey("shorts_after_end")
@@ -880,6 +898,7 @@ object PrefKeys {
     val prefPlayerAudioBalanceLevelRequest =
         PreferenceRequest(prefPlayerAudioBalanceLevelKey, AudioBalanceLevel.Off.ordinal)
     val prefPlayerSkipSilenceRequest = PreferenceRequest(prefPlayerSkipSilenceKey, false)
+    val prefPlayerVolumeRequest = PreferenceRequest(prefPlayerVolumeKey, 1f)
     val prefShortsDanmakuEnabledRequest = PreferenceRequest(prefShortsDanmakuEnabledKey, -1)
     val prefShortsDanmakuAreaRequest = PreferenceRequest(prefShortsDanmakuAreaKey, -1)
     val prefShortsAfterEndRequest = PreferenceRequest(prefShortsAfterEndKey, 0)

@@ -58,6 +58,8 @@ class PlayerMenuState internal constructor() {
     val availableAudios: List<Audio> get() = config.availableAudio.sortedByDescending { it.ordinal }
     val audio: Audio get() = config.currentAudio
     val speed: Float get() = config.currentVideoSpeed
+    /** 播放器自身的音量（0..1），与系统音量独立 */
+    val volume: Float get() = config.currentVideoVolume
     val aspectRatio: VideoAspectRatio get() = config.currentVideoAspectRatio
 
     // ---------- 弹幕 ----------
@@ -101,6 +103,11 @@ class PlayerMenuState internal constructor() {
 
     fun setSpeed(speed: Float) {
         handlers?.onPlaySpeedChange?.invoke(speed)
+    }
+
+    /** 播放器自身音量（0..1），与系统音量独立 */
+    fun setVolume(volume: Float) {
+        handlers?.onVolumeChange?.invoke(volume)
     }
 
     fun setAspectRatio(aspectRatio: VideoAspectRatio) {
@@ -195,6 +202,8 @@ internal class PlayerMenuHandlers(
     val onCodecChange: (VideoCodec) -> Unit,
     val onAudioChange: (Audio) -> Unit,
     val onPlaySpeedChange: (Float) -> Unit,
+    /** 播放器自身音量（0..1），与系统音量独立 */
+    val onVolumeChange: (Float) -> Unit,
     val onAspectRatioChange: (VideoAspectRatio) -> Unit,
     val onDanmakuEnabledChange: (Boolean) -> Unit,
     val onDanmakuTypesChange: (List<DanmakuType>) -> Unit,

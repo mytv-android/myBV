@@ -144,6 +144,11 @@ data class VideoPlayerConfigData(
      * 由调用方进播放页时读一次 Prefs 后传入，播放过程中不变。
      */
     val currentVideoRenderMode: VideoRenderMode = VideoRenderMode.SurfaceView,
+    /**
+     * 播放器自身的音量（0..1），与系统音量独立。
+     * 由调用方进播放页时读一次 Prefs 后传入；播放菜单里调节后同步更新这里。
+     */
+    val currentVideoVolume: Float = 1f,
 )
 
 data class VideoPlayerDanmakuMasksData(

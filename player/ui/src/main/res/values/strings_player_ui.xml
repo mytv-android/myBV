@@ -58,6 +58,9 @@
     <string name="player_ui_panel_more">更多设置</string>
     <string name="player_ui_section_play_mode">播放模式</string>
     <string name="player_ui_section_aspect_ratio">画面比例</string>
+    <!-- 播放器自身的音量，与系统音量（侧键 / 遥控音量键）互不影响 -->
+    <string name="player_ui_panel_volume">播放器音量</string>
+    <string name="player_ui_section_volume">音量</string>
 
     <!-- 电视端菜单 -->
     <string name="player_ui_menu_picture">画面</string>

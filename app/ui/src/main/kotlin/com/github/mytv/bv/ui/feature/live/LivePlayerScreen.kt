@@ -143,6 +143,8 @@ fun LivePlayerScreen(nav: NavController, route: LivePlayerRoute) {
                 userAgent = context.getString(BvR.string.video_player_user_agent_http),
                 referer = "https://live.bilibili.com",
                 enableFfmpegAudioRenderer = Prefs.enableFfmpegAudioRenderer,
+                // 播放器自身的音量，与系统音量独立
+                volume = Prefs.playerVolume,
             )
         )
     }

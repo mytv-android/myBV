@@ -494,6 +494,21 @@ private fun MorePanel(menuState: PlayerMenuState) {
             }
         }
     }
+    // 播放器自身的音量：与系统音量（右半屏竖滑、侧键）互不影响
+    PanelSection(stringResource(R.string.player_ui_section_volume)) {
+        SliderBlock(
+            name = stringResource(R.string.player_ui_panel_volume),
+            value = formatPercent(menuState.volume),
+        ) {
+            ExpressiveSlider(
+                value = menuState.volume,
+                onValueChange = { menuState.setVolume((it * 20).roundToInt() / 20f) },
+                valueRange = 0f..1f,
+                // 5% 一档
+                steps = 19,
+            )
+        }
+    }
     PanelSection(stringResource(R.string.player_ui_section_aspect_ratio)) {
         ChipFlow {
             VideoAspectRatio.entries.forEach { ratio ->

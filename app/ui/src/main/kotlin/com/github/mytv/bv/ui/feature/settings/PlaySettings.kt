@@ -46,7 +46,7 @@ private fun formatSpeed(speed: Float): String =
     if (speed % 1f == 0f) speed.toInt().toString() else speed.toString()
 
 /**
- * 「播放」：默认画质 / 视频编码 / 音质 / 倍速 / 播放模式 / 播放器内核 / 渲染方式 /
+ * 「播放」：默认画质 / 视频编码 / 音质 / 播放器音量 / 倍速 / 播放模式 / 播放器内核 / 渲染方式 /
  * 音频软解 / 跳过静音 / 长按确认键行为与加速倍速。
  * 照搬旧电视 ResolutionSetting、VideoCodecSetting、AudioSetting、PlayerTypeSetting、OtherSetting（FFmpeg）
  * 与旧手机 PlayContent，单选列表改为 BvChip。
@@ -60,6 +60,7 @@ internal fun PlaySettings(container: SettingsContainer) {
             quality = Prefs.defaultQuality,
             codec = Prefs.defaultVideoCodec,
             audio = Prefs.defaultAudio,
+            volume = Prefs.playerVolume,
             speed = Prefs.defaultPlaySpeed,
             playMode = Prefs.defaultPlayMode,
             playerType = Prefs.playerType,
@@ -78,6 +79,7 @@ internal fun PlaySettings(container: SettingsContainer) {
     var quality by remember { mutableStateOf(initial.quality) }
     var codec by remember { mutableStateOf(initial.codec) }
     var audio by remember { mutableStateOf(initial.audio) }
+    var volume by remember { mutableFloatStateOf(initial.volume) }
     var speed by remember { mutableFloatStateOf(initial.speed) }
     var playMode by remember { mutableStateOf(initial.playMode) }
     var playerType by remember { mutableStateOf(initial.playerType) }
@@ -133,6 +135,17 @@ internal fun PlaySettings(container: SettingsContainer) {
                 audioBalance = it
                 PreferenceWrites.enqueue { Prefs.playerAudioBalanceLevel = it }
             },
+        )
+        // 播放器自身的音量：与系统音量（侧键 / 遥控音量键）互不影响，播放菜单里也能随时调
+        PrefSliderGroup(
+            label = stringResource(R.string.settings_play_volume),
+            valueText = stringResource(R.string.settings_percent, (volume * 100).roundToInt()),
+            value = volume,
+            onValueChange = { volume = it },
+            save = { Prefs.playerVolume = it },
+            valueRange = 0f..1f,
+            steps = 19,
+            description = stringResource(R.string.settings_play_volume_desc),
         )
         SettingChoiceGroup(
             label = stringResource(R.string.settings_play_speed),
@@ -276,6 +289,7 @@ private data class PlayPreferences(
     val quality: Resolution,
     val codec: VideoCodec,
     val audio: Audio,
+    val volume: Float,
     val speed: Float,
     val playMode: PlayMode,
     val playerType: PlayerType,
